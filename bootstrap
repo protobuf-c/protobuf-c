@@ -1,0 +1,5 @@
+#! /bin/sh -e
+libtoolize
+aclocal
+autoconf
+automake -a --foreign
