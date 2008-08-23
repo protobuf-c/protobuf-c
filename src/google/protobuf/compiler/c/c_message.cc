@@ -98,6 +98,8 @@ GenerateStructDefinition(io::Printer* printer) {
 
   std::map<string, string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
+  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
   vars["field_count"] = SimpleItoa(descriptor_->field_count());
   if (dllexport_decl_.empty()) {
     vars["dllexport"] = "";
@@ -121,6 +123,16 @@ GenerateStructDefinition(io::Printer* printer) {
   printer->Print(vars, "  /* private */\n");
   printer->Print(vars, "  ProtobufCMessageUnknownFieldArray unknown_field_array;\n");
   printer->Print(vars, "};\n\n");
+
+  printer->Print(vars, "#define $ucclassname$__INIT \\\n"
+		       " { &$lcclassname$__descriptor");
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const FieldDescriptor *field = descriptor_->field(i);
+    printer->Print(", ");
+    field_generators_.get(field).GenerateStaticInit(printer);
+  }
+  printer->Print(" }\n");
+
 }
 
 void MessageGenerator::

@@ -66,6 +66,9 @@ class MessageGenerator {
   // Generate definitions for this class and all its nested types.
   void GenerateStructDefinition(io::Printer* printer);
 
+  // Generate __INIT macro for populating this structure
+  void GenerateStructStaticInitMacro(io::Printer* printer);
+
   // Generate standard helper functions declarations for this message.
   void GenerateHelperFunctionDeclarations(io::Printer* printer);
 

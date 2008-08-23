@@ -71,6 +71,20 @@ void EnumFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void EnumFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+{
+  // TODO: use symbolic name
+  switch (descriptor_->label()) {
+    case FieldDescriptor::LABEL_REQUIRED:
+    case FieldDescriptor::LABEL_OPTIONAL:
+      printer->Print(variables_, "$default$");
+      break;
+    case FieldDescriptor::LABEL_REPEATED:
+      // no support for default?
+      printer->Print("0,NULL");
+      break;
+  }
+}
 
 void EnumFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {

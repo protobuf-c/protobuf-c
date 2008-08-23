@@ -63,6 +63,19 @@ void StringFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void StringFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+{
+  // TODO: no support for defaults?
+  switch (descriptor_->label()) {
+    case FieldDescriptor::LABEL_REQUIRED:
+    case FieldDescriptor::LABEL_OPTIONAL:
+      printer->Print("NULL");
+      break;
+    case FieldDescriptor::LABEL_REPEATED:
+      printer->Print("0,NULL");
+      break;
+  }
+}
 void StringFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {
   GenerateDescriptorInitializerGeneric(printer, false, "STRING", "NULL");

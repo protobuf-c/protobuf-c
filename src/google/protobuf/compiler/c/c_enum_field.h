@@ -40,6 +40,7 @@ class EnumFieldGenerator : public FieldGenerator {
   // implements FieldGenerator ---------------------------------------
   void GenerateStructMembers(io::Printer* printer) const;
   void GenerateDescriptorInitializer(io::Printer* printer) const;
+  void GenerateStaticInit(io::Printer* printer) const;
 
  private:
   map<string, string> variables_;

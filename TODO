@@ -1,8 +1,15 @@
 - check over documentation again
 - handle unknown fields when packing
 - test code
+  - ensure enums are 32-bit
+- make messages derive from ProtobufCMessage,
+  which should have the unknown field array
+- make services derive from ProtobufCService;
+  be usable with a cast.
+- provide example rpc
+- use size_t wherever appropriate in generated code, and in uses of that code (eg
+									       pack and unpack)
 
-- ensure enums are 32-bit
 - support Group (whatever it is)
 - almost no code generator options are obeyed
 - ISSUE: strings may not contain NULs

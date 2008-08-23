@@ -106,7 +106,7 @@ typedef struct _ProtobufCFieldDescriptor ProtobufCFieldDescriptor;
 struct _ProtobufCFieldDescriptor
 {
   const char *name;
-  int id;
+  uint32_t id;
   ProtobufCLabel label;
   ProtobufCType type;
   unsigned quantifier_offset;

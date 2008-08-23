@@ -66,6 +66,10 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void BytesFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+{
+  printer->Print("{0,NULL}");
+}
 void BytesFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {
   GenerateDescriptorInitializerGeneric(printer, true, "BYTES", "NULL");

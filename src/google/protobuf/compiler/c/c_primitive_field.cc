@@ -81,6 +81,18 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void PrimitiveFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+{
+  switch (descriptor_->label()) {
+    case FieldDescriptor::LABEL_REQUIRED:
+    case FieldDescriptor::LABEL_OPTIONAL:
+      printer->Print("0");
+      break;
+    case FieldDescriptor::LABEL_REPEATED:
+      printer->Print("0,NULL");
+      break;
+  }
+}
 
 void PrimitiveFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {

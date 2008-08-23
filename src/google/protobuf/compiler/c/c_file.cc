@@ -127,6 +127,9 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   for (int i = 0; i < file_->message_type_count(); i++) {
     message_generators_[i]->GenerateEnumDefinitions(printer);
   }
+  for (int i = 0; i < file_->enum_type_count(); i++) {
+    enum_generators_[i]->GenerateDefinition(printer);
+  }
 
   // Generate class definitions.
   printer->Print("\n/* --- messages --- */\n\n");
@@ -156,7 +159,7 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
 
   printer->Print("\n/* --- descriptors --- */\n\n");
   for (int i = 0; i < file_->enum_type_count(); i++) {
-    enum_generators_[i]->GenerateDefinition(printer);
+    enum_generators_[i]->GenerateDescriptorDeclarations(printer);
   }
   for (int i = 0; i < file_->message_type_count(); i++) {
     message_generators_[i]->GenerateDescriptorDeclarations(printer);

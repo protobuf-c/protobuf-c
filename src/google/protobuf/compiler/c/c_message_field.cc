@@ -57,6 +57,18 @@ void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void MessageFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+{
+  switch (descriptor_->label()) {
+    case FieldDescriptor::LABEL_REQUIRED:
+    case FieldDescriptor::LABEL_OPTIONAL:
+      printer->Print("NULL");
+      break;
+    case FieldDescriptor::LABEL_REPEATED:
+      printer->Print("0,NULL");
+      break;
+  }
+}
 void MessageFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {
   string addr = "&" + FullNameToLower(descriptor_->message_type()->full_name()) + "__descriptor";

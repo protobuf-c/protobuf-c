@@ -33,6 +33,7 @@ void (*protobuf_c_out_of_memory) (void) = protobuf_c_out_of_memory_default;
 static void *system_alloc(void *allocator_data, size_t size)
 {
   void *rv;
+  (void) allocator_data;
   if (size == 0)
     return NULL;
   rv = malloc (size);
@@ -43,6 +44,7 @@ static void *system_alloc(void *allocator_data, size_t size)
 
 static void system_free (void *allocator_data, void *data)
 {
+  (void) allocator_data;
   if (data)
     free (data);
 }
@@ -621,6 +623,7 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
       break;
     case PROTOBUF_C_TYPE_INT32:
     case PROTOBUF_C_TYPE_UINT32:
+    case PROTOBUF_C_TYPE_ENUM:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
       rv += uint32_pack (*(uint32_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
@@ -780,7 +783,7 @@ int_range_lookup (unsigned n_ranges,
         {
           n = mid - start;
         }
-      else if (value >= ranges[mid].start_value + (ranges[mid+1].orig_index-ranges[mid].orig_index))
+      else if (value >= ranges[mid].start_value + (int)(ranges[mid+1].orig_index-ranges[mid].orig_index))
         {
           unsigned new_start = mid + 1;
           n = start + n - new_start;
@@ -795,7 +798,7 @@ int_range_lookup (unsigned n_ranges,
       unsigned range_size = ranges[start+1].orig_index - start_orig_index;
 
       if (ranges[start].start_value <= value
-       && value < ranges[start].start_value + range_size)
+       && value < (int)(ranges[start].start_value + range_size))
         return (value - ranges[start].start_value) + start_orig_index;
     }
   return -1;
@@ -1011,9 +1014,9 @@ parse_required_member (ScannedMember *scanned_member,
       return 1;
 
     case PROTOBUF_C_TYPE_ENUM:
-      if (wire_type != PROTOBUF_C_WIRE_TYPE_32BIT)
+      if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
         return 0;
-      *(uint32_t*)member = parse_fixed_uint32 (data);
+      *(uint32_t*)member = parse_uint32 (len, data);
       return 1;
 
     case PROTOBUF_C_TYPE_STRING:
@@ -1159,7 +1162,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
 
   while (rem > 0)
     {
-      size_t tag;
+      uint32_t tag;
       ProtobufCWireType wire_type;
       size_t used = parse_tag_and_wiretype (rem, at, &tag, &wire_type);
       const ProtobufCFieldDescriptor *field;
@@ -1230,7 +1233,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           tmp.len = 4;
           break;
         }
-      if (in_slab_index == (1<<(which_slab+4)))
+      if (in_slab_index == (1U<<(which_slab+4)))
         {
           size_t size;
           in_slab_index = 0;
@@ -1278,7 +1281,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   /* do real parsing */
   for (i_slab = 0; i_slab <= which_slab; i_slab++)
     {
-      unsigned max = (i_slab == which_slab) ? in_slab_index : (1<<(i_slab+4));
+      unsigned max = (i_slab == which_slab) ? in_slab_index : (1U<<(i_slab+4));
       ScannedMember *slab = scanned_member_slabs[i_slab];
       unsigned j;
       for (j = 0; j < max; j++)
