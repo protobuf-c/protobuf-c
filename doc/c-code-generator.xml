@@ -30,6 +30,7 @@ called libprotobuf-c rather than generated code.</para>
    object that allows us to implement a kind of reflection
    on the structures.
   </para>
+  <section><title>Naming Conventions</title>
   <para>First, some naming conventions:
    <itemizedlist>
     <listitem><para>
@@ -64,6 +65,8 @@ called libprotobuf-c rather than generated code.</para>
      the unpack method above.</para></listitem>
    </itemizedlist>
   </para>
+  </section>
+  <section><title>Generated Descriptors</title>
   <para>
   We also generate descriptor objects for messages
   and enums.  These are declared in the .h files:
@@ -72,6 +75,8 @@ called libprotobuf-c rather than generated code.</para>
                      foo__bar__baz_bah__descriptor;
   ]]></programlisting>
   </para>
+  </section>
+  <section><title>Message Methods</title>
   <para>
    The message structures all begin with <type>ProtobufCMessageDescriptor*</type>
    which is sufficient to allow them to be cast to <type>ProtobufCMessage</type>.
@@ -136,6 +141,118 @@ called libprotobuf-c rather than generated code.</para>
    </listitem>
   </itemizedlist>
  </para>
+ </section>
+
+ <section><title>Services</title>
+ <para>
+  Services are collections of methods each having an input and output type.
+  Unlike messages where we generate a structure that corresponds
+  to the actual message object, for services we generate
+  a function that creates a <type>ProtobufCService</type>
+  from a collection of user-defined methods.
+ </para>
+ <para>
+  We also define simple functions that invoke each method of a service.
+  These functions work if the service is created by
+  the <function>create_service</function> generated function
+  or if the service is instantiated by an RPC system.
+ </para>
+ <para>
+  Suppose we have a .proto file:
+  <programlisting><![CDATA[
+     message A {
+       required uint32 val;
+     }
+     message B {
+       required string foo;
+     }
+     service Convert {
+       rpc Itoa (A) returns (B);
+       rpc Atoi (B) returns (A);
+     }
+  ]]></programlisting>
+  We will get generated code:
+  <programlisting><![CDATA[
+    struct _Convert_Service {
+      void (*itoa) (Convert_Service *service,
+                    const A *input,
+		    B__Closure closure,
+		    void *closure_data);
+      void (*atoi) (Convert_Service *service,
+                    const B *input,
+		    A__Closure closure,
+		    void *closure_data);
+      void (*destroy) (Convert_Service *service);
+    };
+    ProtobufCService *convert__create_service (Foo__DirLookup_Service *service);
+  ]]></programlisting>
+  Note that <function>create_service</function> takes ownership of <parameter>service</parameter>.
+  For example, here's how to implement a convert service that takes the default radix to use:
+  <programlisting><![CDATA[
+      /* structure derived from Convert_Service. */
+      typedef struct {
+        Convert_Service base;	/* must be first member */
+	unsigned radix;
+      } Convert_WithRadix;
+
+      /* convert int to string (not really implemented) */
+      static void radix_itoa (Convert_Service *service,
+                              const A *input,
+		              B__Closure closure,
+		              void *closure_data)
+      {
+        char buf[256];
+	Convert_WithRadix *wr = (Convert_WithRadix *) service;
+	B rv;
+	print_int_with_radix (input->val, wr->radix, buf);
+	rv.descriptor = &b__descriptor;
+	rv.str = buf;
+	closure (&rv, closure_data);
+      }
+
+      /* convert string to int: use strtoul */
+      static void radix_atoi (Convert_Service *service,
+                              const B *input,
+		              A__Closure closure,
+		              void *closure_data)
+      {
+	Convert_WithRadix *wr = (Convert_WithRadix *) service;
+	A rv;
+	rv.val = strtoul (input->val, NULL, wr->radix);
+	rv.descriptor = &a__descriptor;
+	closure (&rv, closure_data);
+      }
+
+      /* create a new convert service by radix */
+      ProtobufCService *
+      create_convert_service_from_radix (unsigned radix)
+      {
+        Convert_WithRadix *wr = malloc (sizeof (Convert_WithRadix));
+	wr->base.itoa = radix_itoa;
+	wr->base.atoi = radix_atoi;
+	wr->base.destroy = (void(*)(Convert_Service *)) free;
+	wr->radix = radix;
+	return convert__create_service (&wr->base);
+      }
+]]></programlisting>
+   Note that, unlike with messages, you must NOT cast
+   from <type>Convert_Service</type> to <type>ProtobufCService</type>.
+   </para>
+   <para>
+     Conversely, we generate functions to help you invoke service
+     methods on generic <type>ProtobufCService</type> objects.
+     These go through the <function>invoke()</function> of service
+     and they work on both services created with create_service
+     as well as factory-provided services like those provided by RPC systems.
+     For example:
+     <programlisting><![CDATA[
+       void convert__itoa (ProtobufCService *service,
+                           const B *input,
+		           A__Closure closure,
+		           void *closure_data);
+     ]]></programlisting>
+   </para>
+ </section>
 
  </section>
    
