@@ -131,6 +131,7 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
   printer->Print(vars_, "};\n");
   printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"
                        "{\n"
+		       "  PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC,\n"
 		       "  \"$fullname$\",\n"
 		       "  \"$name$\",\n"
 		       "  \"$cname$\",\n"

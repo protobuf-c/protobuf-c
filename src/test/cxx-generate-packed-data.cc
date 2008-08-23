@@ -47,11 +47,29 @@ dump_test_enum_big (void)
   eb.set_test(VALUE2097152); dump_message_bytes(&eb, "test_enum_big_VALUE2097152");
   eb.set_test(VALUE268435455); dump_message_bytes(&eb, "test_enum_big_VALUE268435455");
   eb.set_test(VALUE268435456); dump_message_bytes(&eb, "test_enum_big_VALUE268435456");
-  }
+}
 
+static void
+dump_test_field_numbers (void)
+{
+#define DUMP_ONE(num) \
+  { TestFieldNo##num f; \
+    f.set_test("tst"); \
+    dump_message_bytes(&f, "test_field_number_" #num); }
+  DUMP_ONE (15)
+  DUMP_ONE (16)
+  DUMP_ONE (2047)
+  DUMP_ONE (2048)
+  DUMP_ONE (262143)
+  DUMP_ONE (262144)
+  DUMP_ONE (33554431)
+  DUMP_ONE (33554432)
+#undef DUMP_ONE
+} 
 int main(int argc, char **argv)
 {
   dump_test_enum_small ();
   dump_test_enum_big ();
+  dump_test_field_numbers ();
   return 0;
 }

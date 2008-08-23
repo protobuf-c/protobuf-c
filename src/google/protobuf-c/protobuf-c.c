@@ -823,7 +823,7 @@ parse_tag_and_wiretype (size_t len,
   for (rv = 1; rv < max_rv; rv++)
     if (data[rv] & 0x80)
       {
-        tag |= (data[rv++] & 0x7f) << shift;
+        tag |= (data[rv] & 0x7f) << shift;
         shift += 7;
       }
     else
@@ -1110,8 +1110,7 @@ parse_member (ScannedMember *scanned_member,
   void *member;
   if (field == NULL)
     {
-      ProtobufCMessageUnknownFieldArray *array = MESSAGE_GET_UNKNOWNS (message);
-      ProtobufCMessageUnknownField *ufield = array->unknown_fields + (array->n_unknown_fields++);
+      ProtobufCMessageUnknownField *ufield = message->unknown_fields + (message->n_unknown_fields++);
       ufield->tag = scanned_member->tag;
       ufield->wire_type = scanned_member->wire_type;
       ufield->len = scanned_member->len;
@@ -1157,7 +1156,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   rv = ALLOC (allocator, desc->sizeof_message);
   scanned_member_slabs[0] = first_member_slab;
 
-  memset (rv + 1, 0, desc->sizeof_message - sizeof (ProtobufCMessage));
+  memset (rv, 0, desc->sizeof_message);
   rv->descriptor = desc;
 
   while (rem > 0)
@@ -1274,8 +1273,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   /* allocate space for unknown fields */
   if (n_unknown)
     {
-      ProtobufCMessageUnknownFieldArray *array = MESSAGE_GET_UNKNOWNS (rv);
-      array->unknown_fields = ALLOC (allocator, n_unknown * sizeof (ProtobufCMessageUnknownField));
+      rv->unknown_fields = ALLOC (allocator, n_unknown * sizeof (ProtobufCMessageUnknownField));
     }
 
   /* do real parsing */

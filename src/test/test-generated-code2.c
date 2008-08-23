@@ -55,6 +55,8 @@ static void test_enum_small (void)
   uint8_t *data;
   Foo__TestMessRequiredEnumSmall *unpacked;
 
+  assert (sizeof (Foo__TestEnumSmall) == 4);
+
   small.test = FOO__TEST_ENUM_SMALL__VALUE;
   unpacked = test_compare_pack_methods ((ProtobufCMessage*)&small, &len, &data);
   assert (unpacked->test == FOO__TEST_ENUM_SMALL__VALUE);
@@ -75,7 +77,9 @@ static void test_enum_big (void)
   Foo__TestMessRequiredEnum big = FOO__TEST_MESS_REQUIRED_ENUM__INIT;
   size_t len;
   uint8_t *data;
-  Foo__TestMessRequiredEnumSmall *unpacked;
+  Foo__TestMessRequiredEnum *unpacked;
+
+  assert (sizeof (Foo__TestEnum) == 4);
 
 #define DO_ONE_TEST(shortname, numeric_value, encoded_len) \
   do{ \
@@ -101,6 +105,33 @@ static void test_enum_big (void)
 
 #undef DO_ONE_TEST
 }
+static void test_field_numbers (void)
+{
+  size_t len;
+  uint8_t *data;
+
+#define DO_ONE_TEST(num, exp_len) \
+  { \
+    Foo__TestFieldNo##num t = FOO__TEST_FIELD_NO##num##__INIT; \
+    Foo__TestFieldNo##num *t2; \
+    t.test = "tst"; \
+    t2 = test_compare_pack_methods ((ProtobufCMessage*)(&t), &len, &data); \
+    assert (strcmp (t2->test, "tst") == 0); \
+    TEST_VERSUS_STATIC_ARRAY (len, data, test_field_number_##num); \
+    assert (len == exp_len); \
+    free (data); \
+    foo__test_field_no##num##__free_unpacked (t2, NULL); \
+  }
+  DO_ONE_TEST (15, 1 + 1 + 3);
+  DO_ONE_TEST (16, 2 + 1 + 3);
+  DO_ONE_TEST (2047, 2 + 1 + 3);
+  DO_ONE_TEST (2048, 3 + 1 + 3);
+  DO_ONE_TEST (262143, 3 + 1 + 3);
+  DO_ONE_TEST (262144, 4 + 1 + 3);
+  DO_ONE_TEST (33554431, 4 + 1 + 3);
+  DO_ONE_TEST (33554432, 5 + 1 + 3);
+#undef DO_ONE_TEST
+}
 
 /* === simple testing framework === */
 
@@ -115,7 +146,7 @@ static Test tests[] =
 {
   { "small enums", test_enum_small },
   { "big enums", test_enum_big },
-  //{ "test field numbers", test_field_numbers },
+  { "test field numbers", test_field_numbers },
   //{ "test repeated int32" ,test_repeated_int32 },
   //{ "test repeated sint32" ,test_repeated_sint32 },
   //{ "test repeated sfixed32" ,test_repeated_sfixed32 },

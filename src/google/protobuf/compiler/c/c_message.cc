@@ -110,7 +110,7 @@ GenerateStructDefinition(io::Printer* printer) {
   printer->Print(vars,
     "struct $dllexport$ _$classname$\n"
     "{\n"
-    "  const ProtobufCMessageDescriptor *descriptor;\n");
+    "  ProtobufCMessage base;\n");
 
   // Generate fields.
   printer->Indent();
@@ -120,12 +120,10 @@ GenerateStructDefinition(io::Printer* printer) {
   }
   printer->Outdent();
 
-  printer->Print(vars, "  /* private */\n");
-  printer->Print(vars, "  ProtobufCMessageUnknownFieldArray unknown_field_array;\n");
   printer->Print(vars, "};\n\n");
 
   printer->Print(vars, "#define $ucclassname$__INIT \\\n"
-		       " { &$lcclassname$__descriptor");
+		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor)");
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
     printer->Print(", ");
@@ -208,21 +206,21 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
 		 "{\n"
-		 "  PROTOBUF_C_ASSERT (message->descriptor == &$lcclassname$__descriptor);\n"
+		 "  PROTOBUF_C_ASSERT (message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  return protobuf_c_message_get_packed_size ((ProtobufCMessage*)(message));\n"
 		 "}\n"
 		 "size_t $lcclassname$__pack\n"
 		 "                     (const $classname$ *message,\n"
 		 "                      unsigned char *out)\n"
 		 "{\n"
-		 "  PROTOBUF_C_ASSERT (message->descriptor == &$lcclassname$__descriptor);\n"
+		 "  PROTOBUF_C_ASSERT (message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  return protobuf_c_message_pack ((ProtobufCMessage*)message, out);\n"
 		 "}\n"
 		 "size_t $lcclassname$__pack_to_buffer\n"
 		 "                     (const $classname$ *message,\n"
 		 "                      ProtobufCBuffer *buffer)\n"
 		 "{\n"
-		 "  PROTOBUF_C_ASSERT (message->descriptor == &$lcclassname$__descriptor);\n"
+		 "  PROTOBUF_C_ASSERT (message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  return protobuf_c_message_pack_to_buffer ((ProtobufCMessage*)message, buffer);\n"
 		 "}\n"
 		 "$classname$ *\n"
@@ -239,7 +237,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "                     ($classname$ *message,\n"
 		 "                      ProtobufCAllocator *allocator)\n"
 		 "{\n"
-		 "  PROTOBUF_C_ASSERT (message->descriptor == &$lcclassname$__descriptor);\n"
+		 "  PROTOBUF_C_ASSERT (message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
 		 "}\n"
 		);
@@ -297,6 +295,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
   printer->Print(vars,
     "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
     "{\n"
+    "  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,\n"
     "  \"$fullname$\",\n"
     "  \"$shortname$\",\n"
     "  \"$classname$\",\n"
@@ -305,8 +304,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
     "  $n_fields$,\n"
     "  $lcclassname$__field_descriptors,\n"
     "  $n_ranges$,"
-    "  $lcclassname$__number_ranges,\n"
-    "  PROTOBUF_C_OFFSETOF($classname$, unknown_field_array)\n"
+    "  $lcclassname$__number_ranges\n"
     "};\n");
 }
 

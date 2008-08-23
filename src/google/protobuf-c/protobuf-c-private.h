@@ -31,3 +31,6 @@ struct _ProtobufCIntRange
 int protobuf_c_int_ranges_lookup (unsigned n_ranges,
                                   ProtobufCIntRange *ranges);
 
+#define PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC  0x14159bc3
+#define PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC  0x28aaeef9
+#define PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC     0x114315af

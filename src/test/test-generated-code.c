@@ -5,15 +5,13 @@
 
 int main(int argc, char **argv)
 {
-  Foo__Person person;
+  Foo__Person person = FOO__PERSON__INIT;
   Foo__Person *person2;
   unsigned char simple_pad[8];
   size_t size, size2;
   unsigned char *packed;
   ProtobufCBufferSimple bs = PROTOBUF_C_BUFFER_SIMPLE_INIT (simple_pad);
 
-  memset (&person, 0, sizeof (person));
-  person.descriptor = &foo__person__descriptor;
   person.name = "dave b";
   person.id = 42;
   size = foo__person__get_packed_size (&person);

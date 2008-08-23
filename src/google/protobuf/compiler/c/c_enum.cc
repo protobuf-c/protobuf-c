@@ -185,6 +185,7 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   printer->Print(vars,
     "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
     "{\n"
+    "  PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,\n"
     "  \"$fullname$\",\n"
     "  \"$shortname$\",\n"
     "  \"$cname$\",\n"

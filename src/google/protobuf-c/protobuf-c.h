@@ -86,6 +86,8 @@ struct _ProtobufCEnumValue
 
 struct _ProtobufCEnumDescriptor
 {
+  uint32_t magic;
+
   const char *name;
   const char *short_name;
   const char *c_name;
@@ -115,6 +117,8 @@ struct _ProtobufCFieldDescriptor
 };
 struct _ProtobufCMessageDescriptor
 {
+  uint32_t magic;
+
   const char *name;
   const char *short_name;
   const char *c_name;
@@ -129,16 +133,17 @@ struct _ProtobufCMessageDescriptor
   /* ranges, optimization for looking up fields */
   unsigned n_field_ranges;
   const ProtobufCIntRange *field_ranges;
-
-  /* offset in message to the array of unknown fields */
-  unsigned unknown_field_array_offset;
 };
 
 typedef struct _ProtobufCMessage ProtobufCMessage;
+typedef struct _ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
 struct _ProtobufCMessage
 {
   const ProtobufCMessageDescriptor *descriptor;
+  unsigned n_unknown_fields;
+  ProtobufCMessageUnknownField *unknown_fields;
 };
+#define PROTOBUF_C_MESSAGE_INIT(descriptor) { descriptor, 0, NULL }
 
 size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message);
 size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
@@ -167,6 +172,8 @@ struct _ProtobufCMethodDescriptor
 };
 struct _ProtobufCServiceDescriptor
 {
+  uint32_t magic;
+
   const char *name;
   const char *short_name;
   const char *c_name;
@@ -207,19 +214,12 @@ typedef enum
 } ProtobufCWireType;
 
 /* --- unknown message fields --- */
-typedef struct _ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
-typedef struct _ProtobufCMessageUnknownFieldArray ProtobufCMessageUnknownFieldArray;
 struct _ProtobufCMessageUnknownField
 {
   uint32_t tag;
   ProtobufCWireType wire_type;
   size_t len;
   unsigned char *data;
-};
-struct _ProtobufCMessageUnknownFieldArray
-{
-  unsigned n_unknown_fields;
-  ProtobufCMessageUnknownField *unknown_fields;
 };
 
 /* --- extra (superfluous) api:  trivial buffer --- */
