@@ -256,6 +256,71 @@ static void dump_test_required_bool (void)
   dump_message_bytes (&mess, "test_required_bool_1");
 }
 
+static void dump_test_required_enum_small (void)
+{
+  TestMessRequiredEnumSmall mess;
+  mess.set_test(VALUE);
+  dump_message_bytes (&mess, "test_required_enum_small_VALUE");
+  mess.set_test(OTHER_VALUE);
+  dump_message_bytes (&mess, "test_required_enum_small_OTHER_VALUE");
+}
+
+static void dump_test_required_enum (void)
+{
+  TestMessRequiredEnum mess;
+  mess.set_test (VALUE0);
+  dump_message_bytes (&mess, "test_required_enum_0");
+  mess.set_test (VALUE1);
+  dump_message_bytes (&mess, "test_required_enum_1");
+  mess.set_test (VALUE127);
+  dump_message_bytes (&mess, "test_required_enum_127");
+  mess.set_test (VALUE128);
+  dump_message_bytes (&mess, "test_required_enum_128");
+  mess.set_test (VALUE16383);
+  dump_message_bytes (&mess, "test_required_enum_16383");
+  mess.set_test (VALUE16384);
+  dump_message_bytes (&mess, "test_required_enum_16384");
+  mess.set_test (VALUE2097151);
+  dump_message_bytes (&mess, "test_required_enum_2097151");
+  mess.set_test (VALUE2097152);
+  dump_message_bytes (&mess, "test_required_enum_2097152");
+  mess.set_test (VALUE268435455);
+  dump_message_bytes (&mess, "test_required_enum_268435455");
+  mess.set_test (VALUE268435456);
+  dump_message_bytes (&mess, "test_required_enum_268435456");
+}
+
+static void dump_test_required_string (void)
+{
+  TestMessRequiredString mess;
+  mess.set_test ("");
+  dump_message_bytes(&mess, "test_required_string_empty");
+  mess.set_test ("hello");
+  dump_message_bytes(&mess, "test_required_string_hello");
+  mess.set_test ("two hundred xs follow: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+  dump_message_bytes(&mess, "test_required_string_long");
+}
+
+static void dump_test_required_bytes (void)
+{
+  TestMessRequiredBytes mess;
+  mess.set_test ("");
+  dump_message_bytes (&mess, "test_required_bytes_empty");
+  mess.set_test ("hello");
+  dump_message_bytes (&mess, "test_required_bytes_hello");
+  mess.set_test (std::string("\1") + '\0' + "\375\2\4");
+  dump_message_bytes (&mess, "test_required_bytes_random");
+}
+
+static void dump_test_required_message (void)
+{
+  TestMessRequiredMessage mess;
+  mess.mutable_test()->set_test(0);
+  dump_message_bytes (&mess, "test_required_submess_0");
+  mess.mutable_test()->set_test(42);
+  dump_message_bytes (&mess, "test_required_submess_42");
+}
+
 static void dump_test_optional_int32 (void)
 {
   TestMessOptional opt;
@@ -705,6 +770,11 @@ int main()
   dump_test_required_float ();
   dump_test_required_double ();
   dump_test_required_bool ();
+  dump_test_required_enum_small ();
+  dump_test_required_enum ();
+  dump_test_required_string ();
+  dump_test_required_bytes ();
+  dump_test_required_message ();
   dump_test_optional_int32 ();
   dump_test_optional_sint32 ();
   dump_test_optional_sfixed32 ();

@@ -353,7 +353,70 @@ static void test_required_bool (void)
 #undef DO_TEST
 }
 
+static void test_required_TestEnumSmall (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED(EnumSmall, ENUM_SMALL, enum_small, value, example_packed_data, NUMERIC_EQUALS)
+  DO_TEST(FOO__TEST_ENUM_SMALL__VALUE, test_required_enum_small_VALUE);
+  DO_TEST(FOO__TEST_ENUM_SMALL__OTHER_VALUE, test_required_enum_small_OTHER_VALUE);
+#undef DO_TEST
+}
 
+static void test_required_TestEnum (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED(Enum, ENUM, enum, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (FOO__TEST_ENUM__VALUE0, test_required_enum_0);
+  DO_TEST (FOO__TEST_ENUM__VALUE1, test_required_enum_1);
+  DO_TEST (FOO__TEST_ENUM__VALUE127, test_required_enum_127);
+  DO_TEST (FOO__TEST_ENUM__VALUE128, test_required_enum_128);
+  DO_TEST (FOO__TEST_ENUM__VALUE16383, test_required_enum_16383);
+  DO_TEST (FOO__TEST_ENUM__VALUE16384, test_required_enum_16384);
+  DO_TEST (FOO__TEST_ENUM__VALUE2097151, test_required_enum_2097151);
+  DO_TEST (FOO__TEST_ENUM__VALUE2097152, test_required_enum_2097152);
+  DO_TEST (FOO__TEST_ENUM__VALUE268435455, test_required_enum_268435455);
+  DO_TEST (FOO__TEST_ENUM__VALUE268435456, test_required_enum_268435456);
+
+#undef DO_TEST
+}
+
+static void test_required_string (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED(String, STRING, string, value, example_packed_data, STRING_EQUALS)
+
+  DO_TEST("", test_required_string_empty);
+  DO_TEST("hello", test_required_string_hello);
+  DO_TEST("two hundred xs follow: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", test_required_string_long);
+
+#undef DO_TEST
+}
+
+static void test_required_bytes (void)
+{
+  static ProtobufCBinaryData bd_empty = { 0, (uint8_t*)"" };
+  static ProtobufCBinaryData bd_hello = { 5, (uint8_t*)"hello" };
+  static ProtobufCBinaryData bd_random = { 5, (uint8_t*)"\1\0\375\2\4" };
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED (Bytes, BYTES, bytes, value, example_packed_data, binary_data_equals)
+  DO_TEST (bd_empty, test_required_bytes_empty);
+  DO_TEST (bd_hello, test_required_bytes_hello);
+  DO_TEST (bd_random, test_required_bytes_random);
+#undef DO_TEST
+}
+
+static void test_required_SubMess (void)
+{
+  Foo__SubMess submess = FOO__SUB_MESS__INIT;
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED (Message, MESSAGE, message, value, example_packed_data, submesses_equals)
+  submess.test = 0;
+  DO_TEST (&submess, test_required_submess_0);
+  submess.test = 42;
+  DO_TEST (&submess, test_required_submess_42);
+#undef DO_TEST
+}
 
 /* === Optional type fields === */
 static void test_empty_optional (void)
@@ -940,11 +1003,11 @@ static Test tests[] =
   { "test required float", test_required_float },
   { "test required double", test_required_double },
   { "test required bool", test_required_bool },
-  //{ "test required TestEnumSmall", test_required_TestEnumSmall },
-  //{ "test required TestEnum", test_required_TestEnum },
-  //{ "test required string", test_required_string },
-  //{ "test required bytes", test_required_bytes },
-  //{ "test required SubMess", test_required_SubMess },
+  { "test required TestEnumSmall", test_required_TestEnumSmall },
+  { "test required TestEnum", test_required_TestEnum },
+  { "test required string", test_required_string },
+  { "test required bytes", test_required_bytes },
+  { "test required SubMess", test_required_SubMess },
 
   { "test empty optional" ,test_empty_optional },
   { "test optional int32", test_optional_int32 },
