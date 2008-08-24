@@ -191,6 +191,17 @@ static void test_field_numbers (void)
   DO_ONE_TEST (33554432, 5 + 1 + 3);
 #undef DO_ONE_TEST
 }
+static void test_empty_repeated (void)
+{
+  Foo__TestMess mess = FOO__TEST_MESS__INIT;
+  size_t len;
+  uint8_t *data;
+  Foo__TestMess *mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (len == 0);
+  free (data);
+  foo__test_mess__free_unpacked (mess2, NULL);
+}
+
 static void test_repeated_int32 (void)
 {
 #define DO_TEST(static_array, example_packed_data) \
@@ -469,6 +480,172 @@ static void test_repeated_SubMess (void)
 #undef DO_TEST
 }
 
+#define DO_TEST_OPTIONAL(base_member, value, example_packed_data, equal_func) \
+  do{ \
+  Foo__TestMessOptional opt = FOO__TEST_MESS_OPTIONAL__INIT; \
+  Foo__TestMessOptional *mess; \
+  size_t len; uint8_t *data; \
+  opt.has_##base_member = 1; \
+  opt.base_member = value; \
+  mess = test_compare_pack_methods (&opt.base, &len, &data); \
+  TEST_VERSUS_STATIC_ARRAY (len, data, example_packed_data); \
+  assert (mess->has_##base_member); \
+  assert (equal_func (mess->base_member, value)); \
+  foo__test_mess_optional__free_unpacked (mess, NULL); \
+  free (data); \
+  }while(0)
+
+static void test_optional_int32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_int32, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (INT32_MIN, test_optional_int32_min);
+  DO_TEST (-1, test_optional_int32_m1);
+  DO_TEST (0, test_optional_int32_0);
+  DO_TEST (666, test_optional_int32_666);
+  DO_TEST (INT32_MAX, test_optional_int32_max);
+
+#undef DO_TEST
+}
+
+static void test_optional_sint32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_sint32, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (INT32_MIN, test_optional_sint32_min);
+  DO_TEST (-1, test_optional_sint32_m1);
+  DO_TEST (0, test_optional_sint32_0);
+  DO_TEST (666, test_optional_sint32_666);
+  DO_TEST (INT32_MAX, test_optional_sint32_max);
+
+#undef DO_TEST
+}
+static void test_optional_sfixed32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_sfixed32, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (INT32_MIN, test_optional_sfixed32_min);
+  DO_TEST (-1, test_optional_sfixed32_m1);
+  DO_TEST (0, test_optional_sfixed32_0);
+  DO_TEST (666, test_optional_sfixed32_666);
+  DO_TEST (INT32_MAX, test_optional_sfixed32_max);
+
+#undef DO_TEST
+}
+static void test_optional_int64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_int64, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (INT64_MIN, test_optional_int64_min);
+  DO_TEST (-1111111111LL, test_optional_int64_m1111111111LL);
+  DO_TEST (0, test_optional_int64_0);
+  DO_TEST (QUINTILLION, test_optional_int64_quintillion);
+  DO_TEST (INT64_MAX, test_optional_int64_max);
+
+#undef DO_TEST
+}
+static void test_optional_sint64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_sint64, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (INT64_MIN, test_optional_sint64_min);
+  DO_TEST (-1111111111LL, test_optional_sint64_m1111111111LL);
+  DO_TEST (0, test_optional_sint64_0);
+  DO_TEST (QUINTILLION, test_optional_sint64_quintillion);
+  DO_TEST (INT64_MAX, test_optional_sint64_max);
+
+#undef DO_TEST
+}
+static void test_optional_sfixed64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_sfixed64, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (INT64_MIN, test_optional_sfixed64_min);
+  DO_TEST (-1111111111LL, test_optional_sfixed64_m1111111111LL);
+  DO_TEST (0, test_optional_sfixed64_0);
+  DO_TEST (QUINTILLION, test_optional_sfixed64_quintillion);
+  DO_TEST (INT64_MAX, test_optional_sfixed64_max);
+
+#undef DO_TEST
+}
+
+static void test_optional_uint32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_uint32, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_uint32_0);
+  DO_TEST (669, test_optional_uint32_669);
+  DO_TEST (UINT32_MAX, test_optional_uint32_max);
+
+#undef DO_TEST
+}
+
+static void test_optional_fixed32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_fixed32, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_fixed32_0);
+  DO_TEST (669, test_optional_fixed32_669);
+  DO_TEST (UINT32_MAX, test_optional_fixed32_max);
+
+#undef DO_TEST
+}
+
+static void test_optional_uint64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_uint64, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_uint64_0);
+  DO_TEST (669669669669669ULL, test_optional_uint64_669669669669669);
+  DO_TEST (UINT64_MAX, test_optional_uint64_max);
+
+#undef DO_TEST
+}
+
+static void test_optional_fixed64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_fixed64, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_fixed64_0);
+  DO_TEST (669669669669669ULL, test_optional_fixed64_669669669669669);
+  DO_TEST (UINT64_MAX, test_optional_fixed64_max);
+
+#undef DO_TEST
+}
+
+static void test_optional_float (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_float, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (-100, test_optional_float_m100);
+  DO_TEST (0, test_optional_float_0);
+  DO_TEST (141243, test_optional_float_141243);
+
+#undef DO_TEST
+}
+static void test_optional_double (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_double, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (-100, test_optional_double_m100);
+  DO_TEST (0, test_optional_double_0);
+  DO_TEST (141243, test_optional_double_141243);
+
+#undef DO_TEST
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -483,6 +660,7 @@ static Test tests[] =
   { "small enums", test_enum_small },
   { "big enums", test_enum_big },
   { "test field numbers", test_field_numbers },
+  { "test empty repeated" ,test_empty_repeated },
   { "test repeated int32" ,test_repeated_int32 },
   { "test repeated sint32" ,test_repeated_sint32 },
   { "test repeated sfixed32" ,test_repeated_sfixed32 },
@@ -501,18 +679,18 @@ static Test tests[] =
   { "test repeated string", test_repeated_string },
   { "test repeated bytes", test_repeated_bytes },
   { "test repeated SubMess", test_repeated_SubMess },
-  //{ "test optional int32", test_optional_int32 },
-  //{ "test optional sint32", test_optional_sint32 },
-  //{ "test optional sfixed32", test_optional_sfixed32 },
-  //{ "test optional int64", test_optional_int64 },
-  //{ "test optional sint64", test_optional_sint64 },
-  //{ "test optional sfixed64", test_optional_sfixed64 },
-  //{ "test optional uint32", test_optional_uint32 },
-  //{ "test optional fixed32", test_optional_fixed32 },
-  //{ "test optional uint64", test_optional_uint64 },
-  //{ "test optional fixed64", test_optional_fixed64 },
-  //{ "test optional float", test_optional_float },
-  //{ "test optional double", test_optional_double },
+  { "test optional int32", test_optional_int32 },
+  { "test optional sint32", test_optional_sint32 },
+  { "test optional sfixed32", test_optional_sfixed32 },
+  { "test optional int64", test_optional_int64 },
+  { "test optional sint64", test_optional_sint64 },
+  { "test optional sfixed64", test_optional_sfixed64 },
+  { "test optional uint32", test_optional_uint32 },
+  { "test optional fixed32", test_optional_fixed32 },
+  { "test optional uint64", test_optional_uint64 },
+  { "test optional fixed64", test_optional_fixed64 },
+  { "test optional float", test_optional_float },
+  { "test optional double", test_optional_double },
   //{ "test optional bool", test_optional_bool },
   //{ "test optional TestEnumSmall", test_optional_TestEnumSmall },
   //{ "test optional TestEnum", test_optional_TestEnum },

@@ -1455,17 +1455,22 @@ protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
         }
       else if (desc->fields[f].type == PROTOBUF_C_TYPE_STRING)
         {
-          FREE (allocator, STRUCT_MEMBER (char *, message, desc->fields[f].offset));
+          char *str = STRUCT_MEMBER (char *, message, desc->fields[f].offset);
+          if (str)
+            FREE (allocator, str);
         }
       else if (desc->fields[f].type == PROTOBUF_C_TYPE_BYTES)
         {
-          FREE (allocator, STRUCT_MEMBER (ProtobufCBinaryData, message, desc->fields[f].offset).data);
+          void *data = STRUCT_MEMBER (ProtobufCBinaryData, message, desc->fields[f].offset).data;
+          if (data)
+            FREE (allocator, data);
         }
       else if (desc->fields[f].type == PROTOBUF_C_TYPE_MESSAGE)
         {
-          protobuf_c_message_free_unpacked (STRUCT_MEMBER (ProtobufCMessage *, message,
-                                                           desc->fields[f].offset), allocator);
-
+          ProtobufCMessage *sm;
+          sm = STRUCT_MEMBER (ProtobufCMessage *, message,desc->fields[f].offset);
+          if (sm)
+            protobuf_c_message_free_unpacked (sm, allocator);
         }
     }
   FREE (allocator, message);
