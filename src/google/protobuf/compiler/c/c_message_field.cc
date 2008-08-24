@@ -53,7 +53,7 @@ void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
     case FieldDescriptor::LABEL_REPEATED:
       printer->Print(vars, "unsigned n_$name$;\n");
-      printer->Print(vars, "$type$ *$name$;\n");
+      printer->Print(vars, "$type$ **$name$;\n");
       break;
   }
 }

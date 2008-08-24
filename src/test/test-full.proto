@@ -10,6 +10,7 @@ enum TestEnumSmall {
 }
 enum TestEnum {
   VALUE0 = 0;
+  VALUE1 = 1;
   VALUE127 = 127;
   VALUE128 = 128;
   VALUE16383 = 16383;

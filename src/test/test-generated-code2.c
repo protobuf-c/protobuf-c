@@ -6,6 +6,7 @@
 
 #define TEST_ENUM_SMALL_TYPE_NAME   Foo__TestEnumSmall
 #define TEST_ENUM_SMALL(shortname)   FOO__TEST_ENUM_SMALL__##shortname
+#define TEST_ENUM_TYPE_NAME   Foo__TestEnum
 #include "common-test-arrays.h"
 #define N_ELEMENTS(arr)   (sizeof(arr)/sizeof((arr)[0]))
 
@@ -83,7 +84,8 @@ test_compare_pack_methods (ProtobufCMessage *message,
 
 #define NUMERIC_EQUALS(a,b)   ((a) == (b))
 #define STRING_EQUALS(a,b)    (strcmp((a),(b))==0)
-#define DO_TEST_REPEATED(lc_member_name, static_array, example_packed_data, \
+#define DO_TEST_REPEATED(lc_member_name, cast, \
+                         static_array, example_packed_data, \
                          equals_macro) \
   do{ \
   Foo__TestMess mess = FOO__TEST_MESS__INIT; \
@@ -92,7 +94,7 @@ test_compare_pack_methods (ProtobufCMessage *message,
   uint8_t *data; \
   unsigned i; \
   mess.n_##lc_member_name = N_ELEMENTS (static_array); \
-  mess.lc_member_name = static_array; \
+  mess.lc_member_name = cast static_array; \
   mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data); \
   assert(mess2->n_##lc_member_name == N_ELEMENTS (static_array)); \
   for (i = 0; i < N_ELEMENTS (static_array); i++) \
@@ -191,414 +193,119 @@ static void test_field_numbers (void)
 }
 static void test_repeated_int32 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  int32_t arr0[2] = { -1, 1 };
-  int32_t arr1[5] = { 42, 666, -1123123, 0, 47 };
-  int32_t arr_min[1] = { INT32_MIN };
-  int32_t arr_max[1] = { INT32_MAX };
-  size_t len;
-  uint8_t *data;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_int32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32__empty);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (int32_arr0, test_repeated_int32_arr0);
+  DO_TEST (int32_arr1, test_repeated_int32_arr1);
+  DO_TEST (int32_arr_min_max, test_repeated_int32_arr_min_max);
 
-  mess.n_test_int32 = 1;
-  mess.test_int32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 1);
-  assert(mess2->test_int32[0] == -1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32_m1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_int32 = 1;
-  mess.test_int32 = arr0+1;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 1);
-  assert(mess2->test_int32[0] == 1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32_1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_int32 = 2;
-  mess.test_int32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 2);
-  assert(mess2->test_int32[0] == -1);
-  assert(mess2->test_int32[1] == 1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32_m1_1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_int32 = 5;
-  mess.test_int32 = arr1;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 5);
-  assert(memcmp (mess2->test_int32, arr1, 4*5)==0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32_42_666_m1123123_0_47);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_int32 = 1;
-  mess.test_int32 = arr_min;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 1);
-  assert(mess2->test_int32[0] == INT32_MIN);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32_min);
-  free (data);
-
-  mess.n_test_int32 = 1;
-  mess.test_int32 = arr_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int32 == 1);
-  assert(mess2->test_int32[0] == INT32_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int32_max);
-  free (data);
+#undef DO_TEST
 }
 
 static void test_repeated_sint32 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  int32_t arr0[2] = { -1, 1 };
-  int32_t arr1[5] = { 42, 666, -1123123, 0, 47 };
-  int32_t arr_min[1] = { INT32_MIN };
-  int32_t arr_max[1] = { INT32_MAX };
-  size_t len;
-  uint8_t *data;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_sint32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32__empty);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (int32_arr0, test_repeated_sint32_arr0);
+  DO_TEST (int32_arr1, test_repeated_sint32_arr1);
+  DO_TEST (int32_arr_min_max, test_repeated_sint32_arr_min_max);
 
-  mess.n_test_sint32 = 1;
-  mess.test_sint32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 1);
-  assert(mess2->test_sint32[0] == -1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32_m1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sint32 = 1;
-  mess.test_sint32 = arr0+1;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 1);
-  assert(mess2->test_sint32[0] == 1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32_1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sint32 = 2;
-  mess.test_sint32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 2);
-  assert(mess2->test_sint32[0] == -1);
-  assert(mess2->test_sint32[1] == 1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32_m1_1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sint32 = 5;
-  mess.test_sint32 = arr1;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 5);
-  assert(memcmp (mess2->test_sint32, arr1, 4*5)==0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32_42_666_m1123123_0_47);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sint32 = 1;
-  mess.test_sint32 = arr_min;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 1);
-  assert(mess2->test_sint32[0] == INT32_MIN);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32_min);
-  free (data);
-
-  mess.n_test_sint32 = 1;
-  mess.test_sint32 = arr_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint32 == 1);
-  assert(mess2->test_sint32[0] == INT32_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint32_max);
-  free (data);
+#undef DO_TEST
 }
 
 static void test_repeated_sfixed32 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  int32_t arr0[2] = { -1, 1 };
-  int32_t arr1[5] = { 42, 666, -1123123, 0, 47 };
-  int32_t arr_min[1] = { INT32_MIN };
-  int32_t arr_max[1] = { INT32_MAX };
-  size_t len;
-  uint8_t *data;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_sfixed32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32__empty);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (int32_arr0, test_repeated_sfixed32_arr0);
+  DO_TEST (int32_arr1, test_repeated_sfixed32_arr1);
+  DO_TEST (int32_arr_min_max, test_repeated_sfixed32_arr_min_max);
 
-  mess.n_test_sfixed32 = 1;
-  mess.test_sfixed32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 1);
-  assert(mess2->test_sfixed32[0] == -1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32_m1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sfixed32 = 1;
-  mess.test_sfixed32 = arr0+1;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 1);
-  assert(mess2->test_sfixed32[0] == 1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32_1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sfixed32 = 2;
-  mess.test_sfixed32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 2);
-  assert(mess2->test_sfixed32[0] == -1);
-  assert(mess2->test_sfixed32[1] == 1);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32_m1_1);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sfixed32 = 5;
-  mess.test_sfixed32 = arr1;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 5);
-  assert(memcmp (mess2->test_sfixed32, arr1, 4*5)==0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32_42_666_m1123123_0_47);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_sfixed32 = 1;
-  mess.test_sfixed32 = arr_min;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 1);
-  assert(mess2->test_sfixed32[0] == INT32_MIN);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32_min);
-  free (data);
-
-  mess.n_test_sfixed32 = 1;
-  mess.test_sfixed32 = arr_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed32 == 1);
-  assert(mess2->test_sfixed32[0] == INT32_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed32_max);
-  free (data);
+#undef DO_TEST
 }
 
 static void test_repeated_uint32 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  uint32_t arr0[4] = { BILLION, MILLION, 1, 0 };
-  uint32_t arr_zero[1] = { 0 };
-  uint32_t arr_max[1] = { UINT32_MAX };
-  size_t len;
-  uint8_t *data;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_uint32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_uint32 == 0);
-  assert(len == 0);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (uint32_roundnumbers, test_repeated_uint32_roundnumbers);
+  DO_TEST (uint32_0_max, test_repeated_uint32_0_max);
 
-  mess.n_test_uint32 = 4;
-  mess.test_uint32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_uint32 == 4);
-  assert(mess2->test_uint32[0] == BILLION);
-  assert(mess2->test_uint32[1] == MILLION);
-  assert(mess2->test_uint32[2] == 1);
-  assert(mess2->test_uint32[3] == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_uint32_bil_mil_1_0);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_uint32 = 1;
-  mess.test_uint32 = arr_zero;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_uint32 == 1);
-  assert(mess2->test_uint32[0] == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_uint32_0);
-  free (data);
-
-  mess.n_test_uint32 = 1;
-  mess.test_uint32 = arr_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_uint32 == 1);
-  assert(mess2->test_uint32[0] == UINT32_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_uint32_max);
-  free (data);
+#undef DO_TEST
 }
+
+
 
 static void test_repeated_fixed32 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  uint32_t arr0[4] = { BILLION, MILLION, 1, 0 };
-  uint32_t arr_zero[1] = { 0 };
-  uint32_t arr_max[1] = { UINT32_MAX };
-  size_t len;
-  uint8_t *data;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_fixed32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_fixed32 == 0);
-  assert(len == 0);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (uint32_roundnumbers, test_repeated_fixed32_roundnumbers);
+  DO_TEST (uint32_0_max, test_repeated_fixed32_0_max);
 
-  mess.n_test_fixed32 = 4;
-  mess.test_fixed32 = arr0;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_fixed32 == 4);
-  assert(mess2->test_fixed32[0] == BILLION);
-  assert(mess2->test_fixed32[1] == MILLION);
-  assert(mess2->test_fixed32[2] == 1);
-  assert(mess2->test_fixed32[3] == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_fixed32_bil_mil_1_0);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
-
-  mess.n_test_fixed32 = 1;
-  mess.test_fixed32 = arr_zero;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_fixed32 == 1);
-  assert(mess2->test_fixed32[0] == 0);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_fixed32_0);
-  free (data);
-
-  mess.n_test_fixed32 = 1;
-  mess.test_fixed32 = arr_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_fixed32 == 1);
-  assert(mess2->test_fixed32[0] == UINT32_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_fixed32_max);
-  free (data);
+#undef DO_TEST
 }
 
 static void test_repeated_int64 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  size_t len;
-  uint8_t *data;
-  unsigned i;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_int64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess.n_test_int64 = N_ELEMENTS (int64_roundnumbers);
-  mess.test_int64 = int64_roundnumbers;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int64 == N_ELEMENTS (int64_roundnumbers));
-  for (i = 0; i < N_ELEMENTS (int64_roundnumbers); i++)
-    assert(mess2->test_int64[i] == int64_roundnumbers[i]);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int64_roundnumbers);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (int64_roundnumbers, test_repeated_int64_roundnumbers);
+  DO_TEST (int64_min_max, test_repeated_int64_min_max);
 
-  mess.n_test_int64 = N_ELEMENTS (int64_min_max);
-  mess.test_int64 = int64_min_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_int64 == N_ELEMENTS (int64_min_max));
-  assert(mess2->test_int64[0] == INT64_MIN);
-  assert(mess2->test_int64[1] == INT64_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_int64_min_max);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+#undef DO_TEST
 }
 
 static void test_repeated_sint64 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  size_t len;
-  uint8_t *data;
-  unsigned i;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_sint64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess.n_test_sint64 = N_ELEMENTS (int64_roundnumbers);
-  mess.test_sint64 = int64_roundnumbers;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint64 == N_ELEMENTS (int64_roundnumbers));
-  for (i = 0; i < N_ELEMENTS (int64_roundnumbers); i++)
-    assert(mess2->test_sint64[i] == int64_roundnumbers[i]);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint64_roundnumbers);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (int64_roundnumbers, test_repeated_sint64_roundnumbers);
+  DO_TEST (int64_min_max, test_repeated_sint64_min_max);
 
-  mess.n_test_sint64 = N_ELEMENTS (int64_min_max);
-  mess.test_sint64 = int64_min_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sint64 == N_ELEMENTS (int64_min_max));
-  assert(mess2->test_sint64[0] == INT64_MIN);
-  assert(mess2->test_sint64[1] == INT64_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sint64_min_max);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+#undef DO_TEST
 }
 
 static void test_repeated_sfixed64 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  size_t len;
-  uint8_t *data;
-  unsigned i;
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_sfixed64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
-  mess.n_test_sfixed64 = N_ELEMENTS (int64_roundnumbers);
-  mess.test_sfixed64 = int64_roundnumbers;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed64 == N_ELEMENTS (int64_roundnumbers));
-  for (i = 0; i < N_ELEMENTS (int64_roundnumbers); i++)
-    assert(mess2->test_sfixed64[i] == int64_roundnumbers[i]);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed64_roundnumbers);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+  DO_TEST (int64_roundnumbers, test_repeated_sfixed64_roundnumbers);
+  DO_TEST (int64_min_max, test_repeated_sfixed64_min_max);
 
-  mess.n_test_sfixed64 = N_ELEMENTS (int64_min_max);
-  mess.test_sfixed64 = int64_min_max;
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data);
-  assert(mess2->n_test_sfixed64 == N_ELEMENTS (int64_min_max));
-  assert(mess2->test_sfixed64[0] == INT64_MIN);
-  assert(mess2->test_sfixed64[1] == INT64_MAX);
-  TEST_VERSUS_STATIC_ARRAY (len, data, test_repeated_sfixed64_min_max);
-  free (data);
-  foo__test_mess__free_unpacked (mess2, NULL);
+#undef DO_TEST
 }
 
 static void test_repeated_uint64 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  size_t len;
-  uint8_t *data;
-  unsigned i;
-
 #define DO_TEST(static_array, example_packed_data) \
-  do{ \
-  mess.n_test_uint64 = N_ELEMENTS (static_array); \
-  mess.test_uint64 = static_array; \
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data); \
-  assert(mess2->n_test_uint64 == N_ELEMENTS (static_array)); \
-  for (i = 0; i < N_ELEMENTS (static_array); i++) \
-    assert(mess2->test_uint64[i] == static_array[i]); \
-  TEST_VERSUS_STATIC_ARRAY (len, data, example_packed_data); \
-  free (data); \
-  foo__test_mess__free_unpacked (mess2, NULL); \
-  }while(0)
+  DO_TEST_REPEATED(test_uint64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
   DO_TEST(uint64_roundnumbers, test_repeated_uint64_roundnumbers);
   DO_TEST(uint64_0_1_max, test_repeated_uint64_0_1_max);
@@ -609,24 +316,10 @@ static void test_repeated_uint64 (void)
 
 static void test_repeated_fixed64 (void)
 {
-  Foo__TestMess mess = FOO__TEST_MESS__INIT;
-  Foo__TestMess *mess2;
-  size_t len;
-  uint8_t *data;
-  unsigned i;
-
 #define DO_TEST(static_array, example_packed_data) \
-  do{ \
-  mess.n_test_fixed64 = N_ELEMENTS (static_array); \
-  mess.test_fixed64 = static_array; \
-  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data); \
-  assert(mess2->n_test_fixed64 == N_ELEMENTS (static_array)); \
-  for (i = 0; i < N_ELEMENTS (static_array); i++) \
-    assert(mess2->test_fixed64[i] == static_array[i]); \
-  TEST_VERSUS_STATIC_ARRAY (len, data, example_packed_data); \
-  free (data); \
-  foo__test_mess__free_unpacked (mess2, NULL); \
-  }while(0)
+  DO_TEST_REPEATED(test_fixed64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
 
   DO_TEST(uint64_roundnumbers, test_repeated_fixed64_roundnumbers);
   DO_TEST(uint64_0_1_max, test_repeated_fixed64_0_1_max);
@@ -639,7 +332,7 @@ static void test_repeated_float (void)
 {
 
 #define DO_TEST(static_array, example_packed_data) \
-  DO_TEST_REPEATED(test_float, \
+  DO_TEST_REPEATED(test_float, , \
                    static_array, example_packed_data, \
                    NUMERIC_EQUALS)
 
@@ -652,7 +345,7 @@ static void test_repeated_double (void)
 {
 
 #define DO_TEST(static_array, example_packed_data) \
-  DO_TEST_REPEATED(test_double, \
+  DO_TEST_REPEATED(test_double, , \
                    static_array, example_packed_data, \
                    NUMERIC_EQUALS)
 
@@ -665,7 +358,7 @@ static void test_repeated_boolean (void)
 {
 
 #define DO_TEST(static_array, example_packed_data) \
-  DO_TEST_REPEATED(test_boolean, \
+  DO_TEST_REPEATED(test_boolean, , \
                    static_array, example_packed_data, \
                    NUMERIC_EQUALS)
 
@@ -680,13 +373,98 @@ static void test_repeated_TestEnumSmall (void)
 {
 
 #define DO_TEST(static_array, example_packed_data) \
-  DO_TEST_REPEATED(test_enum_small, \
+  DO_TEST_REPEATED(test_enum_small, , \
                    static_array, example_packed_data, \
                    NUMERIC_EQUALS)
 
   DO_TEST(enum_small_0, test_repeated_enum_small_0);
   DO_TEST(enum_small_1, test_repeated_enum_small_1);
   DO_TEST(enum_small_random, test_repeated_enum_small_random);
+
+#undef DO_TEST
+}
+
+static void test_repeated_TestEnum (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_enum, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(enum_0, test_repeated_enum_0);
+  DO_TEST(enum_1, test_repeated_enum_1);
+  DO_TEST(enum_random, test_repeated_enum_random);
+
+#undef DO_TEST
+}
+
+static void test_repeated_string (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_string, (char **), \
+                   static_array, example_packed_data, \
+                   STRING_EQUALS)
+
+  DO_TEST(repeated_strings_0, test_repeated_strings_0);
+  DO_TEST(repeated_strings_1, test_repeated_strings_1);
+  DO_TEST(repeated_strings_2, test_repeated_strings_2);
+  DO_TEST(repeated_strings_3, test_repeated_strings_3);
+
+#undef DO_TEST
+}
+
+static protobuf_c_boolean
+binary_data_equals (ProtobufCBinaryData a, ProtobufCBinaryData b)
+{
+  if (a.len != b.len)
+    return 0;
+  return memcmp (a.data, b.data, a.len) == 0;
+}
+
+static void test_repeated_bytes (void)
+{
+  static ProtobufCBinaryData test_binary_data_0[] = {
+    { 4, (uint8_t *) "text" },
+    { 9, (uint8_t *) "str\1\2\3\4\5\0" },
+    { 10, (uint8_t *) "gobble\0foo" }
+  };
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_bytes, , \
+                   static_array, example_packed_data, \
+                   binary_data_equals)
+
+  DO_TEST (test_binary_data_0, test_repeated_bytes_0);
+
+#undef DO_TEST
+}
+
+static protobuf_c_boolean
+submesses_equals (Foo__SubMess *a, Foo__SubMess *b)
+{
+  assert(a->base.descriptor == &foo__sub_mess__descriptor);
+  assert(b->base.descriptor == &foo__sub_mess__descriptor);
+  return a->test == b->test;
+}
+
+static void test_repeated_SubMess (void)
+{
+  static Foo__SubMess submess0 = FOO__SUB_MESS__INIT;
+  static Foo__SubMess submess1 = FOO__SUB_MESS__INIT;
+  static Foo__SubMess submess2 = FOO__SUB_MESS__INIT;
+  static Foo__SubMess *submesses[3] = { &submess0, &submess1, &submess2 };
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_message, , \
+                   static_array, example_packed_data, \
+                   submesses_equals)
+
+  DO_TEST (submesses, test_repeated_submess_0);
+  submess0.test = 42;
+  submess1.test = -10000;
+  submess2.test = 667;
+  DO_TEST (submesses, test_repeated_submess_1);
 
 #undef DO_TEST
 }
@@ -719,10 +497,10 @@ static Test tests[] =
   { "test repeated double", test_repeated_double },
   { "test repeated boolean", test_repeated_boolean },
   { "test repeated TestEnumSmall", test_repeated_TestEnumSmall },
-  //{ "test repeated TestEnum", test_repeated_TestEnum },
-  //{ "test repeated string", test_repeated_string },
-  //{ "test repeated bytes", test_repeated_bytes },
-  //{ "test repeated SubMess", test_repeated_SubMess },
+  { "test repeated TestEnum", test_repeated_TestEnum },
+  { "test repeated string", test_repeated_string },
+  { "test repeated bytes", test_repeated_bytes },
+  { "test repeated SubMess", test_repeated_SubMess },
   //{ "test optional int32", test_optional_int32 },
   //{ "test optional sint32", test_optional_sint32 },
   //{ "test optional sfixed32", test_optional_sfixed32 },
@@ -762,7 +540,7 @@ static Test tests[] =
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
-int main (int argc, char **argv)
+int main ()
 {
   unsigned i;
   for (i = 0; i < n_tests; i++)

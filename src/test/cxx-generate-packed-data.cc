@@ -9,7 +9,9 @@ using namespace foo;
 
 #define protobuf_c_boolean bool
 #define TEST_ENUM_SMALL_TYPE_NAME  TestEnumSmall
-#define TEST_ENUM_SMALL(NAME)     foo::NAME
+#define TEST_ENUM_SMALL(NAME)      foo::NAME
+#define TEST_ENUM_TYPE_NAME        TestEnum
+#define TEST_ENUM(NAME)            foo::NAME
 #include "common-test-arrays.h"
 #define N_ELEMENTS(arr)   (sizeof(arr)/sizeof((arr)[0]))
 
@@ -74,162 +76,104 @@ dump_test_field_numbers (void)
   DUMP_ONE (33554432)
 #undef DUMP_ONE
 } 
+
+#define DUMP_STATIC_ARRAY_GENERIC(member, static_array, output_array_name) \
+  do{ \
+    TestMess mess; \
+    for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
+      mess.add_##member(static_array[i]); \
+    dump_message_bytes(&mess, output_array_name); \
+  }while(0)
 static void dump_test_repeated_int32 (void)
 {
-  TestMess mess;
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_int32, static_array, output_array_name)
 
-  mess.clear_test_int32 ();
-  dump_message_bytes(&mess, "test_repeated_int32__empty");
-  mess.add_test_int32(-1);
-  dump_message_bytes(&mess, "test_repeated_int32_m1");
-  mess.add_test_int32(1);
-  dump_message_bytes(&mess, "test_repeated_int32_m1_1");
-  mess.clear_test_int32 ();
-  mess.add_test_int32(1);
-  dump_message_bytes(&mess, "test_repeated_int32_1");
-  mess.clear_test_int32 ();
-  mess.add_test_int32(42);
-  mess.add_test_int32(666);
-  mess.add_test_int32(-1123123);
-  mess.add_test_int32(0);
-  mess.add_test_int32(47);
-  dump_message_bytes(&mess, "test_repeated_int32_42_666_m1123123_0_47");
-  mess.clear_test_int32 ();
-  mess.add_test_int32(INT32_MIN);
-  dump_message_bytes(&mess, "test_repeated_int32_min");
-  mess.clear_test_int32 ();
-  mess.add_test_int32(INT32_MAX);
-  dump_message_bytes(&mess, "test_repeated_int32_max");
+  DUMP_STATIC_ARRAY (int32_arr0, "test_repeated_int32_arr0");
+  DUMP_STATIC_ARRAY (int32_arr1, "test_repeated_int32_arr1");
+  DUMP_STATIC_ARRAY (int32_arr_min_max, "test_repeated_int32_arr_min_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 static void dump_test_repeated_sint32 (void)
 {
-  TestMess mess;
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_sint32, static_array, output_array_name)
 
-  mess.clear_test_sint32 ();
-  dump_message_bytes(&mess, "test_repeated_sint32__empty");
-  mess.add_test_sint32(-1);
-  dump_message_bytes(&mess, "test_repeated_sint32_m1");
-  mess.add_test_sint32(1);
-  dump_message_bytes(&mess, "test_repeated_sint32_m1_1");
-  mess.clear_test_sint32 ();
-  mess.add_test_sint32(1);
-  dump_message_bytes(&mess, "test_repeated_sint32_1");
-  mess.clear_test_sint32 ();
-  mess.add_test_sint32(42);
-  mess.add_test_sint32(666);
-  mess.add_test_sint32(-1123123);
-  mess.add_test_sint32(0);
-  mess.add_test_sint32(47);
-  dump_message_bytes(&mess, "test_repeated_sint32_42_666_m1123123_0_47");
-  mess.clear_test_sint32 ();
-  mess.add_test_sint32(INT32_MIN);
-  dump_message_bytes(&mess, "test_repeated_sint32_min");
-  mess.clear_test_sint32 ();
-  mess.add_test_sint32(INT32_MAX);
-  dump_message_bytes(&mess, "test_repeated_sint32_max");
+  DUMP_STATIC_ARRAY (int32_arr0, "test_repeated_sint32_arr0");
+  DUMP_STATIC_ARRAY (int32_arr1, "test_repeated_sint32_arr1");
+  DUMP_STATIC_ARRAY (int32_arr_min_max, "test_repeated_sint32_arr_min_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 static void dump_test_repeated_uint32 (void)
 {
-  TestMess mess;
-  mess.add_test_uint32(BILLION);
-  mess.add_test_uint32(MILLION);
-  mess.add_test_uint32(1);
-  mess.add_test_uint32(0);
-  dump_message_bytes (&mess, "test_repeated_uint32_bil_mil_1_0");
-  mess.clear_test_uint32();
-  mess.add_test_uint32(0);
-  dump_message_bytes (&mess, "test_repeated_uint32_0");
-  mess.clear_test_uint32();
-  mess.add_test_uint32(UINT32_MAX);
-  dump_message_bytes (&mess, "test_repeated_uint32_max");
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_uint32, static_array, output_array_name)
+
+  DUMP_STATIC_ARRAY (uint32_roundnumbers, "test_repeated_uint32_roundnumbers");
+  DUMP_STATIC_ARRAY (uint32_0_max, "test_repeated_uint32_0_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 static void dump_test_repeated_sfixed32 (void)
 {
-  TestMess mess;
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_sfixed32, static_array, output_array_name)
 
-  mess.clear_test_sfixed32 ();
-  dump_message_bytes(&mess, "test_repeated_sfixed32__empty");
-  mess.add_test_sfixed32(-1);
-  dump_message_bytes(&mess, "test_repeated_sfixed32_m1");
-  mess.add_test_sfixed32(1);
-  dump_message_bytes(&mess, "test_repeated_sfixed32_m1_1");
-  mess.clear_test_sfixed32 ();
-  mess.add_test_sfixed32(1);
-  dump_message_bytes(&mess, "test_repeated_sfixed32_1");
-  mess.clear_test_sfixed32 ();
-  mess.add_test_sfixed32(42);
-  mess.add_test_sfixed32(666);
-  mess.add_test_sfixed32(-1123123);
-  mess.add_test_sfixed32(0);
-  mess.add_test_sfixed32(47);
-  dump_message_bytes(&mess, "test_repeated_sfixed32_42_666_m1123123_0_47");
-  mess.clear_test_sfixed32 ();
-  mess.add_test_sfixed32(INT32_MIN);
-  dump_message_bytes(&mess, "test_repeated_sfixed32_min");
-  mess.clear_test_sfixed32 ();
-  mess.add_test_sfixed32(INT32_MAX);
-  dump_message_bytes(&mess, "test_repeated_sfixed32_max");
+  DUMP_STATIC_ARRAY (int32_arr0, "test_repeated_sfixed32_arr0");
+  DUMP_STATIC_ARRAY (int32_arr1, "test_repeated_sfixed32_arr1");
+  DUMP_STATIC_ARRAY (int32_arr_min_max, "test_repeated_sfixed32_arr_min_max");
+
+#undef DUMP_STATIC_ARRAY
 }
+
 static void dump_test_repeated_fixed32 (void)
 {
-  TestMess mess;
-  mess.add_test_fixed32(BILLION);
-  mess.add_test_fixed32(MILLION);
-  mess.add_test_fixed32(1);
-  mess.add_test_fixed32(0);
-  dump_message_bytes (&mess, "test_repeated_fixed32_bil_mil_1_0");
-  mess.clear_test_fixed32();
-  mess.add_test_fixed32(0);
-  dump_message_bytes (&mess, "test_repeated_fixed32_0");
-  mess.clear_test_fixed32();
-  mess.add_test_fixed32(UINT32_MAX);
-  dump_message_bytes (&mess, "test_repeated_fixed32_max");
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_fixed32, static_array, output_array_name)
+
+  DUMP_STATIC_ARRAY (uint32_roundnumbers, "test_repeated_fixed32_roundnumbers");
+  DUMP_STATIC_ARRAY (uint32_0_max, "test_repeated_fixed32_0_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 static void dump_test_repeated_int64 (void)
 {
-  TestMess mess;
-  for (unsigned i = 0; i < N_ELEMENTS (int64_roundnumbers); i++)
-    mess.add_test_int64(int64_roundnumbers[i]);
-  dump_message_bytes(&mess, "test_repeated_int64_roundnumbers");
-  mess.clear_test_int64();
-  for (unsigned i = 0; i < N_ELEMENTS (int64_min_max); i++)
-    mess.add_test_int64(int64_min_max[i]);
-  dump_message_bytes(&mess, "test_repeated_int64_min_max");
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_int64, static_array, output_array_name)
+
+  DUMP_STATIC_ARRAY (int64_roundnumbers, "test_repeated_int64_roundnumbers");
+  DUMP_STATIC_ARRAY (int64_min_max, "test_repeated_int64_min_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 
 static void dump_test_repeated_sint64 (void)
 {
-  TestMess mess;
-  for (unsigned i = 0; i < N_ELEMENTS (int64_roundnumbers); i++)
-    mess.add_test_sint64(int64_roundnumbers[i]);
-  dump_message_bytes(&mess, "test_repeated_sint64_roundnumbers");
-  mess.clear_test_sint64();
-  for (unsigned i = 0; i < N_ELEMENTS (int64_min_max); i++)
-    mess.add_test_sint64(int64_min_max[i]);
-  dump_message_bytes(&mess, "test_repeated_sint64_min_max");
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_sint64, static_array, output_array_name)
+
+  DUMP_STATIC_ARRAY (int64_roundnumbers, "test_repeated_sint64_roundnumbers");
+  DUMP_STATIC_ARRAY (int64_min_max, "test_repeated_sint64_min_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 
 static void dump_test_repeated_sfixed64 (void)
 {
-  TestMess mess;
-  for (unsigned i = 0; i < N_ELEMENTS (int64_roundnumbers); i++)
-    mess.add_test_sfixed64(int64_roundnumbers[i]);
-  dump_message_bytes(&mess, "test_repeated_sfixed64_roundnumbers");
-  mess.clear_test_sfixed64();
-  for (unsigned i = 0; i < N_ELEMENTS (int64_min_max); i++)
-    mess.add_test_sfixed64(int64_min_max[i]);
-  dump_message_bytes(&mess, "test_repeated_sfixed64_min_max");
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC(test_sfixed64, static_array, output_array_name)
+
+  DUMP_STATIC_ARRAY (int64_roundnumbers, "test_repeated_sfixed64_roundnumbers");
+  DUMP_STATIC_ARRAY (int64_min_max, "test_repeated_sfixed64_min_max");
+
+#undef DUMP_STATIC_ARRAY
 }
 static void dump_test_repeated_uint64 (void)
 {
-  TestMess mess;
 #define DUMP_STATIC_ARRAY(static_array, output_array_name) \
-  do{ \
-  mess.clear_test_uint64(); \
-  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
-    mess.add_test_uint64(static_array[i]); \
-  dump_message_bytes(&mess, output_array_name); \
-  }while(0)
+  DUMP_STATIC_ARRAY_GENERIC (test_uint64, static_array, output_array_name)
 
   DUMP_STATIC_ARRAY(uint64_roundnumbers, "test_repeated_uint64_roundnumbers");
   DUMP_STATIC_ARRAY(uint64_0_1_max, "test_repeated_uint64_0_1_max");
@@ -239,14 +183,8 @@ static void dump_test_repeated_uint64 (void)
 }
 static void dump_test_repeated_fixed64 (void)
 {
-  TestMess mess;
 #define DUMP_STATIC_ARRAY(static_array, output_array_name) \
-  do{ \
-  mess.clear_test_fixed64(); \
-  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
-    mess.add_test_fixed64(static_array[i]); \
-  dump_message_bytes(&mess, output_array_name); \
-  }while(0)
+  DUMP_STATIC_ARRAY_GENERIC(test_fixed64, static_array, output_array_name)
 
   DUMP_STATIC_ARRAY(uint64_roundnumbers, "test_repeated_fixed64_roundnumbers");
   DUMP_STATIC_ARRAY(uint64_0_1_max, "test_repeated_fixed64_0_1_max");
@@ -257,14 +195,8 @@ static void dump_test_repeated_fixed64 (void)
 
 static void dump_test_repeated_float (void)
 {
-  TestMess mess;
 #define DUMP_STATIC_ARRAY(static_array, output_array_name) \
-  do{ \
-  mess.clear_test_float(); \
-  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
-    mess.add_test_float(static_array[i]); \
-  dump_message_bytes(&mess, output_array_name); \
-  }while(0)
+  DUMP_STATIC_ARRAY_GENERIC(test_float, static_array, output_array_name)
 
   DUMP_STATIC_ARRAY(float_random, "test_repeated_float_random");
 
@@ -273,14 +205,8 @@ static void dump_test_repeated_float (void)
 
 static void dump_test_repeated_double (void)
 {
-  TestMess mess;
 #define DUMP_STATIC_ARRAY(static_array, output_array_name) \
-  do{ \
-  mess.clear_test_double(); \
-  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
-    mess.add_test_double(static_array[i]); \
-  dump_message_bytes(&mess, output_array_name); \
-  }while(0)
+  DUMP_STATIC_ARRAY_GENERIC(test_double, static_array, output_array_name)
 
   DUMP_STATIC_ARRAY(double_random, "test_repeated_double_random");
 
@@ -288,14 +214,8 @@ static void dump_test_repeated_double (void)
 }
 static void dump_test_repeated_boolean (void)
 {
-  TestMess mess;
 #define DUMP_STATIC_ARRAY(static_array, output_array_name) \
-  do{ \
-  mess.clear_test_boolean(); \
-  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
-    mess.add_test_boolean(static_array[i]); \
-  dump_message_bytes(&mess, output_array_name); \
-  }while(0)
+  DUMP_STATIC_ARRAY_GENERIC(test_boolean, static_array, output_array_name)
 
   DUMP_STATIC_ARRAY(boolean_0, "test_repeated_boolean_0");
   DUMP_STATIC_ARRAY(boolean_1, "test_repeated_boolean_1");
@@ -305,14 +225,8 @@ static void dump_test_repeated_boolean (void)
 }
 static void dump_test_repeated_enum_small (void)
 {
-  TestMess mess;
 #define DUMP_STATIC_ARRAY(static_array, output_array_name) \
-  do{ \
-  mess.clear_test_enum_small(); \
-  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
-    mess.add_test_enum_small(static_array[i]); \
-  dump_message_bytes(&mess, output_array_name); \
-  }while(0)
+  DUMP_STATIC_ARRAY_GENERIC (test_enum_small, static_array, output_array_name)
 
   DUMP_STATIC_ARRAY (enum_small_0, "test_repeated_enum_small_0");
   DUMP_STATIC_ARRAY (enum_small_1, "test_repeated_enum_small_1");
@@ -321,7 +235,54 @@ static void dump_test_repeated_enum_small (void)
 #undef DUMP_STATIC_ARRAY
 }
 
+static void dump_test_repeated_enum (void)
+{
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC (test_enum, static_array, output_array_name)
 
+  DUMP_STATIC_ARRAY (enum_0, "test_repeated_enum_0");
+  DUMP_STATIC_ARRAY (enum_1, "test_repeated_enum_1");
+  DUMP_STATIC_ARRAY (enum_random, "test_repeated_enum_random");
+
+#undef DUMP_STATIC_ARRAY
+}
+
+static void dump_test_repeated_string (void)
+{
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  DUMP_STATIC_ARRAY_GENERIC (test_string, static_array, output_array_name)
+
+  DUMP_STATIC_ARRAY (repeated_strings_0, "test_repeated_strings_0");
+  DUMP_STATIC_ARRAY (repeated_strings_1, "test_repeated_strings_1");
+  DUMP_STATIC_ARRAY (repeated_strings_2, "test_repeated_strings_2");
+  DUMP_STATIC_ARRAY (repeated_strings_3, "test_repeated_strings_3");
+
+#undef DUMP_STATIC_ARRAY
+}
+
+static void dump_test_repeated_bytes (void)
+{
+  TestMess mess;
+  mess.add_test_bytes(std::string("text"));
+  mess.add_test_bytes(std::string("str\1\2\3\4\5") + '\0');
+  mess.add_test_bytes(std::string("gobble") + '\0' + "foo");
+  dump_message_bytes(&mess, "test_repeated_bytes_0");
+}
+
+static void dump_test_repeated_SubMess (void)
+{
+  TestMess mess;
+  mess.add_test_message()->set_test(0);
+  mess.add_test_message()->set_test(0);
+  mess.add_test_message()->set_test(0);
+  dump_message_bytes(&mess, "test_repeated_submess_0");
+
+  mess.clear_test_message();
+  mess.add_test_message()->set_test(42);
+  mess.add_test_message()->set_test(-10000);
+  mess.add_test_message()->set_test(667);
+  dump_message_bytes(&mess, "test_repeated_submess_1");
+}
 
 int main()
 {
@@ -342,5 +303,9 @@ int main()
   dump_test_repeated_double ();
   dump_test_repeated_boolean ();
   dump_test_repeated_enum_small ();
+  dump_test_repeated_enum ();
+  dump_test_repeated_string ();
+  dump_test_repeated_bytes ();
+  dump_test_repeated_SubMess ();
   return 0;
 }

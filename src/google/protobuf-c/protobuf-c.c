@@ -336,7 +336,10 @@ repeated_field_get_packed_size (const ProtobufCFieldDescriptor *field,
       break;
     case PROTOBUF_C_TYPE_MESSAGE:
       for (i = 0; i < count; i++)
-        rv += protobuf_c_message_get_packed_size (((ProtobufCMessage **) member)[i]);
+        {
+          size_t len = protobuf_c_message_get_packed_size (((ProtobufCMessage **) array)[i]);
+          rv += uint32_size (len) + len;
+        }
       break;
     //case PROTOBUF_C_TYPE_GROUP:          // NOT SUPPORTED
     }
