@@ -205,10 +205,9 @@ struct _ProtobufCService
   void (*destroy) (ProtobufCService *service);
 };
 
-ProtobufCService *protobuf_c_create_service_from_vfuncs
-                               (const ProtobufCServiceDescriptor *descriptor,
-                                void *service);
+
 void protobuf_c_service_destroy (ProtobufCService *);
+
 
 
 /* --- wire format enums --- */

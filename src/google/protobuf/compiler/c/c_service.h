@@ -56,7 +56,7 @@ class ServiceGenerator {
   // Source file stuff.
   void GenerateCFile(io::Printer* printer);
   void GenerateServiceDescriptor(io::Printer* printer);
-  void GenerateCreateService(io::Printer* printer);
+  void GenerateInit(io::Printer* printer);
   void GenerateCallersImplementations(io::Printer* printer);
 
   const ServiceDescriptor* descriptor_;

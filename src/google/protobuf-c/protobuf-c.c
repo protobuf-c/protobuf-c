@@ -35,6 +35,15 @@
 #define TRUE 1
 #define FALSE 0
 
+#define ASSERT_IS_ENUM_DESCRIPTOR(desc) \
+  assert((desc)->magic == PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC)
+#define ASSERT_IS_MESSAGE_DESCRIPTOR(desc) \
+  assert((desc)->magic == PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
+#define ASSERT_IS_MESSAGE(message) \
+  ASSERT_IS_MESSAGE_DESCRIPTOR((message)->descriptor)
+#define ASSERT_IS_SERVICE_DESCRIPTOR(desc) \
+  assert((desc)->magic == PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC)
+
 /* --- allocator --- */
 
 static void protobuf_c_out_of_memory_default (void)
@@ -354,6 +363,7 @@ size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 {
   unsigned i;
   size_t rv = 0;
+  ASSERT_IS_MESSAGE (message);
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
@@ -662,6 +672,7 @@ size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
 {
   unsigned i;
   size_t rv = 0;
+  ASSERT_IS_MESSAGE (message);
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
@@ -839,6 +850,7 @@ protobuf_c_message_pack_to_buffer (const ProtobufCMessage *message,
 {
   unsigned i;
   size_t rv = 0;
+  ASSERT_IS_MESSAGE (message);
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
@@ -1266,6 +1278,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   unsigned f;
   unsigned i_slab;
 
+  ASSERT_IS_MESSAGE_DESCRIPTOR (desc);
+
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
   rv = ALLOC (allocator, desc->sizeof_message);
@@ -1455,8 +1469,10 @@ protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
 {
   const ProtobufCMessageDescriptor *desc = message->descriptor;
   unsigned f;
+  ASSERT_IS_MESSAGE (message);
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
+  message->descriptor = NULL;
   for (f = 0; f < desc->n_fields; f++)
     {
       if (desc->fields[f].label == PROTOBUF_C_LABEL_REPEATED)
@@ -1536,30 +1552,16 @@ service_machgen_invoke(ProtobufCService *service,
   (*handler) (machgen->service, input, closure, closure_data);
 }
 
-static void
-service_machgen_destroy (ProtobufCService *service)
+void
+protobuf_c_service_generated_init (ProtobufCService *service,
+                                   const ProtobufCServiceDescriptor *descriptor,
+                                   ProtobufCServiceDestroy destroy)
 {
-  /* destroy function always follows the methods.
-     we assume these function pointers are the same size. */
-  DestroyHandler *handlers;
-  DestroyHandler handler;
-  ServiceMachgen *machgen = (ServiceMachgen *) service;
-  handlers = (DestroyHandler *) machgen->service;
-  handler = handlers[service->descriptor->n_methods];
-  (*handler) (machgen->service);
-  FREE (&protobuf_c_default_allocator, service);
-}
-ProtobufCService *
-protobuf_c_create_service_from_vfuncs
-                               (const ProtobufCServiceDescriptor *descriptor,
-                                void *service)
-{
-  ServiceMachgen *rv = ALLOC (&protobuf_c_default_allocator, sizeof (ServiceMachgen));
-  rv->base.descriptor = descriptor;
-  rv->base.invoke = service_machgen_invoke;
-  rv->base.destroy = service_machgen_destroy;
-  rv->service = service;
-  return &rv->base;
+  ASSERT_IS_SERVICE_DESCRIPTOR(descriptor);
+  service->descriptor = descriptor;
+  service->destroy = destroy;
+  service->invoke = service_machgen_invoke;
+  memset (service + 1, 0, descriptor->n_methods * sizeof (GenericHandler));
 }
 
 void protobuf_c_service_destroy (ProtobufCService *service)

@@ -36,6 +36,7 @@ ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
   vars_["fullname"] = descriptor_->full_name();
   vars_["cname"] = FullNameToC(descriptor_->full_name());
   vars_["lcfullname"] = FullNameToLower(descriptor_->full_name());
+  vars_["lcfullpadd"] = ConvertToSpaces(vars_["lcfullname"]);
   vars_["package"] = descriptor_->file()->package();
   if (dllexport_decl.empty()) {
     vars_["dllexport"] = "";
@@ -58,7 +59,8 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
   printer->Print(vars_,
 		 "typedef struct _$cname$_Service $cname$_Service;\n"
 		 "struct _$cname$_Service\n"
-		 "{\n");
+		 "{\n"
+		 "  ProtobufCService base;\n");
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
     string lcname = CamelToLower(method->name());
@@ -73,9 +75,11 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
                    "         $metpad$  void *closure_data);\n");
   }
   printer->Print(vars_,
-		 "  void (*destroy) ($cname$_Service *service);\n");
-  printer->Print(vars_,
 		 "};\n");
+  printer->Print(vars_,
+		 "typedef void (*$cname$_ServiceDestroy)($cname$_Service);\n"
+		 "void $lcfullname$__init ($cname$_Service *service,\n"
+		 "     $lcfullpadd$        $cname$_ServiceDestroy destroy);\n");
 }
 void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
 {
@@ -111,9 +115,21 @@ void ServiceGenerator::GenerateDescriptorDeclarations(io::Printer* printer)
 void ServiceGenerator::GenerateCFile(io::Printer* printer)
 {
   GenerateServiceDescriptor(printer);
-  GenerateCreateService(printer);
   GenerateCallersImplementations(printer);
+  GenerateInit(printer);
 }
+void ServiceGenerator::GenerateInit(io::Printer* printer)
+{
+  printer->Print(vars_,
+		 "void $lcfullname$__init ($cname$_Service *service,\n"
+		 "     $lcfullpadd$        $cname$_ServiceDestroy destroy)\n"
+		 "{\n"
+		 "  protobuf_c_service_generated_init (&service->base,\n"
+		 "                                     &$lcfullname$__descriptor,\n"
+		 "                                     (ProtobufCServiceDestroy) destroy);\n"
+		 "}\n");
+}
+
 void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
 {
   int n_methods = descriptor_->method_count();
@@ -141,14 +157,6 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
 		       "};\n");
 }
 
-void ServiceGenerator::GenerateCreateService(io::Printer* printer)
-{
-  printer->Print(vars_, "ProtobufCService *\n"
-                       "$lcfullname$__create_service ($cname$_Service *service)\n"
-		       "{\n"
-		       "  return protobuf_c_create_service_from_vfuncs (&$lcfullname$__descriptor, service);\n"
-		       "}\n");
-}
 void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
 {
   for (int i = 0; i < descriptor_->method_count(); i++) {
