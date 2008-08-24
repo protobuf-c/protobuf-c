@@ -4,6 +4,8 @@
 #include "generated-code/test-full.pb-c.h"
 #include "generated-code/test-full-cxx-output.inc"
 
+#define TEST_ENUM_SMALL_TYPE_NAME   Foo__TestEnumSmall
+#define TEST_ENUM_SMALL(shortname)   FOO__TEST_ENUM_SMALL__##shortname
 #include "common-test-arrays.h"
 #define N_ELEMENTS(arr)   (sizeof(arr)/sizeof((arr)[0]))
 
@@ -674,6 +676,21 @@ static void test_repeated_boolean (void)
 #undef DO_TEST
 }
 
+static void test_repeated_TestEnumSmall (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_REPEATED(test_enum_small, \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(enum_small_0, test_repeated_enum_small_0);
+  DO_TEST(enum_small_1, test_repeated_enum_small_1);
+  DO_TEST(enum_small_random, test_repeated_enum_small_random);
+
+#undef DO_TEST
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -701,7 +718,7 @@ static Test tests[] =
   { "test repeated float", test_repeated_float },
   { "test repeated double", test_repeated_double },
   { "test repeated boolean", test_repeated_boolean },
-  //{ "test repeated TestEnumSmall", test_repeated_TestEnumSmall },
+  { "test repeated TestEnumSmall", test_repeated_TestEnumSmall },
   //{ "test repeated TestEnum", test_repeated_TestEnum },
   //{ "test repeated string", test_repeated_string },
   //{ "test repeated bytes", test_repeated_bytes },

@@ -8,6 +8,8 @@
 using namespace foo;
 
 #define protobuf_c_boolean bool
+#define TEST_ENUM_SMALL_TYPE_NAME  TestEnumSmall
+#define TEST_ENUM_SMALL(NAME)     foo::NAME
 #include "common-test-arrays.h"
 #define N_ELEMENTS(arr)   (sizeof(arr)/sizeof((arr)[0]))
 
@@ -301,9 +303,27 @@ static void dump_test_repeated_boolean (void)
 
 #undef DUMP_STATIC_ARRAY
 }
+static void dump_test_repeated_enum_small (void)
+{
+  TestMess mess;
+#define DUMP_STATIC_ARRAY(static_array, output_array_name) \
+  do{ \
+  mess.clear_test_enum_small(); \
+  for (unsigned i = 0; i < N_ELEMENTS (static_array); i++) \
+    mess.add_test_enum_small(static_array[i]); \
+  dump_message_bytes(&mess, output_array_name); \
+  }while(0)
+
+  DUMP_STATIC_ARRAY (enum_small_0, "test_repeated_enum_small_0");
+  DUMP_STATIC_ARRAY (enum_small_1, "test_repeated_enum_small_1");
+  DUMP_STATIC_ARRAY (enum_small_random, "test_repeated_enum_small_random");
+
+#undef DUMP_STATIC_ARRAY
+}
 
 
-int main(int argc, char **argv)
+
+int main()
 {
   dump_test_enum_small ();
   dump_test_enum_big ();
@@ -321,5 +341,6 @@ int main(int argc, char **argv)
   dump_test_repeated_float ();
   dump_test_repeated_double ();
   dump_test_repeated_boolean ();
+  dump_test_repeated_enum_small ();
   return 0;
 }

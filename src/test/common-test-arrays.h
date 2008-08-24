@@ -30,3 +30,10 @@ double double_random[] = { FLOATING_POINT_RANDOM };
 protobuf_c_boolean boolean_0[]  = {0 };
 protobuf_c_boolean boolean_1[]  = {1 };
 protobuf_c_boolean boolean_random[] = {0,1,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,0,1,1,0,1,1,0 };
+
+TEST_ENUM_SMALL_TYPE_NAME enum_small_0[] = { TEST_ENUM_SMALL(VALUE) };
+TEST_ENUM_SMALL_TYPE_NAME enum_small_1[] = { TEST_ENUM_SMALL(OTHER_VALUE) };
+#define T(v) (TEST_ENUM_SMALL_TYPE_NAME)(v)
+TEST_ENUM_SMALL_TYPE_NAME enum_small_random[] = {T(0),T(1),T(1),T(0),T(0),T(1),T(1),T(1),T(0),T(0),T(0),T(0),T(0),T(1),T(1),T(1),T(1),T(1),T(1),T(0),T(1),T(1),T(0),T(1),T(1),T(0) };
+#undef T
+
