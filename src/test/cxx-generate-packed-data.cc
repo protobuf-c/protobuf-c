@@ -225,6 +225,37 @@ static void dump_test_required_fixed64 (void)
   dump_message_bytes (&mess, "test_required_fixed64_max");
 }
 
+static void dump_test_required_float (void)
+{
+  TestMessRequiredFloat mess;
+  mess.set_test(-THOUSAND);
+  dump_message_bytes (&mess, "test_required_float_mthou");
+  mess.set_test(0);
+  dump_message_bytes (&mess, "test_required_float_0");
+  mess.set_test(420);
+  dump_message_bytes (&mess, "test_required_float_420");
+}
+
+static void dump_test_required_double (void)
+{
+  TestMessRequiredDouble mess;
+  mess.set_test(-THOUSAND);
+  dump_message_bytes (&mess, "test_required_double_mthou");
+  mess.set_test(0);
+  dump_message_bytes (&mess, "test_required_double_0");
+  mess.set_test(420);
+  dump_message_bytes (&mess, "test_required_double_420");
+}
+
+static void dump_test_required_bool (void)
+{
+  TestMessRequiredBool mess;
+  mess.set_test(false);
+  dump_message_bytes (&mess, "test_required_bool_0");
+  mess.set_test(true);
+  dump_message_bytes (&mess, "test_required_bool_1");
+}
+
 static void dump_test_optional_int32 (void)
 {
   TestMessOptional opt;
@@ -671,6 +702,9 @@ int main()
   dump_test_required_sfixed64 ();
   dump_test_required_uint64 ();
   dump_test_required_fixed64 ();
+  dump_test_required_float ();
+  dump_test_required_double ();
+  dump_test_required_bool ();
   dump_test_optional_int32 ();
   dump_test_optional_sint32 ();
   dump_test_optional_sfixed32 ();

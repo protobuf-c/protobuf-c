@@ -324,6 +324,36 @@ static void test_required_fixed64 (void)
 #undef DO_TEST
 }
 
+static void test_required_float (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED(Float, FLOAT, float, value, example_packed_data, NUMERIC_EQUALS)
+  DO_TEST(-THOUSAND, test_required_float_mthou);
+  DO_TEST(0, test_required_float_0);
+  DO_TEST(420, test_required_float_420);
+#undef DO_TEST
+}
+
+static void test_required_double (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED(Double, DOUBLE, double, value, example_packed_data, NUMERIC_EQUALS)
+  DO_TEST(-THOUSAND, test_required_double_mthou);
+  DO_TEST(0, test_required_double_0);
+  DO_TEST(420, test_required_double_420);
+#undef DO_TEST
+}
+
+static void test_required_bool (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_REQUIRED(Bool, BOOL, bool, value, example_packed_data, NUMERIC_EQUALS)
+  DO_TEST(0, test_required_bool_0);
+  DO_TEST(1, test_required_bool_1);
+#undef DO_TEST
+}
+
+
 
 /* === Optional type fields === */
 static void test_empty_optional (void)
@@ -907,9 +937,9 @@ static Test tests[] =
   { "test required fixed32", test_required_fixed32 },
   { "test required uint64", test_required_uint64 },
   { "test required fixed64", test_required_fixed64 },
-  //{ "test required float", test_required_float },
-  //{ "test required double", test_required_double },
-  //{ "test required bool", test_required_bool },
+  { "test required float", test_required_float },
+  { "test required double", test_required_double },
+  { "test required bool", test_required_bool },
   //{ "test required TestEnumSmall", test_required_TestEnumSmall },
   //{ "test required TestEnum", test_required_TestEnum },
   //{ "test required string", test_required_string },
