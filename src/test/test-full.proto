@@ -142,4 +142,6 @@ message TestMessRequiredBytes {
 message TestMessRequiredMessage {
   required SubMess test = 1;
 }
+message EmptyMess {
+}
 

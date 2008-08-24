@@ -5,6 +5,15 @@
 #include <stddef.h>
 #include <assert.h>
 
+#ifdef __cplusplus
+# define PROTOBUF_C_BEGIN_DECLS    extern "C" {
+# define PROTOBUF_C_END_DECLS      }
+#else
+# define PROTOBUF_C_BEGIN_DECLS
+# define PROTOBUF_C_END_DECLS
+#endif
+
+PROTOBUF_C_BEGIN_DECLS
 
 typedef enum
 {
@@ -45,7 +54,7 @@ typedef struct _ProtobufCBinaryData ProtobufCBinaryData;
 struct _ProtobufCBinaryData
 {
   size_t len;
-  unsigned char *data;
+  uint8_t *data;
 };
 
 typedef struct _ProtobufCIntRange ProtobufCIntRange; /* private */
@@ -71,7 +80,7 @@ struct _ProtobufCBuffer
 {
   void (*append)(ProtobufCBuffer     *buffer,
                  size_t               len,
-                 const unsigned char *data);
+                 const uint8_t       *data);
 };
 /* --- enums --- */
 typedef struct _ProtobufCEnumValue ProtobufCEnumValue;
@@ -147,7 +156,7 @@ struct _ProtobufCMessage
 
 size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message);
 size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
-                                             unsigned char *out);
+                                             uint8_t                *out);
 size_t    protobuf_c_message_pack_to_buffer (const ProtobufCMessage *message,
                                              ProtobufCBuffer  *buffer);
 
@@ -155,7 +164,7 @@ ProtobufCMessage *
           protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *,
                                              ProtobufCAllocator  *allocator,
                                              size_t               len,
-                                             const unsigned char *data);
+                                             const uint8_t       *data);
 void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
                                              ProtobufCAllocator  *allocator);
 
@@ -219,7 +228,7 @@ struct _ProtobufCMessageUnknownField
   uint32_t tag;
   ProtobufCWireType wire_type;
   size_t len;
-  unsigned char *data;
+  uint8_t *data;
 };
 
 /* --- extra (superfluous) api:  trivial buffer --- */
@@ -229,7 +238,7 @@ struct _ProtobufCBufferSimple
   ProtobufCBuffer base;
   size_t alloced;
   size_t len;
-  unsigned char *data;
+  uint8_t *data;
   protobuf_c_boolean must_free_data;
 };
 #define PROTOBUF_C_BUFFER_SIMPLE_INIT(array_of_bytes) \
@@ -241,4 +250,7 @@ struct _ProtobufCBufferSimple
 
 /* ====== private ====== */
 #include "protobuf-c-private.h"
+
+PROTOBUF_C_END_DECLS
+
 #endif /* __PROTOBUF_C_RUNTIME_H_ */

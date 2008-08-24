@@ -975,6 +975,62 @@ static void test_repeated_SubMess (void)
 #undef DO_TEST
 }
 
+static void test_unknown_fields (void)
+{
+  static Foo__EmptyMess mess = FOO__EMPTY_MESS__INIT;
+  static Foo__EmptyMess *mess2;
+  ProtobufCMessageUnknownField fields[2];
+  size_t len; uint8_t *data;
+
+  mess.base.n_unknown_fields = 2;
+  mess.base.unknown_fields = fields;
+
+  fields[0].tag = 5454;
+  fields[0].wire_type = PROTOBUF_C_WIRE_TYPE_VARINT;
+  fields[0].len = 2;
+  fields[0].data = (uint8_t*)"\377\1";
+  fields[1].tag = 5555;
+  fields[1].wire_type = PROTOBUF_C_WIRE_TYPE_32BIT;
+  fields[1].len = 4;
+  fields[1].data = (uint8_t*)"\4\1\0\0";
+  mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (mess2->base.n_unknown_fields == 2);
+  assert (mess2->base.unknown_fields[0].tag == 5454);
+  assert (mess2->base.unknown_fields[0].wire_type == PROTOBUF_C_WIRE_TYPE_VARINT);
+  assert (mess2->base.unknown_fields[0].len == 2);
+  assert (memcmp (mess2->base.unknown_fields[0].data, fields[0].data, 2) == 0);
+  assert (mess2->base.unknown_fields[1].tag == 5555);
+  assert (mess2->base.unknown_fields[1].wire_type == PROTOBUF_C_WIRE_TYPE_32BIT);
+  assert (mess2->base.unknown_fields[1].len == 4);
+  assert (memcmp (mess2->base.unknown_fields[1].data, fields[1].data, 4) == 0);
+  TEST_VERSUS_STATIC_ARRAY (len, data, test_unknown_fields_0);
+  free (data);
+  foo__empty_mess__free_unpacked (mess2, NULL);
+
+  fields[0].tag = 6666;
+  fields[0].wire_type = PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
+  fields[0].len = 9;
+  fields[0].data = (uint8_t*)"\10xxxxxxxx";
+  fields[1].tag = 7777;
+  fields[1].wire_type = PROTOBUF_C_WIRE_TYPE_64BIT;
+  fields[1].len = 8;
+  fields[1].data = (uint8_t*)"\1\1\1\0\0\0\0\0";
+  mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (mess2->base.n_unknown_fields == 2);
+  assert (mess2->base.unknown_fields[0].tag == 6666);
+  assert (mess2->base.unknown_fields[0].wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED);
+  assert (mess2->base.unknown_fields[0].len == 9);
+  assert (memcmp (mess2->base.unknown_fields[0].data, fields[0].data, 9) == 0);
+  assert (mess2->base.unknown_fields[1].tag == 7777);
+  assert (mess2->base.unknown_fields[1].wire_type == PROTOBUF_C_WIRE_TYPE_64BIT);
+  assert (mess2->base.unknown_fields[1].len == 8);
+  assert (memcmp (mess2->base.unknown_fields[1].data, fields[1].data, 8) == 0);
+  TEST_VERSUS_STATIC_ARRAY (len, data, test_unknown_fields_1);
+  free (data);
+  foo__empty_mess__free_unpacked (mess2, NULL);
+}
+
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -1048,6 +1104,8 @@ static Test tests[] =
   { "test repeated string", test_repeated_string },
   { "test repeated bytes", test_repeated_bytes },
   { "test repeated SubMess", test_repeated_SubMess },
+
+  { "test unknown fields", test_unknown_fields }
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 

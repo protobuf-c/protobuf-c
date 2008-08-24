@@ -58,7 +58,7 @@ void StringFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       printer->Print(variables_, "char *$name$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print(variables_, "unsigned n_$name$;\n");
+      printer->Print(variables_, "size_t n_$name$;\n");
       printer->Print(variables_, "char **$name$;\n");
       break;
   }

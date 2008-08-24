@@ -752,6 +752,26 @@ static void dump_test_repeated_SubMess (void)
   dump_message_bytes(&mess, "test_repeated_submess_1");
 }
 
+static void dump_test_unknown_fields (void)
+{
+  EmptyMess mess;
+  google::protobuf::Message::Reflection *reflection = mess.GetReflection();
+  google::protobuf::UnknownFieldSet *fs = reflection->MutableUnknownFields();
+  google::protobuf::UnknownField *f;
+  f = fs->AddField(5454);
+  f->add_varint(255);
+  f = fs->AddField(5555);
+  f->add_fixed32(260);
+  dump_message_bytes (&mess, "test_unknown_fields_0");
+
+  fs->Clear();
+  f = fs->AddField(6666);
+  f->add_length_delimited("xxxxxxxx");
+  f = fs->AddField(7777);
+  f->add_fixed64(0x10101);
+  dump_message_bytes (&mess, "test_unknown_fields_1");
+}
+
 int main()
 {
   dump_test_enum_small ();
@@ -811,5 +831,6 @@ int main()
   dump_test_repeated_string ();
   dump_test_repeated_bytes ();
   dump_test_repeated_SubMess ();
+  dump_test_unknown_fields ();
   return 0;
 }

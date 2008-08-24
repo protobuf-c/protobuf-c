@@ -61,7 +61,7 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       printer->Print(variables_, "ProtobufCBinaryData $name$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print(variables_, "unsigned n_$name$;\n");
+      printer->Print(variables_, "size_t n_$name$;\n");
       printer->Print(variables_, "ProtobufCBinaryData *$name$;\n");
       break;
   }

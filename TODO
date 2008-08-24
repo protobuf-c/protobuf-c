@@ -1,11 +1,6 @@
 - check over documentation again
-- handle unknown fields when packing
-- test code
-- make services derive from ProtobufCService;
-  be usable with a cast.
+- make services derive from ProtobufCService; be usable with a cast.
 - provide example rpc
-- use size_t wherever appropriate in generated code,
-  and in uses of that code (eg pack and unpack)
 
 - To document:
   - __INIT macro

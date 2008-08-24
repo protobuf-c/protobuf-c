@@ -84,6 +84,8 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
     "#define PROTOBUF_C_$filename_identifier$__INCLUDED\n"
     "\n"
     "#include <google/protobuf-c/protobuf-c.h>\n"
+    "\n"
+    "PROTOBUF_C_BEGIN_DECLS\n"
     "\n",
     "filename_identifier", filename_identifier);
 
@@ -169,6 +171,8 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   }
 
   printer->Print(
+    "\n"
+    "PROTOBUF_C_END_DECLS\n"
     "\n\n#endif  // PROTOBUF_$filename_identifier$__INCLUDED\n",
     "filename_identifier", filename_identifier);
 }
