@@ -1,6 +1,21 @@
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
+#include <endian.h>
+
+#define DO_LITTLE_ENDIAN_OPTIMIZATIONS   0
+#define PRINT_UNPACK_ERRORS              1
+
+#if DO_LITTLE_ENDIAN_OPTIMIZATIONS
+# if (__LITTLE_ENDIAN == __BYTE_ORDER)
+#  define IS_LITTLE_ENDIAN 1
+# else
+#  define IS_LITTLE_ENDIAN 0
+# endif
+#endif
+
+
+/* This file defines `__BYTE_ORDER' for the particular machine.  */
 
 #include "protobuf-c.h"
 
@@ -123,6 +138,23 @@ uint32_size (uint32_t v)
   else
     return 5;
 }
+static inline size_t
+int32_size (int32_t v)
+{
+  if (v < 0)
+    return 10;
+  else
+  if (v < (1<<7))
+    return 1;
+  else if (v < (1<<14))
+    return 2;
+  else if (v < (1<<21))
+    return 3;
+  else if (v < (1<<28))
+    return 4;
+  else
+    return 5;
+}
 static inline uint32_t
 zigzag32 (int32_t v)
 {
@@ -164,7 +196,7 @@ zigzag64 (int64_t v)
     return v * 2;
 }
 static inline size_t
-sint64_size (int32_t v)
+sint64_size (int64_t v)
 {
   return uint64_size(zigzag64(v));
 }
@@ -179,10 +211,11 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
     case PROTOBUF_C_TYPE_SINT32:
       return rv + sint32_size (*(int32_t *) member);
     case PROTOBUF_C_TYPE_INT32:
+      return rv + int32_size (*(uint32_t *) member);
     case PROTOBUF_C_TYPE_UINT32:
       return rv + uint32_size (*(uint32_t *) member);
     case PROTOBUF_C_TYPE_SINT64:
-      return rv + sint64_size (*(int32_t *) member);
+      return rv + sint64_size (*(int64_t *) member);
     case PROTOBUF_C_TYPE_INT64:
     case PROTOBUF_C_TYPE_UINT64:
       return rv + uint64_size (*(uint64_t *) member);
@@ -256,6 +289,9 @@ repeated_field_get_packed_size (const ProtobufCFieldDescriptor *field,
         rv += sint32_size (((int32_t*)array)[i]);
       break;
     case PROTOBUF_C_TYPE_INT32:
+      for (i = 0; i < count; i++)
+        rv += int32_size (((uint32_t*)array)[i]);
+      break;
     case PROTOBUF_C_TYPE_UINT32:
     case PROTOBUF_C_TYPE_ENUM:
       for (i = 0; i < count; i++)
@@ -355,6 +391,23 @@ uint32_pack (uint32_t value, BYTE *out)
   out[rv++] = value;
   return rv;
 }
+static inline size_t
+int32_pack (int32_t value, BYTE *out)
+{
+  if (value < 0)
+    {
+      out[0] = value | 0x80;
+      out[1] = (value>>7) | 0x80;
+      out[2] = (value>>14) | 0x80;
+      out[3] = (value>>21) | 0x80;
+      out[4] = (value>>28) | 0x80;
+      out[5] = out[6] = out[7] = out[8] = 0xff;
+      out[9] = 0x01;
+      return 10;
+    }
+  else
+    return uint32_pack (value, out);
+}
 static inline size_t sint32_pack (int32_t value, BYTE *out)
 {
   return uint32_pack (zigzag32 (value), out);
@@ -367,7 +420,7 @@ uint64_pack (uint64_t value, BYTE *out)
   unsigned rv;
   if (hi == 0)
     return uint32_pack ((uint32_t)lo, out);
-  out[0] = (lo) & 0x7f;
+  out[0] = (lo) | 0x80;
   out[1] = (lo>>7) | 0x80;
   out[2] = (lo>>14) | 0x80;
   out[3] = (lo>>21) | 0x80;
@@ -466,13 +519,15 @@ required_field_pack (const ProtobufCFieldDescriptor *field,
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
       return rv + sint32_pack (*(int32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_INT32:
+      out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
+      return rv + int32_pack (*(uint32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_UINT32:
     case PROTOBUF_C_TYPE_ENUM:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
       return rv + uint32_pack (*(uint32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_SINT64:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + sint64_pack (*(int32_t *) member, out + rv);
+      return rv + sint64_pack (*(int64_t *) member, out + rv);
     case PROTOBUF_C_TYPE_INT64:
     case PROTOBUF_C_TYPE_UINT64:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
@@ -622,6 +677,10 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_INT32:
+      scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
+      rv += int32_pack (*(uint32_t *) member, scratch + rv);
+      buffer->append (buffer, rv, scratch);
+      break;
     case PROTOBUF_C_TYPE_UINT32:
     case PROTOBUF_C_TYPE_ENUM:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
@@ -630,7 +689,7 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
       break;
     case PROTOBUF_C_TYPE_SINT64:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += sint64_pack (*(int32_t *) member, scratch + rv);
+      rv += sint64_pack (*(int64_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_INT64:
@@ -766,6 +825,12 @@ protobuf_c_message_pack_to_buffer (const ProtobufCMessage *message,
 }
 
 /* === unpacking === */
+#if PRINT_UNPACK_ERRORS
+# define UNPACK_ERROR(args)  do { printf args;printf("\n"); }while(0)
+#else
+# define UNPACK_ERROR(args)  do { } while (0)
+#endif
+
 static inline int
 int_range_lookup (unsigned n_ranges,
                   const ProtobufCIntRange *ranges,
@@ -866,11 +931,18 @@ scan_length_prefixed_data (size_t len, const BYTE *data, size_t *prefix_len_out)
         break;
     }
   if (i == hdr_max)
-    return 0;
+    {
+      UNPACK_ERROR (("error parsing length for length-prefixed data"));
+      return 0;
+    }
   hdr_len = i + 1;
   *prefix_len_out = hdr_len;
   if (hdr_len + val > len)
-    return 0;
+    {
+      UNPACK_ERROR (("data too short after length-prefix of %u",
+                     val));
+      return 0;
+    }
   return hdr_len + val;
 }
 
@@ -893,6 +965,11 @@ parse_uint32 (unsigned len, const BYTE *data)
         }
     }
   return rv;
+}
+static inline uint32_t
+parse_int32 (unsigned len, const BYTE *data)
+{
+  return parse_uint32 (len, data);
 }
 static inline int32_t
 unzigzag32 (uint32_t v)
@@ -972,6 +1049,10 @@ parse_required_member (ScannedMember *scanned_member,
   switch (scanned_member->field->type)
     {
     case PROTOBUF_C_TYPE_INT32:
+      if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
+        return 0;
+      *(uint32_t*)member = parse_int32 (len, data);
+      return 1;
     case PROTOBUF_C_TYPE_UINT32:
       if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
         return 0;
@@ -988,7 +1069,7 @@ parse_required_member (ScannedMember *scanned_member,
       if (wire_type != PROTOBUF_C_WIRE_TYPE_32BIT)
         return 0;
       *(uint32_t*)member = parse_fixed_uint32 (data);
-      break;
+      return 1;
 
     case PROTOBUF_C_TYPE_INT64:
     case PROTOBUF_C_TYPE_UINT64:
@@ -1167,7 +1248,11 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
       const ProtobufCFieldDescriptor *field;
       ScannedMember tmp;
       if (used == 0)
-        goto error_cleanup;
+        {
+          UNPACK_ERROR (("error parsing tag/wiretype at offset %u",
+                         (unsigned)(at-data)));
+          goto error_cleanup;
+        }
       /* XXX: consider optimizing for field[1].id == tag, if field[1] exists! */
       if (last_field->id != tag)
         {
@@ -1205,13 +1290,21 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
               if ((at[i] & 0x80) == 0)
                 break;
             if (i == max_len)
-              goto error_cleanup;
+              {
+                UNPACK_ERROR (("unterminated varint at offset %u",
+                               (unsigned)(at-data)));
+                goto error_cleanup;
+              }
             tmp.len = i + 1;
           }
           break;
         case PROTOBUF_C_WIRE_TYPE_64BIT:
           if (rem < 8)
-            goto error_cleanup;
+            {
+              UNPACK_ERROR (("too short after 64bit wiretype at offset %u",
+                             (unsigned)(at-data)));
+              goto error_cleanup;
+            }
           tmp.len = 8;
           break;
         case PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED:
@@ -1219,7 +1312,10 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             size_t pref_len;
             tmp.len = scan_length_prefixed_data (rem, at, &pref_len);
             if (tmp.len == 0)
-              goto error_cleanup;
+              {
+                /* NOTE: scan_length_prefixed_data calls UNPACK_ERROR */
+                goto error_cleanup;
+              }
             tmp.length_prefix_len = pref_len;
             break;
           }
@@ -1228,7 +1324,11 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           PROTOBUF_C_ASSERT_NOT_REACHED ();
         case PROTOBUF_C_WIRE_TYPE_32BIT:
           if (rem < 4)
-            goto error_cleanup;
+            {
+              UNPACK_ERROR (("too short after 32bit wiretype at offset %u",
+                             (unsigned)(at-data)));
+              goto error_cleanup;
+            }
           tmp.len = 4;
           break;
         }
@@ -1285,7 +1385,11 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
       for (j = 0; j < max; j++)
         {
           if (!parse_member (slab + j, rv, allocator))
-            goto error_cleanup;
+            {
+              UNPACK_ERROR (("error parsing member %s of %s",
+                             slab->field->name, desc->name));
+              goto error_cleanup;
+            }
         }
     }
 

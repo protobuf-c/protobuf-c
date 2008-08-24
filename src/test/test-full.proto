@@ -58,7 +58,7 @@ message TestMess {
   repeated fixed64 test_fixed64 = 10;
   repeated float test_float = 11;
   repeated double test_double = 12;
-  repeated bool test_bool = 13;
+  repeated bool test_boolean = 13;
   repeated TestEnumSmall test_enum_small = 14;
   repeated TestEnum test_enum = 15;
   repeated string test_string = 16;
@@ -79,7 +79,7 @@ message TestMessOptional {
   optional fixed64 test_fixed64 = 10;
   optional float test_float = 11;
   optional double test_double = 12;
-  optional bool test_bool = 13;
+  optional bool test_boolean = 13;
   optional TestEnum test_enum = 14;
   optional string test_string = 15;
   optional bytes test_bytes = 16;

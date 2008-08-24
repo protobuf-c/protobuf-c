@@ -1,7 +1,6 @@
 - check over documentation again
 - handle unknown fields when packing
 - test code
-  - ensure enums are 32-bit
 - make services derive from ProtobufCService;
   be usable with a cast.
 - provide example rpc

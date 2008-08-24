@@ -68,7 +68,18 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 }
 void BytesFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
-  printer->Print("{0,NULL}");
+  switch (descriptor_->label()) {
+    case FieldDescriptor::LABEL_REQUIRED:
+      printer->Print(variables_, "{0,NULL}");
+      break;
+    case FieldDescriptor::LABEL_OPTIONAL:
+      printer->Print(variables_, "0,{0,NULL}");
+      break;
+    case FieldDescriptor::LABEL_REPEATED:
+      // no support for default?
+      printer->Print("0,NULL");
+      break;
+  }
 }
 void BytesFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {
