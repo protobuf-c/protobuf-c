@@ -81,10 +81,11 @@ message TestMessOptional {
   optional float test_float = 11;
   optional double test_double = 12;
   optional bool test_boolean = 13;
-  optional TestEnum test_enum = 14;
-  optional string test_string = 15;
-  optional bytes test_bytes = 16;
-  optional SubMess test_message = 17;
+  optional TestEnumSmall test_enum_small = 14;
+  optional TestEnum test_enum = 15;
+  optional string test_string = 16;
+  optional bytes test_bytes = 17;
+  optional SubMess test_message = 18;
 }
 
 message TestMessRequiredInt32 {

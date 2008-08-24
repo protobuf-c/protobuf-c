@@ -402,6 +402,17 @@ static void dump_test_optional_uint64 (void)
   dump_message_bytes (&opt, "test_optional_uint64_max");
 }
 
+static void dump_test_optional_fixed64 (void)
+{
+  TestMessOptional opt;
+  opt.set_test_fixed64(0);
+  dump_message_bytes (&opt, "test_optional_fixed64_0");
+  opt.set_test_fixed64(669669669669669ULL);
+  dump_message_bytes (&opt, "test_optional_fixed64_669669669669669");
+  opt.set_test_fixed64(UINT64_MAX);
+  dump_message_bytes (&opt, "test_optional_fixed64_max");
+}
+
 static void dump_test_optional_float (void)
 {
   TestMessOptional opt;
@@ -424,16 +435,60 @@ static void dump_test_optional_double (void)
   dump_message_bytes (&opt, "test_optional_double_141243");
 }
 
-static void dump_test_optional_fixed64 (void)
+static void dump_test_optional_bool (void)
 {
   TestMessOptional opt;
-  opt.set_test_fixed64(0);
-  dump_message_bytes (&opt, "test_optional_fixed64_0");
-  opt.set_test_fixed64(669669669669669ULL);
-  dump_message_bytes (&opt, "test_optional_fixed64_669669669669669");
-  opt.set_test_fixed64(UINT64_MAX);
-  dump_message_bytes (&opt, "test_optional_fixed64_max");
+  opt.set_test_boolean (false);
+  dump_message_bytes (&opt, "test_optional_bool_0");
+  opt.set_test_boolean (true);
+  dump_message_bytes (&opt, "test_optional_bool_1");
 }
+
+static void dump_test_optional_enum_small (void)
+{
+  TestMessOptional opt;
+  opt.set_test_enum_small (VALUE);
+  dump_message_bytes (&opt, "test_optional_enum_small_0");
+  opt.set_test_enum_small (OTHER_VALUE);
+  dump_message_bytes (&opt, "test_optional_enum_small_1");
+}
+static void dump_test_optional_enum (void)
+{
+  TestMessOptional opt;
+//for a in 0 1 127 128 16383 16384 2097151 2097152 268435455 268435456 ; do
+//echo '    opt.set_test_enum (VALUE'$a');
+//dump_message_bytes (&opt, "test_optional_enum_'$a'");'
+//done
+    opt.set_test_enum (VALUE0);
+    dump_message_bytes (&opt, "test_optional_enum_0");
+    opt.set_test_enum (VALUE1);
+    dump_message_bytes (&opt, "test_optional_enum_1");
+    opt.set_test_enum (VALUE127);
+    dump_message_bytes (&opt, "test_optional_enum_127");
+    opt.set_test_enum (VALUE128);
+    dump_message_bytes (&opt, "test_optional_enum_128");
+    opt.set_test_enum (VALUE16383);
+    dump_message_bytes (&opt, "test_optional_enum_16383");
+    opt.set_test_enum (VALUE16384);
+    dump_message_bytes (&opt, "test_optional_enum_16384");
+    opt.set_test_enum (VALUE2097151);
+    dump_message_bytes (&opt, "test_optional_enum_2097151");
+    opt.set_test_enum (VALUE2097152);
+    dump_message_bytes (&opt, "test_optional_enum_2097152");
+    opt.set_test_enum (VALUE268435455);
+    dump_message_bytes (&opt, "test_optional_enum_268435455");
+    opt.set_test_enum (VALUE268435456);
+    dump_message_bytes (&opt, "test_optional_enum_268435456");
+}
+static void dump_test_optional_string (void)
+{
+  TestMessOptional opt;
+  opt.set_test_string ("");
+  dump_message_bytes (&opt, "test_optional_string_empty");
+  opt.set_test_string ("hello");
+  dump_message_bytes (&opt, "test_optional_string_hello");
+}
+
 int main()
 {
   dump_test_enum_small ();
@@ -469,5 +524,9 @@ int main()
   dump_test_optional_fixed64 ();
   dump_test_optional_float ();
   dump_test_optional_double ();
+  dump_test_optional_bool ();
+  dump_test_optional_enum_small ();
+  dump_test_optional_enum ();
+  dump_test_optional_string ();
   return 0;
 }

@@ -480,6 +480,18 @@ static void test_repeated_SubMess (void)
 #undef DO_TEST
 }
 
+static void test_empty_optional (void)
+{
+  Foo__TestMessOptional mess = FOO__TEST_MESS_OPTIONAL__INIT;
+  size_t len;
+  uint8_t *data;
+  Foo__TestMessOptional *mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (len == 0);
+  free (data);
+  foo__test_mess_optional__free_unpacked (mess2, NULL);
+}
+
+
 #define DO_TEST_OPTIONAL(base_member, value, example_packed_data, equal_func) \
   do{ \
   Foo__TestMessOptional opt = FOO__TEST_MESS_OPTIONAL__INIT; \
@@ -645,6 +657,68 @@ static void test_optional_double (void)
 
 #undef DO_TEST
 }
+static void test_optional_bool (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_boolean, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_bool_0);
+  DO_TEST (1, test_optional_bool_1);
+
+#undef DO_TEST
+}
+static void test_optional_TestEnumSmall (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_enum_small, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_enum_small_0);
+  DO_TEST (1, test_optional_enum_small_1);
+
+#undef DO_TEST
+}
+
+static void test_optional_TestEnum (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL(test_enum, value, example_packed_data, NUMERIC_EQUALS)
+
+  DO_TEST (FOO__TEST_ENUM__VALUE0, test_optional_enum_0);
+  DO_TEST (FOO__TEST_ENUM__VALUE1, test_optional_enum_1);
+  DO_TEST (FOO__TEST_ENUM__VALUE127, test_optional_enum_127);
+  DO_TEST (FOO__TEST_ENUM__VALUE128, test_optional_enum_128);
+  DO_TEST (FOO__TEST_ENUM__VALUE16383, test_optional_enum_16383);
+  DO_TEST (FOO__TEST_ENUM__VALUE16384, test_optional_enum_16384);
+  DO_TEST (FOO__TEST_ENUM__VALUE2097151, test_optional_enum_2097151);
+  DO_TEST (FOO__TEST_ENUM__VALUE2097152, test_optional_enum_2097152);
+  DO_TEST (FOO__TEST_ENUM__VALUE268435455, test_optional_enum_268435455);
+  DO_TEST (FOO__TEST_ENUM__VALUE268435456, test_optional_enum_268435456);
+
+#undef DO_TEST
+}
+
+#define DO_TEST_OPTIONAL__NO_HAS(base_member, value, example_packed_data, equal_func) \
+  do{ \
+  Foo__TestMessOptional opt = FOO__TEST_MESS_OPTIONAL__INIT; \
+  Foo__TestMessOptional *mess; \
+  size_t len; uint8_t *data; \
+  opt.base_member = value; \
+  mess = test_compare_pack_methods (&opt.base, &len, &data); \
+  TEST_VERSUS_STATIC_ARRAY (len, data, example_packed_data); \
+  assert (mess->base_member != NULL); \
+  assert (equal_func (mess->base_member, value)); \
+  foo__test_mess_optional__free_unpacked (mess, NULL); \
+  free (data); \
+  }while(0)
+
+static void test_optional_string (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_OPTIONAL__NO_HAS (test_string, value, example_packed_data, STRING_EQUALS)
+  DO_TEST ("", test_optional_string_empty);
+  DO_TEST ("hello", test_optional_string_hello);
+#undef DO_TEST
+}
 
 /* === simple testing framework === */
 
@@ -679,6 +753,7 @@ static Test tests[] =
   { "test repeated string", test_repeated_string },
   { "test repeated bytes", test_repeated_bytes },
   { "test repeated SubMess", test_repeated_SubMess },
+  { "test empty optional" ,test_empty_optional },
   { "test optional int32", test_optional_int32 },
   { "test optional sint32", test_optional_sint32 },
   { "test optional sfixed32", test_optional_sfixed32 },
@@ -691,10 +766,10 @@ static Test tests[] =
   { "test optional fixed64", test_optional_fixed64 },
   { "test optional float", test_optional_float },
   { "test optional double", test_optional_double },
-  //{ "test optional bool", test_optional_bool },
-  //{ "test optional TestEnumSmall", test_optional_TestEnumSmall },
-  //{ "test optional TestEnum", test_optional_TestEnum },
-  //{ "test optional string", test_optional_string },
+  { "test optional bool", test_optional_bool },
+  { "test optional TestEnumSmall", test_optional_TestEnumSmall },
+  { "test optional TestEnum", test_optional_TestEnum },
+  { "test optional string", test_optional_string },
   //{ "test optional bytes", test_optional_bytes },
   //{ "test optional SubMess", test_optional_SubMess },
   //{ "test required int32", test_required_int32 },
