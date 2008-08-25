@@ -120,16 +120,16 @@ GenerateStructDefinition(io::Printer* printer) {
   }
   printer->Outdent();
 
-  printer->Print(vars, "};\n\n");
+  printer->Print(vars, "};\n");
 
   printer->Print(vars, "#define $ucclassname$__INIT \\\n"
-		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor)");
+		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor) \\\n    ");
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
     printer->Print(", ");
     field_generators_.get(field).GenerateStaticInit(printer);
   }
-  printer->Print(" }\n");
+  printer->Print(" }\n\n\n");
 
 }
 
@@ -180,10 +180,16 @@ void MessageGenerator::GenerateClosureTypedef(io::Printer* printer)
   }
   std::map<string, string> vars;
   vars["name"] = FullNameToC(descriptor_->full_name());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   printer->Print(vars,
-                 "typedef void (*$name$_Closure)\n"
+                 "typedef void (*$name$__ClosureFunc)\n"
 		 "                 (const $name$ *message,\n"
-		 "                  void *closure_data);\n");
+		 "                  void *closure_data);\n"
+		 "ProtobufCClosure *$lcclassname$__closure_new\n"
+		 "                 ($name$__ClosureFunc func,\n"
+		 "                  void *closure_data,\n"
+		 "                  ProtobufCDestroyFunc destroy);\n"
+		 );
 }
 
 static int
@@ -239,6 +245,15 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "{\n"
 		 "  PROTOBUF_C_ASSERT (message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
+		 "}\n"
+		 "ProtobufCClosure *$lcclassname$__closure_new\n"
+		 "                 ($classname$__ClosureFunc func,\n"
+		 "                  void *closure_data,\n"
+		 "                  ProtobufCDestroyFunc destroy)\n"
+		 "{\n"
+		 "  return protobuf_c_closure_new (&$lcclassname$__descriptor,\n"
+		 "                                 (ProtobufCClosureFunc) func,\n"
+		 "                                 closure_data, destroy);\n"
 		 "}\n"
 		);
 }

@@ -71,8 +71,7 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
     printer->Print(vars_,
                    "  void (*$method$)($cname$_Service *service,\n"
                    "         $metpad$  const $input_typename$ *input,\n"
-                   "         $metpad$  $output_typename$_Closure closure,\n"
-                   "         $metpad$  void *closure_data);\n");
+                   "         $metpad$  ProtobufCClosure *closure);\n");
   }
   printer->Print(vars_,
 		 "};\n");
@@ -95,8 +94,7 @@ void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
     printer->Print(vars_,
                    "void $lcfullname$__$method$(ProtobufCService *service,\n"
                    "     $padddddddddddddddddd$ const $input_typename$ *input,\n"
-                   "     $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
-                   "     $padddddddddddddddddd$ void *closure_data);\n");
+                   "     $padddddddddddddddddd$ ProtobufCClosure *closure);\n");
   }
 }
 
@@ -167,17 +165,18 @@ void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
     vars_["metpad"] = ConvertToSpaces(lcname);
     vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
     vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    vars_["lc_output_typename"] = FullNameToLower(method->output_type()->full_name());
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     vars_["index"] = SimpleItoa(i);
      
     printer->Print(vars_,
                    "void $lcfullname$__$method$(ProtobufCService *service,\n"
                    "     $padddddddddddddddddd$ const $input_typename$ *input,\n"
-                   "     $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
-                   "     $padddddddddddddddddd$ void *closure_data)\n"
+                   "     $padddddddddddddddddd$ ProtobufCClosure *closure)\n"
 		   "{\n"
 		   "  PROTOBUF_C_ASSERT (service->descriptor == &$lcfullname$__descriptor);\n"
-		   "  service->invoke(service, $index$, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);\n"
+		   "  PROTOBUF_C_ASSERT (closure->descriptor == &$lc_output_typename$__descriptor);\n"
+		   "  service->invoke(service, $index$, (const ProtobufCMessage *) input, closure);\n"
 		   "}\n");
   }
 }

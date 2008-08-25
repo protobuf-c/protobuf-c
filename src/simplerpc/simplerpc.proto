@@ -1,0 +1,37 @@
+package simplerpc;
+
+message RequestPreamble
+{
+  required uint32 size = 1;
+  required string domain = 2;
+  required uint64 request_id = 3;
+}
+
+message ResponsePreamble
+{
+  required uint32 size = 1;
+  required uint64 request_id = 2;
+}
+
+// builtin services (domain=simplerpc.builtin)
+message DomainListRequest
+{
+  required bool get_service_defs = 1;
+}
+
+message DomainInfo
+{
+  required string domain = 1;
+  optional string service = 2;
+  optional bytes service_defs = 3;
+}
+
+message DomainListResponse
+{
+  repeated DomainInfo info = 1;
+}
+
+service Builtin
+{
+  rpc ListDomains(DomainListRequest) returns (DomainListResponse);
+}

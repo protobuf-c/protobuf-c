@@ -173,6 +173,23 @@ void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
 typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
 typedef struct _ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
 
+typedef struct _ProtobufCError ProtobufCError;
+struct _ProtobufCError
+{
+  const char *domain;           /* must be static string */
+  unsigned code;
+  char *message;
+};
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 4)
+#define PROTOBUF_C_PRINTF_ATTR( format_idx, arg_idx )    \
+  __attribute__((__format__ (__printf__, format_idx, arg_idx)))
+#endif
+ProtobufCError *protobuf_c_error_new (const char *domain,
+                                      unsigned    code,
+                                      const char *message_format,
+                                      ...) PROTOBUF_C_PRINTF_ATTR(3,4);
+
+
 struct _ProtobufCMethodDescriptor
 {
   const char *name;
@@ -192,16 +209,45 @@ struct _ProtobufCServiceDescriptor
 };
 
 typedef struct _ProtobufCService ProtobufCService;
-typedef void (*ProtobufCClosure)(const ProtobufCMessage *message,
-                                 void                   *closure_data);
+typedef void (*ProtobufCClosureFunc)     (const ProtobufCMessage *message,
+                                          void                   *closure_data);
+typedef void (*ProtobufCClosureErrorFunc)(const ProtobufCError   *error,
+                                          void                   *closure_data);
+typedef void (*ProtobufCDestroyFunc)     (void                   *closure_data);
+
+typedef struct _ProtobufCClosure ProtobufCClosure;
+struct _ProtobufCClosure
+{
+  const ProtobufCMessageDescriptor *descriptor;
+  ProtobufCClosureFunc handle_message;
+  ProtobufCClosureErrorFunc handle_error;
+  void *closure_data;
+  ProtobufCDestroyFunc destroy_data;
+};
+
+ProtobufCClosure *protobuf_c_closure_new (const ProtobufCMessageDescriptor *,
+                                          ProtobufCClosureFunc    func,
+                                          void                   *closure_data,
+                                          ProtobufCDestroyFunc    destroy);
+void              protobuf_c_closure_set_error_handler
+                                         (ProtobufCClosure       *closure,
+                                          ProtobufCClosureErrorFunc func);
+#define protobuf_c_closure_set_error_handler(closure, func) \
+  do { ((closure)->handle_error) = (func); } while(0)
+
+/* these functions destroy the closure */
+void              protobuf_c_closure_run (ProtobufCClosure       *closure,
+                                          const ProtobufCMessage *message);
+void              protobuf_c_closure_error(ProtobufCClosure      *closure,
+                                          const ProtobufCError   *error);
+
 struct _ProtobufCService
 {
   const ProtobufCServiceDescriptor *descriptor;
   void (*invoke)(ProtobufCService *service,
                  unsigned          method_index,
                  const ProtobufCMessage *input,
-                 ProtobufCClosure  closure,
-                 void             *closure_data);
+                 ProtobufCClosure *closure);
   void (*destroy) (ProtobufCService *service);
 };
 

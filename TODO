@@ -1,15 +1,16 @@
-- check over documentation again
-- make services derive from ProtobufCService; be usable with a cast.
 - provide example rpc
+- at least include extensions in Descriptor
 
-- To document:
+- Documentations:
   - __INIT macro
+  - service __init function
+  - get rid of docs for create-service; update generally
+  - check over documentation again
 
 - support Group (whatever it is)
 - almost no code generator options are obeyed
 - ISSUE: strings may not contain NULs
 - generate Init functions / handle default values
-- at least include extensions in Descriptor
 - proper support for extensions (not sure i get what's needed)
 
 - get rid of kThick/ThinSeparator if we decide not to use them

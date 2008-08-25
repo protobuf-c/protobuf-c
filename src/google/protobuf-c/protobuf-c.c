@@ -1534,14 +1534,12 @@ struct _ServiceMachgen
 typedef void (*DestroyHandler)(void *service);
 typedef void (*GenericHandler)(void *service,
                                const ProtobufCMessage *input,
-                               ProtobufCClosure  closure,
-                               void             *closure_data);
+                               ProtobufCClosure *closure);
 static void 
 service_machgen_invoke(ProtobufCService *service,
                        unsigned          method_index,
                        const ProtobufCMessage *input,
-                       ProtobufCClosure  closure,
-                       void             *closure_data)
+                       ProtobufCClosure *closure)
 {
   GenericHandler *handlers;
   GenericHandler handler;
@@ -1549,7 +1547,7 @@ service_machgen_invoke(ProtobufCService *service,
   PROTOBUF_C_ASSERT (method_index < service->descriptor->n_methods);
   handlers = (GenericHandler *) machgen->service;
   handler = handlers[method_index];
-  (*handler) (machgen->service, input, closure, closure_data);
+  (*handler) (machgen->service, input, closure);
 }
 
 void
@@ -1563,6 +1561,55 @@ protobuf_c_service_generated_init (ProtobufCService *service,
   service->invoke = service_machgen_invoke;
   memset (service + 1, 0, descriptor->n_methods * sizeof (GenericHandler));
 }
+
+ProtobufCClosure *
+protobuf_c_closure_new (const ProtobufCMessageDescriptor *descriptor,
+                        ProtobufCClosureFunc    func,
+                        void                   *closure_data,
+                        ProtobufCDestroyFunc    destroy)
+{
+  ProtobufCClosure *rv;
+  rv = protobuf_c_default_allocator.alloc (&protobuf_c_default_allocator,
+                                           sizeof (ProtobufCClosure));
+  rv->descriptor = descriptor;
+  rv->handle_message = func;
+  rv->handle_error = NULL;
+  rv->closure_data = closure_data;
+  rv->destroy_data = destroy;
+  return rv;
+}
+#undef protobuf_c_closure_set_error_handler
+void
+protobuf_c_closure_set_error_handler (ProtobufCClosure       *closure,
+                                      ProtobufCClosureErrorFunc func)
+{
+  closure->handle_error = func;
+}
+
+static inline void free_closure (ProtobufCClosure *closure)
+{
+  if (closure->destroy_data)
+    closure->destroy_data (closure->closure_data);
+  protobuf_c_default_allocator.free (&protobuf_c_default_allocator, closure);
+}
+
+void              protobuf_c_closure_run (ProtobufCClosure       *closure,
+                                          const ProtobufCMessage *message)
+{
+  PROTOBUF_C_ASSERT (closure->descriptor == message->descriptor);
+  closure->handle_message (message, closure->closure_data);
+  free_closure (closure);
+}
+
+void
+protobuf_c_closure_error   (ProtobufCClosure      *closure,
+                            const ProtobufCError   *error)
+{
+  if (closure->handle_error != NULL)
+    closure->handle_error (error, closure->closure_data);
+  free_closure (closure);
+}
+
 
 void protobuf_c_service_destroy (ProtobufCService *service)
 {

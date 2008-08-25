@@ -1,4 +1,7 @@
 #include <gsk/gsk.h>
+#include "generated/simplerpc.pb-c.h"
+
+/* === server === */
 
 struct _SimplerpcServerStream
 {
@@ -7,20 +10,24 @@ struct _SimplerpcServerStream
   GskBuffer incoming, outgoing;
 };
 
-struct _SimplerpcServer
+struct _SimplerpcContext
 {
-  GskStreamListener *listener;
   GHashTable *domain_to_service;
   guint ref_count;
 };
 
+struct _SimplerpcServer
+{
+  GskStreamListener *listener;
+  SimplerpcContext *context;
+};
 
 static SimplerpcServer *
-simplerpc_server_from_listener (GskStreamListener *listener)
+simplerpc_server_from_listener (GskStreamListener *listener,
+                                SimplerpcContext  *context)
 {
   SimplerpcServer *rv = g_slice_new (SimplerpcServer);
   rv->listener = listener;
-  rv->ref_count = 1;
   rv->domain_to_service = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                  g_free,
                                                  protobuf_c_server_destroy);
@@ -30,9 +37,10 @@ simplerpc_server_from_listener (GskStreamListener *listener)
 }
 
 SimplerpcServer *
-simplerpc_bind_ipv4   (int              tcp_port,
-                       SimplerpcBindIpv4Flags flags,
-                       ProtobufCError **error)
+simplerpc_server_bind_ipv4   (int              tcp_port,
+                              SimplerpcBindIpv4Flags flags,
+                              SimplerpcContext *context,
+                              ProtobufCError **error)
 {
   GskStreamListener *listener;
   GskSocketAddress *addr;
@@ -46,33 +54,111 @@ simplerpc_bind_ipv4   (int              tcp_port,
       set_protobuf_c_error_from_gerror (error, ge);
       return NULL;
     }
-  return simplerpc_server_from_listener (listener);
+  return simplerpc_server_from_listener (listener, context);
 }
 
 SimplerpcServer *
-simplerpc_bind_local  (const char      *path,
-                       ProtobufCError **error)
+simplerpc_server_bind_local  (const char      *path,
+                              SimplerpcContext *context,
+                              ProtobufCError **error)
+{
+  GskStreamListener *listener;
+  GskSocketAddress *addr;
+  addr = gsk_socket_address_new_local (path);
+  listener = gsk_stream_listener_socket_new_bind (addr, &ge);
+  if (listener == NULL)
+    {
+      set_protobuf_c_error_from_gerror (error, ge);
+      return NULL;
+    }
+  return simplerpc_server_from_listener (listener, context);
+}
+
+
+typedef struct _BuiltinService BuiltinService;
+struct _BuiltinService
+{
+  Simplerpc__Builtin_Service base;
+  SimplerpcContext *context;
+};
+
+static void
+builtin_service_list_domains (Simplerpc__Builtin_Service *service,
+                              const Simplerpc__DomainListRequest *input,
+                              ProtobufCClosure *closure)
 {
   ...
-  return simplerpc_server_from_listener (listener);
 }
+
+static void
+builtin_service_destroy (Simplerpc__Builtin_Service *ser)
+{
+  BuiltinService *bs = (BuiltinService *) ser;
+  g_slice_free (BuiltinService, bs);
+}
+
+SimplerpcContext *
+simplerpc_context_new (void)
+{
+  SimplerpcContext *context = g_slice_new (SimplerpcContext);
+  BuiltinService *service;
+  context->domain_to_service
+    = g_hash_table_new_full (g_str_hash, g_str_equal,
+                             g_free,
+                             (GDestroyNotify) protobuf_c_server_destroy);
+  context->ref_count = 1;
+  
+  service = g_slice_new (BuiltinService);
+  simplerpc__builtin__init (&service->base);
+  service->base.list_domains = builtin_service_list_domains;
+  service->base.base.destroy = builtin_service_free;
+  service->context = context;
+  simplerpc_context_add_service (context, "simplerpc.builtin",
+                                 (ProtobufCService *) service);
+  return context;
+}
+
+
 void
-simplerpc_add_service (SimplerpcServer *server,
-                       const char      *domain,
-                       ProtobufCService *service)
+simplerpc_context_add_service (SimplerpcContext *context,
+                               const char      *domain,
+                               ProtobufCService *service)
 {
-  ...
+  g_hash_table_insert (context, g_strdup (domain), service);
 }
+
 void
 simplerpc_server_destroy (SimplerpcServer *server)
 {
   ...
 }
 
+/* === client === */
+typedef struct _SimplerpcClientRequest SimplerpcClientRequest;
+typedef struct _SimplerpcClient SimplerpcClient;
 
+struct _SimplerpcClientRequest
+{
+  guint64 request_id;
+  gsize request_len;
+  guint8 *request_data;
+  ProtobufCClosure *closure;
+  SimplerpcClientRequest *prev, *next;
+};
+
+struct _SimplerpcClient
+{
+  GskStream *transport;
+  GskBuffer incoming;
+  GskBuffer outgoing;
+  GHashTable *request_id_to_request;
+
+  guint ref_count;
+  SimplerpcClientRequest *first, *last;
+};
 
 SimplerpcClient  *
-simplerpc_client_new_ipv4 (const uint8_t   *ip_addr,
+simplerpc_client_new_ipv4 (const char      *hostname,
                            uint16_t         port,
                            ProtobufCError **error)
 {

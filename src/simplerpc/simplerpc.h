@@ -3,14 +3,19 @@
 
 #include <google/protobuf-c/protobuf.h>
 
-SimplerpcServer * simplerpc_bind_ipv4   (int              tcp_port,
-                                         SimplerpcBindIpv4Flags flags,
-                                         ProtobufCError **error);
-SimplerpcServer * simplerpc_bind_local  (const char      *path,
-                                         ProtobufCError **error);
-void              simplerpc_add_service (SimplerpcServer *server,
+SimplerpcContext *simplerpc_context_new (void);
+void              simplerpc_context_add_service
+                                        (SimplerpcServer *server,
                                          const char      *domain,
                                          ProtobufCService *service);
+
+SimplerpcServer * simplerpc_bind_ipv4   (int              tcp_port,
+                                         SimplerpcBindIpv4Flags flags,
+                                         SimplerpcContext *context,
+                                         ProtobufCError **error);
+SimplerpcServer * simplerpc_bind_local  (const char      *path,
+                                         SimplerpcContext *context,
+                                         ProtobufCError **error);
 void              simplerpc_server_destroy (SimplerpcServer *server);
 
 
