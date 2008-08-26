@@ -180,16 +180,10 @@ void MessageGenerator::GenerateClosureTypedef(io::Printer* printer)
   }
   std::map<string, string> vars;
   vars["name"] = FullNameToC(descriptor_->full_name());
-  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   printer->Print(vars,
-                 "typedef void (*$name$__ClosureFunc)\n"
+                 "typedef void (*$name$_Closure)\n"
 		 "                 (const $name$ *message,\n"
-		 "                  void *closure_data);\n"
-		 "ProtobufCClosure *$lcclassname$__closure_new\n"
-		 "                 ($name$__ClosureFunc func,\n"
-		 "                  void *closure_data,\n"
-		 "                  ProtobufCDestroyFunc destroy);\n"
-		 );
+		 "                  void *closure_data);\n");
 }
 
 static int
@@ -245,15 +239,6 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "{\n"
 		 "  PROTOBUF_C_ASSERT (message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
-		 "}\n"
-		 "ProtobufCClosure *$lcclassname$__closure_new\n"
-		 "                 ($classname$__ClosureFunc func,\n"
-		 "                  void *closure_data,\n"
-		 "                  ProtobufCDestroyFunc destroy)\n"
-		 "{\n"
-		 "  return protobuf_c_closure_new (&$lcclassname$__descriptor,\n"
-		 "                                 (ProtobufCClosureFunc) func,\n"
-		 "                                 closure_data, destroy);\n"
 		 "}\n"
 		);
 }

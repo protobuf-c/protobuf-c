@@ -1,7 +1,7 @@
 SUBDIRS = . test
 bin_PROGRAMS = protoc-c
 lib_LTLIBRARIES = libprotobuf-c.la
-protobufcincludedir = $(includedir)/google/protobufc
+protobufcincludedir = $(includedir)/google/protobuf-c
 protoc_c_SOURCES = \
 google/protobuf/compiler/c/c_service.cc \
 google/protobuf/compiler/c/c_helpers.cc \
