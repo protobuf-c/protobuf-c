@@ -1,21 +1,75 @@
+----------------------
+--- IMPORTANT TODO ---
+----------------------
 - provide example rpc
 - at least include extensions in Descriptor
-- test code:
+- implement default values for most primitive types,
+  but not strings, bytes, or messages.
+
+--------------------
+--- NEEDED TESTS ---
+--------------------
+- test:
   - service method lookups
   - out-of-order fields in messages (ie if the number isn't ascending)
   - gaps in numbers: check that the number of ranges is correct
+  - default values
 
-- Documentations:
-  - __INIT macro
-  - service __init function
-  - get rid of docs for create-service; update generally
+---------------------
+--- DOCUMENTATION ---
+---------------------
+Document:
+  - __INIT macro; explain current lifetime policy
+  - services
+  - default value handling
+    - note that the plan is to set the value to the default 
+      for optional types, but NOT set has_* to TRUE.
+      That way, code can just ignore the has,
+      but we won't superfluously serialize the default value.
+      (Move this to the docs)
+      Also, for now, we won't init default values that require allocation.
+    - add to CAVEATS: defaults for messages, strings, bytes not initialized
+      by INIT macro.  Rationale:  would interfere with other allocator
+      systems... not clear if that's true.
   - check over documentation again
 
+--------------------------
+--- LOW PRIORITY STUFF ---
+--------------------------
 - support Group (whatever it is)
 - almost no code generator options are obeyed
-- ISSUE: strings may not contain NULs
 - generate Init functions / handle default values
 - proper support for extensions (not sure i get what's needed)
 
+------------------------------------
+--- EXTREMELY LOW PRIORITY STUFF ---
+------------------------------------
 - get rid of kThick/ThinSeparator if we decide not to use them
 - stop using qsort in the code generator:  find some c++ish way to do it
+
+----------------------------------------------
+--- ISSUES WE ARE PROBABLY GOING TO IGNORE ---
+----------------------------------------------
+- strings may not contain NULs
+
+-------------------------
+--- IDEAS TO CONSIDER ---
+-------------------------
+
+- lifetime functions for messages:
+   MESSAGE__INIT macro:
+       for static messages, doesn't handle defaults requiring allocation.
+   message__init_allocated_defaults (...)
+       for static messages, only touches default values that must
+       be allocated.
+   message__init(...)
+       initializes all defaults -- does allocations for strings etc
+   message__new()
+       return a new message using an allocator with standard allocation policy
+   message__unpack_onto(...)
+       unpack onto an initialized message
+   message__clear(...)
+       clears all allocations, does not free the message itself
+   message__free(...)
+       free the message.
+  [yeah, right: after typing it out, i see it's way too complicated]
