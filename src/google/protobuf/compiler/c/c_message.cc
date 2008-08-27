@@ -280,6 +280,21 @@ GenerateMessageDescriptor(io::Printer* printer) {
   printer->Print(vars,
     "};\n");
 
+  NameIndex *field_indices = new NameIndex [descriptor_->field_count()];
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    field_indices[i].name = sorted_fields[i]->name().c_str();
+    field_indices[i].index = i;
+  }
+  qsort (field_indices, descriptor_->field_count(), sizeof (NameIndex),
+         compare_name_indices_by_name);
+  printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    vars["index"] = SimpleItoa(field_indices[i].index);
+    vars["name"] = field_indices[i].name;
+    printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
+  }
+  printer->Print("};\n");
+
   // create range initializers
   int *values = new int[descriptor_->field_count()];
   for (int i = 0; i < descriptor_->field_count(); i++) {
@@ -303,6 +318,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
     "  sizeof($classname$),\n"
     "  $n_fields$,\n"
     "  $lcclassname$__field_descriptors,\n"
+    "  $lcclassname$__field_indices_by_name,\n"
     "  $n_ranges$,"
     "  $lcclassname$__number_ranges\n"
     "};\n");

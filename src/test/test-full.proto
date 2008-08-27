@@ -19,7 +19,17 @@ enum TestEnum {
   VALUE2097152 = 2097152;
   VALUE268435455 = 268435455;
   VALUE268435456 = 268435456;
-};
+}
+enum TestEnumDupValues {
+  VALUE_A = 42;
+  VALUE_B = 42;
+  VALUE_C = 42;
+  VALUE_D = 666;
+  VALUE_E = 666;
+  VALUE_F = 1000;
+  VALUE_AA = 1000;
+  VALUE_BB = 1001;
+}
 
 message TestFieldNo15 {			// should use 1 byte header
   required string test = 15;

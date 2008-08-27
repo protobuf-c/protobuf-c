@@ -7,6 +7,12 @@ void protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,
 
 /* === stuff which needs to be declared for use in the generated code === */
 
+struct _ProtobufCEnumValueIndex
+{
+  const char *name;
+  unsigned index;               /* into values[] array */
+};
+
 /* IntRange: helper structure for optimizing
      int => index lookups
    in the case where the keys are mostly consecutive values,

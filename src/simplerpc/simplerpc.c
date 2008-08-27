@@ -85,8 +85,10 @@ struct _BuiltinService
 static void
 builtin_service_list_domains (Simplerpc__Builtin_Service *service,
                               const Simplerpc__DomainListRequest *input,
-                              ProtobufCClosure *closure)
+                              Simplerpc__DomainListResponse__ClosureFunc closure,
+                              void *closure_data)
 {
+  Simplerpc__DomainList dl = SIMPLERPC__DOMAIN_INFO__INIT;
   ...
 }
 

@@ -152,6 +152,13 @@ string ConvertToSpaces(const string &input) {
   return string(input.size(), ' ');
 }
 
+int compare_name_indices_by_name(const void *a, const void *b)
+{
+  const NameIndex *ni_a = (const NameIndex *) a;
+  const NameIndex *ni_b = (const NameIndex *) b;
+  return strcmp (ni_a->name, ni_b->name);
+}
+
 
 string CEscape(const string& src);
 
@@ -273,7 +280,7 @@ WriteIntRanges(io::Printer* printer, int n_values, const int *values, const stri
         n_ranges++;
     }
     vars["n_ranges"] = SimpleItoa(n_ranges);
-    printer->Print(vars, "static ProtobufCIntRange $name$[$n_ranges$ + 1] =\n"
+    printer->Print(vars, "static const ProtobufCIntRange $name$[$n_ranges$ + 1] =\n"
                          "{\n");
     int last_range_start = 0;
     for (int i = 1; i < n_values; i++) {

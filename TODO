@@ -1,5 +1,9 @@
 - provide example rpc
 - at least include extensions in Descriptor
+- test code:
+  - service method lookups
+  - out-of-order fields in messages (ie if the number isn't ascending)
+  - gaps in numbers: check that the number of ranges is correct
 
 - Documentations:
   - __INIT macro

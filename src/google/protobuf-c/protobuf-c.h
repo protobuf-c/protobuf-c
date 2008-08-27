@@ -84,6 +84,7 @@ struct _ProtobufCBuffer
 };
 /* --- enums --- */
 typedef struct _ProtobufCEnumValue ProtobufCEnumValue;
+typedef struct _ProtobufCEnumValueIndex ProtobufCEnumValueIndex;
 typedef struct _ProtobufCEnumDescriptor ProtobufCEnumDescriptor;
 
 struct _ProtobufCEnumValue
@@ -108,7 +109,11 @@ struct _ProtobufCEnumDescriptor
 
   /* sorted by name */
   unsigned n_value_names;
-  const ProtobufCEnumValue *values_by_name;
+  const ProtobufCEnumValueIndex *values_by_name;
+
+  /* value-ranges, for faster lookups by number */
+  unsigned n_value_ranges;
+  const ProtobufCIntRange *value_ranges;
 };
 
 /* --- messages --- */
@@ -138,11 +143,13 @@ struct _ProtobufCMessageDescriptor
   /* sorted by field-id */
   unsigned n_fields;
   const ProtobufCFieldDescriptor *fields;
+  const unsigned *fields_sorted_by_name;
 
   /* ranges, optimization for looking up fields */
   unsigned n_field_ranges;
   const ProtobufCIntRange *field_ranges;
 };
+
 
 typedef struct _ProtobufCMessage ProtobufCMessage;
 typedef struct _ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
@@ -209,6 +216,27 @@ struct _ProtobufCService
 void protobuf_c_service_destroy (ProtobufCService *);
 
 
+/* --- querying the descriptors --- */
+const ProtobufCEnumValue *
+protobuf_c_enum_descriptor_get_value_by_name 
+                         (const ProtobufCEnumDescriptor    *desc,
+                          const char                       *name);
+const ProtobufCEnumValue *
+protobuf_c_enum_descriptor_get_value        
+                         (const ProtobufCEnumDescriptor    *desc,
+                          int                               value);
+const ProtobufCFieldDescriptor *
+protobuf_c_message_descriptor_get_field_by_name
+                         (const ProtobufCMessageDescriptor *desc,
+                          const char                       *name);
+const ProtobufCFieldDescriptor *
+protobuf_c_message_descriptor_get_field        
+                         (const ProtobufCMessageDescriptor *desc,
+                          unsigned                          value);
+const ProtobufCMethodDescriptor *
+protobuf_c_service_descriptor_get_method_by_name
+                         (const ProtobufCServiceDescriptor *desc,
+                          const char                       *name);
 
 /* --- wire format enums --- */
 typedef enum

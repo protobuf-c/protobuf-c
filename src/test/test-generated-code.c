@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int main(int argc, char **argv)
+int main()
 {
   Foo__Person person = FOO__PERSON__INIT;
   Foo__Person *person2;

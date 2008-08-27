@@ -1568,3 +1568,114 @@ void protobuf_c_service_destroy (ProtobufCService *service)
 {
   service->destroy (service);
 }
+
+/* --- querying the descriptors --- */
+const ProtobufCEnumValue *
+protobuf_c_enum_descriptor_get_value_by_name 
+                         (const ProtobufCEnumDescriptor    *desc,
+                          const char                       *name)
+{
+  unsigned start = 0, count = desc->n_value_names;
+  while (count > 1)
+    {
+      unsigned mid = start + count / 2;
+      int rv = strcmp (desc->values_by_name[mid].name, name);
+      if (rv == 0)
+        return desc->values + desc->values_by_name[mid].index;
+      else if (rv < 0)
+        {
+          count = start + count - (mid - 1);
+          start = mid + 1;
+        }
+      else
+        count = mid - start;
+    }
+  if (count == 0)
+    return NULL;
+  if (strcmp (desc->values_by_name[start].name, name) == 0)
+    return desc->values + desc->values_by_name[start].index;
+  return NULL;
+}
+const ProtobufCEnumValue *
+protobuf_c_enum_descriptor_get_value        
+                         (const ProtobufCEnumDescriptor    *desc,
+                          int                               value)
+{
+  int rv = int_range_lookup (desc->n_value_ranges, desc->value_ranges, value);
+  if (rv < 0)
+    return NULL;
+  return desc->values + rv;
+}
+
+const ProtobufCFieldDescriptor *
+protobuf_c_message_descriptor_get_field_by_name
+                         (const ProtobufCMessageDescriptor *desc,
+                          const char                       *name)
+{
+  unsigned start = 0, count = desc->n_fields;
+  const ProtobufCFieldDescriptor *field;
+  while (count > 1)
+    {
+      unsigned mid = start + count / 2;
+      int rv;
+      field = desc->fields + desc->fields_sorted_by_name[mid];
+      rv = strcmp (field->name, name);
+      if (rv == 0)
+        return field;
+      else if (rv < 0)
+        {
+          count = start + count - (mid + 1);
+          start = mid + 1;
+        }
+      else
+        count = mid - start;
+    }
+  if (count == 0)
+    return NULL;
+  field = desc->fields + desc->fields_sorted_by_name[start];
+  if (strcmp (field->name, name) == 0)
+    return field;
+  return NULL;
+}
+
+const ProtobufCFieldDescriptor *
+protobuf_c_message_descriptor_get_field        
+                         (const ProtobufCMessageDescriptor *desc,
+                          unsigned                          value)
+{
+  int rv = int_range_lookup (desc->n_field_ranges,
+                             desc->field_ranges,
+                             value);
+  if (rv < 0)
+    return NULL;
+  return desc->fields + rv;
+}
+
+const ProtobufCMethodDescriptor *
+protobuf_c_service_descriptor_get_method_by_name
+                         (const ProtobufCServiceDescriptor *desc,
+                          const char                       *name)
+{
+  unsigned start = 0, count = desc->n_methods;
+  while (count > 1)
+    {
+      unsigned mid = start + count / 2;
+      int rv = strcmp (desc->methods[mid].name, name);
+      if (rv == 0)
+        return desc->methods + mid;
+      if (rv < 0)
+        {
+          count = start + count - (mid - 1);
+          start = mid + 1;
+        }
+      else
+        {
+          count = mid - start;
+        }
+    }
+  if (count == 0)
+    return NULL;
+  if (strcmp (desc->methods[start].name, name) == 0)
+    return desc->methods + start;
+  return NULL;
+}

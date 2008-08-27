@@ -122,6 +122,13 @@ string GetLabelName(FieldDescriptor::Label label);
 // returns the number of ranges there are to bsearch.
 unsigned WriteIntRanges(io::Printer* printer, int n_values, const int *values, const string &name);
 
+struct NameIndex
+{
+  unsigned index;
+  const char *name;
+};
+int compare_name_indices_by_name(const void*, const void*);
+
 }  // namespace c
 }  // namespace compiler
 }  // namespace protobuf

@@ -1030,6 +1030,81 @@ static void test_unknown_fields (void)
   foo__empty_mess__free_unpacked (mess2, NULL);
 }
 
+static void
+test_enum_descriptor (const ProtobufCEnumDescriptor *desc)
+{
+  unsigned i;
+  for (i = 0; i < desc->n_values; i++)
+    {
+      const ProtobufCEnumValue *sv = desc->values + i;
+      const ProtobufCEnumValue *vv;
+      const ProtobufCEnumValue *vn;
+      vv = protobuf_c_enum_descriptor_get_value (desc, sv->value);
+      vn = protobuf_c_enum_descriptor_get_value_by_name (desc, sv->name);
+      assert (sv == vv);
+      assert (sv == vn);
+    }
+  for (i = 0; i < desc->n_value_names; i++)
+    {
+      const char *name = desc->values_by_name[i].name;
+      const ProtobufCEnumValue *v;
+      v = protobuf_c_enum_descriptor_get_value_by_name (desc, name);
+      assert (v != NULL);
+    }
+}
+static void
+test_enum_by_name (const ProtobufCEnumDescriptor *desc,
+                   const char *name,
+                   int expected_value)
+{
+  const ProtobufCEnumValue *v;
+  v = protobuf_c_enum_descriptor_get_value_by_name (desc, name);
+  assert (v != NULL);
+  assert (v->value == expected_value);
+}
+
+static void
+test_enum_lookups (void)
+{
+  test_enum_descriptor (&foo__test_enum__descriptor);
+  test_enum_descriptor (&foo__test_enum_small__descriptor);
+  test_enum_descriptor (&foo__test_enum_dup_values__descriptor);
+#define TEST_ENUM_DUP_VALUES(str, shortname) \
+  test_enum_by_name (&foo__test_enum_dup_values__descriptor,  \
+                     str, FOO__TEST_ENUM_DUP_VALUES__##shortname)
+  TEST_ENUM_DUP_VALUES ("VALUE_A", VALUE_A);
+  TEST_ENUM_DUP_VALUES ("VALUE_B", VALUE_B);
+  TEST_ENUM_DUP_VALUES ("VALUE_C", VALUE_C);
+  TEST_ENUM_DUP_VALUES ("VALUE_D", VALUE_D);
+  TEST_ENUM_DUP_VALUES ("VALUE_E", VALUE_E);
+  TEST_ENUM_DUP_VALUES ("VALUE_F", VALUE_F);
+  TEST_ENUM_DUP_VALUES ("VALUE_AA", VALUE_AA);
+  TEST_ENUM_DUP_VALUES ("VALUE_BB", VALUE_BB);
+#undef TEST_ENUM_DUP_VALUES
+}
+
+static void
+test_message_descriptor (const ProtobufCMessageDescriptor *desc)
+{
+  unsigned i;
+  for (i = 0; i < desc->n_fields; i++)
+    {
+      const ProtobufCFieldDescriptor *f = desc->fields + i;
+      const ProtobufCFieldDescriptor *fv;
+      const ProtobufCFieldDescriptor *fn;
+      fv = protobuf_c_message_descriptor_get_field (desc, f->id);
+      fn = protobuf_c_message_descriptor_get_field_by_name (desc, f->name);
+      assert (f == fv);
+      assert (f == fn);
+    }
+}
+static void
+test_message_lookups (void)
+{
+  test_message_descriptor (&foo__test_mess__descriptor);
+  test_message_descriptor (&foo__test_mess_optional__descriptor);
+  test_message_descriptor (&foo__test_mess_required_enum__descriptor);
+}
 
 /* === simple testing framework === */
 
@@ -1105,7 +1180,10 @@ static Test tests[] =
   { "test repeated bytes", test_repeated_bytes },
   { "test repeated SubMess", test_repeated_SubMess },
 
-  { "test unknown fields", test_unknown_fields }
+  { "test unknown fields", test_unknown_fields },
+
+  { "test enum lookups", test_enum_lookups },
+  { "test message lookups", test_message_lookups },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
