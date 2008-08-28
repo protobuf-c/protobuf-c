@@ -61,13 +61,13 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
     "  PROTOBUF_C_TYPE_$TYPE$,\n");
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
-      printer->Print(variables, "  0,   // quantifier_offset\n");
+      printer->Print(variables, "  0,   /* quantifier_offset */\n");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
       if (optional_uses_has) {
 	printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, has_$name$),\n");
       } else {
-	printer->Print(variables, "  0,   // quantifier_offset\n");
+	printer->Print(variables, "  0,   /* quantifier_offset */\n");
       }
       break;
     case FieldDescriptor::LABEL_REPEATED:

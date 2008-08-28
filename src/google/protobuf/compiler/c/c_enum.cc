@@ -52,12 +52,15 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   const EnumValueDescriptor* max_value = descriptor_->value(0);
 
 
+  vars["opt_comma"] = ",";
   for (int i = 0; i < descriptor_->value_count(); i++) {
     vars["name"] = descriptor_->value(i)->name();
     vars["number"] = SimpleItoa(descriptor_->value(i)->number());
     vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
+    if (i + 1 == descriptor_->value_count())
+      vars["opt_comma"] = "";
 
-    printer->Print(vars, "$prefix$$name$ = $number$,\n");
+    printer->Print(vars, "$prefix$$name$ = $number$$opt_comma$\n");
 
     if (descriptor_->value(i)->number() < min_value->number()) {
       min_value = descriptor_->value(i);
