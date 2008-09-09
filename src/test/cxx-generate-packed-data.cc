@@ -755,8 +755,8 @@ static void dump_test_repeated_SubMess (void)
 static void dump_test_unknown_fields (void)
 {
   EmptyMess mess;
-  google::protobuf::Message::Reflection *reflection = mess.GetReflection();
-  google::protobuf::UnknownFieldSet *fs = reflection->MutableUnknownFields();
+  const google::protobuf::Message::Reflection *reflection = mess.GetReflection();
+  google::protobuf::UnknownFieldSet *fs = reflection->MutableUnknownFields(&mess);
   google::protobuf::UnknownField *f;
   f = fs->AddField(5454);
   f->add_varint(255);

@@ -3,8 +3,14 @@
 ----------------------
 - provide example rpc
 - at least include extensions in Descriptor
+- proper support for extensions
+  - slot for ranges in descriptor
+  - parent in descriptor
+  - "extends" is implemented as c-style derivation
+  - cast macros?
 - implement default values for most primitive types,
   but not strings, bytes, or messages.
+- ensure enums are int-size
 
 --------------------
 --- NEEDED TESTS ---
@@ -19,7 +25,6 @@
 --- DOCUMENTATION ---
 ---------------------
 Document:
-  - __INIT macro; explain current lifetime policy
   - services
   - default value handling
     - note that the plan is to set the value to the default 
@@ -39,7 +44,6 @@ Document:
 - support Group (whatever it is)
 - almost no code generator options are obeyed
 - generate Init functions / handle default values
-- proper support for extensions (not sure i get what's needed)
 
 ------------------------------------
 --- EXTREMELY LOW PRIORITY STUFF ---

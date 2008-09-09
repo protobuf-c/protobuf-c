@@ -21,9 +21,9 @@ generated-code/test.pb-c.c generated-code/test.pb-c.h: ../protoc-c $(srcdir)/tes
 generated-code/test-full.pb-c.c generated-code/test-full.pb-c.h: ../protoc-c $(srcdir)/test-full.proto
 	mkdir -p generated-code
 	../protoc-c -I$(srcdir) --c_out=generated-code $(srcdir)/test-full.proto
-generated-code/test-full.pb.cc generated-code/test-full.pb.h: $(srcdir)/test-full.proto
+generated-code/test-full.pb.cc generated-code/test-full.pb.h: $(srcdir)/test-full.proto @PROTOC@
 	mkdir -p generated-code
-	protoc -I$(srcdir) --cpp_out=generated-code $(srcdir)/test-full.proto
+	@PROTOC@ -I$(srcdir) --cpp_out=generated-code $(srcdir)/test-full.proto
 generated-code/test-full-cxx-output.inc: cxx-generate-packed-data
 	./cxx-generate-packed-data > generated-code/test-full-cxx-output.inc
 
