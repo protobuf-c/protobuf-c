@@ -1,21 +1,38 @@
+/* --- protobuf-c.c: public protobuf c runtime implementation --- */
+
+/*
+ * Copyright 2008, Dave Benson.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License
+ * at http://www.apache.org/licenses/LICENSE-2.0 Unless
+ * required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
-#include <endian.h>
+#include <endian.h>                     /* for __BYTE_ORDER, __LITTLE_ENDIAN */
 
 #define DO_LITTLE_ENDIAN_OPTIMIZATIONS   0
 #define PRINT_UNPACK_ERRORS              1
 
 #if DO_LITTLE_ENDIAN_OPTIMIZATIONS
-# if (__LITTLE_ENDIAN == __uint8_t_ORDER)
+# if (__LITTLE_ENDIAN == __BYTE_ORDER)
 #  define IS_LITTLE_ENDIAN 1
 # else
 #  define IS_LITTLE_ENDIAN 0
 # endif
+#else
+# define IS_LITTLE_ENDIAN 0
 #endif
 
-
-/* This file defines `__uint8_t_ORDER' for the particular machine.  */
 
 #include "protobuf-c.h"
 
