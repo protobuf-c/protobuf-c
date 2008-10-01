@@ -1070,7 +1070,7 @@ static inline uint64_t
 parse_fixed_uint64 (const uint8_t *data)
 {
 #if IS_LITTLE_ENDIAN
-  uint32_t t;
+  uint64_t t;
   memcpy (&t, data, 8);
   return t;
 #else
