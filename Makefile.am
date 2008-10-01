@@ -3,7 +3,7 @@ SUBDIRS = src
 EXTRA_DIST = scripts pkgwriteinfo.in
 
 # --- packages ---
-DEBARCH = @ARCH@
+DEBARCH = `dpkg --print-architecture`
 deb:
 	test -r protobuf-c-@VERSION@.tar.gz || $(MAKE) dist
 	$(srcdir)/scripts/pkgwrite --format=debian \
