@@ -1,0 +1,25 @@
+Package: protobuf-c
+Section: libs
+Group: Development/Libraries
+Priority: low
+Author: David Benson <daveb@ffem.org>
+Packager: Dave Benson
+Packager-Email: daveb@ffem.org
+Version: @VERSION@
+Release: 1
+License: private
+Synopsis: C bindings for protocol-buffers
+Description: protobuf or protocol-buffers is google's
+ language for describing extensible binary data formats.
+
+Build: normal
+
+Target: {MAIN}
+Files: /usr/bin/protoc-c
+Files: /usr/include/google/protobuf-c/*.h
+Files: /usr/lib/libprotobuf-c.*
+Which-Build: normal
+Synopsis: C bindings for protocol-buffers
+Description: protobuf or protocol-buffers is google's
+ language for describing extensible binary data formats.
+

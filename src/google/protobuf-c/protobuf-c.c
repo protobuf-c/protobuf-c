@@ -18,21 +18,8 @@
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
-#include <endian.h>                     /* for __BYTE_ORDER, __LITTLE_ENDIAN */
 
-#define DO_LITTLE_ENDIAN_OPTIMIZATIONS   0
 #define PRINT_UNPACK_ERRORS              1
-
-#if DO_LITTLE_ENDIAN_OPTIMIZATIONS
-# if (__LITTLE_ENDIAN == __BYTE_ORDER)
-#  define IS_LITTLE_ENDIAN 1
-# else
-#  define IS_LITTLE_ENDIAN 0
-# endif
-#else
-# define IS_LITTLE_ENDIAN 0
-#endif
-
 
 #include "protobuf-c.h"
 

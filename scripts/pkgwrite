@@ -1,0 +1,3733 @@
+#! /usr/bin/perl -w
+
+# pkgwrite 0.0.8: Build native packages from source code
+#               and pkgwriteinfo files.
+#
+# This file contains POD documentation: try `perldoc pkgwrite' for help.
+#
+# Copyright Dave Benson <daveb@ffem.org>, 2000-2001.
+
+# Requirements:
+#        perl 5.004 or higher,
+# and native packaging tools for the output packages, that is:
+# For redhat `rpm'. And for debian `dpkg' and `dpkg-buildpackage'.
+
+#  pkgwrite
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public
+#  License along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+#
+# ---
+#
+# This software may also be licensed under the terms of
+# the GNU Lesser General Public License, version 2 or higher.
+# (This is so that the pkgwrite script may be legally included
+# with LGPL'd software.)
+#
+# ---
+#
+# Furthermore, the packages and intermediary files generated
+# with pkgwrite are specifically excluded from the terms of
+# this license.  Hence, pkgwrite adds no additional restrictions to
+# the package's licensing, but they must comply with the
+# licensing on the other source code, libraries and tools used
+# to generate the package.
+
+# Finally, this contains the rpmrc that is distributed with
+# rpm 4.0: CVS entry:  rpmrc.in 2.28.2.2 2000/09/13.
+# That file had no copyright info.  The RPM source code,
+# like pkgwrite, is licenced under both the LGPL and the GPL.
+
+require 5.004;
+use Carp;
+use Config;      # for signal names
+use Symbol qw(gensym);
+
+# Table of Contents of the Source Code.
+#  Section 0:  Initialization & Configuration.
+#  Section 1:  Helper functions.
+#  Section 2:  parse_pkgwriteinfo_file: Return package information.
+#  Section 3:  Verify that a package is correctly formed.
+#  Section 4:  ChangeLog parsing code.
+#  Section 5:  Redhat tape.
+#  Section 6:  Debian tape.
+#  Section 7:  High-level API:  Make a package from a tarball.
+#  Section 8:  Usage message.
+#  Section 9:  Main program.
+#  Section 10: POD Documention.
+ 
+
+#=====================================================================
+# Section 0: Initialization & Configuration.
+#=====================================================================
+# --- function prototypes ---
+sub dump_list ($);                  # print a builtin table to stdout
+sub initialize_packaging_tables (); # redhat/debian package mgnt specifics
+sub initialize_signal_tables ();    # signal number to id mappings
+sub add_automatic_conflicts ($);    # add conflicts if file sets intersect
+
+# --- global initialization ---
+$initial_dir = `pwd`;
+chomp ($initial_dir);
+initialize_packaging_tables ();
+initialize_signal_tables ();
+$PKGWRITE_VERSION = '0.0.8';
+
+# --- configuration ---
+# set to 0 for debugging: don't delete working directories.
+$do_cleanup = 1;
+$do_cleanup = $ENV{DO_CLEANUP} if defined($ENV{DO_CLEANUP});
+
+# force the changelog to refer to this exact version.
+$strict_changelog_checking = 1;
+
+# whether to perform an extra packaging sanity test phase.
+$do_sanity_check = 1;
+
+# for the changelog, which distribution should be listed?
+# XXX: hm, what if a single package changes dist?  look at
+#      packages in stable for an example, i guess... (actually
+#      this isn't a problem if you *always* use pkgwrite,
+#      but that's annoying.)
+$debian_dist = 'unstable';
+
+# options to pass to ./configure (these differ due on different
+# distros due to different standard directories -- most likely,
+# the redhat usage will converge to the debian/fhsstnd.)
+@common_config_flags =    ( '--sysconfdir=/etc',
+                            '--prefix=/usr',
+			    '--quiet' );
+$redhat_config_flags = join(' ',
+			    @common_config_flags
+			    );
+$debian_config_flags = join(' ',
+			    @common_config_flags,
+                            '--mandir=/usr/share/man',
+                            '--infodir=/usr/share/info',
+                            '--datadir=/usr/share');
+
+# Directories where shared libraries are kept: if we install a library
+# in any of these directories we need to run `ldconfig'.
+@ldconfig_dirs = ( '/usr/lib', '/lib', '/usr/X11/lib',
+                   '/usr/X11R6/lib', '/usr/lib/X11' );
+
+# --- configuration ---
+# gzip/gunzip programs + arguments that can act as filters.
+$gzip = 'gzip -9 -c -';
+$gunzip = 'gzip -d -c -';
+
+# flags which cause `tar' to extract a file to stdout from an archive.
+# usage: tar $untar_to_stdout ARCHIVE FILE
+#     or zcat ARCHIVE | tar $untar_to_stdout - FILE
+# (perhaps this isn't portable?)
+$untar_to_stdout = "xOf";
+
+# Location of the optional system-wide rpmrc file.
+$system_rpmrc_file = "/var/lib/rpm/rpmrc";
+
+# Standard build architectures.  Yes, hardcoding this sucks...
+$default_redhat_archs = "i386 alpha sparc sparc64";
+
+# --- configure-time substitutions (!) ---
+# The RHS of these assignments is a autoconf-substitution;
+# in pkgwrite.in there are autoconf AC_SUBST()d variables,
+# and in pkgwrite these is a 0 or 1 to indicate
+# whether `configure' detected a suitable version of these 
+# packaging systems.
+$has_rpm_support = 1;
+$has_dpkg_support = 1;
+
+# --- build hash tables of fixed strings ---
+sub initialize_packaging_tables ()
+{
+  # --- Debian packaging values ---
+  # valid values for the Priority: field.
+  for (qw(required important standard optional extra))
+    {
+      $DPKG_PRIORITY_LEVELS{$_} = $_;
+    }
+
+  # valid values for the Section: field.
+  for (qw(admin base comm contrib devel doc editors electronics
+          games graphics hamradio interpreters libs mail
+          math misc net news non-free oldlibs otherosfs
+          shells sound tex text utils web x11))
+    {
+      $DPKG_SECTIONS{$_} = $_;
+    }
+
+  # --- Redhat packaging values ---
+  for ('Amusements/Games', 'Amusements/Graphics', 'Applications/Archiving',
+       'Applications/Communications', 'Applications/Databases',
+       'Applications/Editors', 'Applications/Emulators',
+       'Applications/Engineering', 'Applications/File',
+       'Applications/Internet', 'Applications/Multimedia',
+       'Applications/Productivity', 'Applications/Publishing',
+       'Applications/System', 'Applications/Text',
+       'Development/Debuggers', 'Development/Languages',
+       'Development/Libraries', 'Development/System',
+       'Development/Tools', 'Documentation',
+       'System Environment/Base', 'System Environment/Daemons',
+       'System Environment/Kernel', 'System Environment/Libraries',
+       'System Environment/Shells', 'User Interface/Desktops',
+       'User Interface/X', 'User Interface/X Hardware Support')
+    {
+      $RPM_GROUPS{lc($_)} = $_;
+    }
+}
+
+# initialize_signal_tables:  Build a lookup-table mapping from
+#   signal number to the signal's name (the part which follows
+#   SIG in the C macro:  for example: HUP, KILL, TERM, SEGV, ABRT, etc)
+#   based on perl's configuration.
+sub initialize_signal_tables ()
+{
+  defined $Config{sig_name} || die "No sigs?";
+  my $i = 0;
+  foreach $name (split(' ', $Config{sig_name}))
+    {
+      #$signo{$name} = $i;
+      $signame[$i] = $name;
+      $i++;
+    }
+}
+
+
+#=====================================================================
+# Section 1: Helper functions.
+#=====================================================================
+# --- run: run a program or die ---
+sub run($)
+{
+  my $command = $_[0];
+  print STDERR "<PKGWRITE> running: $command\n";
+  my $rv = system ($command);
+  if ($rv != 0)
+    {
+      if ($rv < 256)
+        {
+	  die "command `$command' killed by signal " . $signame[$rv];
+	}
+      else
+        {
+	  die "command `$command' exited with status " . ($rv >> 8);
+	}
+    }
+}
+
+# safe_mkdir: make a directory if it doesn't exist,
+#             or die with an error message.
+sub safe_mkdir($)
+{
+  croak "safe_mkdir(undef) called" unless defined $_[0];
+  mkdir ($_[0], 0755) or croak "mkdir($_[0]) failed";
+}
+
+# check_field(OBJECT, HASH-ENTRY, FIELD)
+#
+# Verify that OBJECT->{HASH-ENTRY} is value, or die with a diagnostic.
+sub check_field($$$)
+{
+  if (!defined($_[0]->{$_[1]}))
+    {
+      my $type = $_[0]->{type};
+      my $name = $_[0]->{name};
+      $name = "(unknown name)" unless defined $name;
+      $type = "packaging" unless defined $type;
+      die "field `$_[2]' required in $type for $name";
+    }
+}
+
+# undef_or_empty: Test if an array reference is undefined or of zero length.
+sub undef_or_empty ($)
+{
+  return 1 unless defined $_[0];
+  my $array = $_[0];
+  return 1 unless scalar (@$array);
+  return 0;
+}
+
+# write_entries: Write out optional field entries from a hash-table $object.
+#                $field_list and $hash_entries are parallel lists.
+sub write_entries ($$$$)
+{
+  my ($fh, $object, $field_list, $hash_entries) = @_;
+  my $count = scalar(@$field_list);
+  my $i;
+  for ($i = 0; $i < $count; $i++)
+    {
+      my $hentry = $hash_entries->[$i];
+      my $fname = $field_list->[$i];
+      if (defined($object->{$hentry}))
+        {
+	  print $fh $fname, ": ", $object->{$hentry}, "\n";
+	}
+    }
+}
+
+# make a full path from a possibly relative path specified
+# on the command line.
+sub make_absolute($)
+{
+  if ($_[0] !~ m,^/,)
+    {
+      return "$initial_dir/" . $_[0];
+    }
+  else
+    {
+      return $_[0];
+    }
+}
+
+# write_list_to_file(\@LIST, $FNAME)
+# Write each element of LIST on a separate line to a file named $FNAME.
+sub write_list_to_file ($$)
+{
+  my ($list, $fname) = @_;
+  open Z, ">$fname" or die "write_list_to_file: couldn't create $fname";
+  for (@$list)
+    {
+      print Z "$_\n";
+    }
+  close Z;
+}
+
+# make_file:  Create a file with the contents of a given string.
+sub make_file ($$)
+{
+  my ($fname, $contents) = @_;
+  open Z, ">$fname" or die "make_file: couldn't create $fname";
+  print Z $contents;
+  close Z;
+}
+
+# maybe_print_make_dirs(\%MADE_DIRECTORIES, $FILE_HANDLE, $DIRECTORY):
+#
+# Print a script to make the directories and subdirectories
+# of $dir, recording made directories in MADE_DIRECTORIES
+# to avoid duplication.
+sub maybe_print_make_dirs ($$$)
+{
+  my ($made_dirs, $fh, $dir) = @_;
+  my $cur = '';
+  $cur = ($dir =~ s,^/+,,) ? '' : '.';
+  for (split /\//, $dir)
+    {
+      $cur .= "/$_";
+      if (!defined($made_dirs->{$cur}))
+        {
+	  print $fh "\ttest -d $cur || mkdir $cur\n";
+	  $made_dirs->{$cur} = 1;
+	}
+    }
+}
+
+# string_to_boolean: take the normal yes/no/false/true/0/1 mess
+# and output 0, 1, or undef.
+sub string_to_boolean ($)
+{
+  my $s = $_[0];
+  return 0 if ($s eq '0'
+            || $s eq 'f'     || $s eq 'F'
+            || $s eq 'n'     || $s eq 'N'
+            || $s eq 'no'    || $s eq 'NO'
+            || $s eq 'false' || $s eq 'FALSE');
+  return 1 if ($s eq '1'
+            || $s eq 't'     || $s eq 'T'
+            || $s eq 'y'     || $s eq 'Y'
+            || $s eq 'yes'   || $s eq 'YES'
+            || $s eq 'true'  || $s eq 'TRUE');
+  return undef;
+}
+
+# Read lines from FILE-HEADER until a non-empty line is encountered.
+# Return undef if no nonempty line is encountered.
+sub skip_empty_lines ($)
+{
+  my $fh = $_[0];
+  while (<$fh>)
+    {
+      chomp;
+      return $_ if /\S/;
+    }
+  return undef;
+}
+
+# From the basename of a manpage (eg zshall.1.gz or exit.3tcl)
+# find the man-section (resp. 1 or 3).
+sub get_manpage_section ($)
+{
+  my $b = $_[0];
+  $b =~ s/\.gz$//;
+  $b =~ s/\.bz2$//;
+  $b =~ s/\.Z$//;
+  $b =~ s/^.*\.//;
+  if ($b =~ /^(\d+)/)
+    {
+      return $b;
+    }
+  die "Couldn't figure out what man-section $_[0] was in";
+}
+
+
+
+# --- Creating and destroying the temporary working area ---
+sub get_tmp_dir() {
+  return $ENV{'TMPDIR'} || $ENV{'TEMPDIR'} || "/tmp";
+}
+sub get_work_dir ()
+{
+  # Make a working directory.
+  if (!defined($global_work_dir))
+    {
+      $global_work_dir = get_tmp_dir() . "/mkpkg-$$-$ENV{USER}";
+      mkdir ($global_work_dir, 0755) 
+         or die "couldn't make tmp directory $global_work_dir";
+    }
+  $SIG{__DIE__} = sub { remove_work_dir (); };
+  return $global_work_dir;
+}
+
+sub remove_work_dir ()
+{
+  if (defined($global_work_dir))
+    {
+      $SIG{__DIE__} = sub {};
+      run ("rm -rf $global_work_dir") if $do_cleanup;
+      undef($global_work_dir);
+    }
+}
+
+
+
+#=====================================================================
+# Section 2: parse_pkgwriteinfo_file: Return package information.
+#=====================================================================
+# DATA STRUCTURES
+#
+# The return value is a Package, a hash-table with the following fields:
+#   name => NAME-OF-PACKAGE
+#   output_name => NAME-OF-PACKAGE  [sometimes mangled for co-installation]
+#   section => DEBIAN-SECTION
+#   group => REDHAT-GROUP
+#   priority => DEBIAN-PRIORITY
+#   author => AUTHOR
+#   builds => \@BUILDS
+#   targets => \@TARGETS
+#   url => URL
+#   summary => SUMMARY
+#   license => LICENSE
+#   version => UPSTREAM-VERSION
+#   release => RELEASE
+#   packager => PACKAGER_FULLNAME
+#   packager_email = PACKAGER_EMAIL
+#   changelog => CHANGELOG-FILE
+#   fullname => PACKAGE-VERSION-RELEASE
+#   upstream_fullname => PACKAGE-VERSION
+#   needs_noarch => [01]
+#   needs_arch_specific => [01]
+#   upstream_is_packager => [01]  Whether the packager and author are the same.
+#                                 (The default is 1, meaning TRUE)
+#   changelog_file => changelog.gz or changelog.Debian.gz
+# 
+# Each Target's information is a hash-table with the following fields:
+#   name => TARGET-NAME            [without PACKAGE-, or {MAIN}]
+#   summary => SUMMARY
+#   description => DESCRIPTION
+#   section => DEBIAN-SECTION      [default to package's section]
+#   group => REDHAT-GROUP          [default to package's group]
+#   files => \@PATTERNS
+#   conffiles => \@PATTERNS
+#   manpages => \@MANPAGES         [just the basename -- no path]
+#   arch_indep => [01]             [whether this target contains compiled code]
+#   build_name => BUILD-NAME
+#   build => BUILD
+#   installed_docs => \@DOCS       [docs the package installs]
+#   source_docs => \@DOCS          [docs from the package tarball]
+#
+# Each Build's information is a hash-table with the following fields:
+#   name => BUILD-NAME             [or {MAIN} for the default]
+#   configure_flags => FLAGS       [addl flags to pass to the configure script]
+#   configure_envars => ENVARS     [NAME=VALUE pairs...]
+#   make_flags => FLAGS            [addl flags to pass to make & make install]
+#   build_flags => FLAGS           [addl flags to pass to make]
+#   install_flags => FLAGS         [addl flags to pass to make install]
+#   extra_build_targets => \@T     [addl `make' targets to build]
+#   extra_install_targets => \@T   [addl `make' targets to install]
+
+sub parse_pkgwriteinfo_file($)
+{
+  open PINFO, "$_[0]" or die "couldn't open $_[0]";
+  my $package;
+  my @lines = ();
+
+  # ---
+  # Break the line up into sections starting with Target, Package, Build,
+  # and call the appropriate parser on those blocks,
+  # which are functions named handle_{target,package,build}.
+  #
+  # Each of those functions takes a list of lines as arguments
+  # and returns a hash-table reference of the appropriate {'type'}.
+
+  # Parse the first block, which is always Package:.
+  while (<PINFO>)
+    {
+      # Ignore whitespace.
+      next if /^\s*$/;
+
+      # Ignore comments.
+      next if /^\s*#/;
+
+      chomp;
+      $line = $_;
+      if ($line =~ /^Target:/ || $line =~ /^Build:/)
+        {
+	  # Clear out the current lines as the main package entry.
+	  $package = handle_package (@lines);
+	  die unless defined $package;
+
+	  # This line begins the new block.
+	  @lines = ( $line );
+	  last;
+	}
+      else
+        {
+	  push @lines, $_;
+	}
+    }
+  while (<PINFO>)
+    {
+      # Ignore whitespace.
+      next if /^\s*$/;
+
+      # Ignore comments.
+      next if /^\s*#/;
+
+      chomp;
+      $line = $_;
+
+      # Are we are a block boundary?
+      if (($line =~ /^Target:/) || ($line =~ /^Build:/))
+        {
+	  # What type of block did we just complete?
+	  if ($lines[0] =~ /^Target:/)
+	    {
+	      # Parse the Target.
+	      my $target = handle_target (@lines);
+	      die unless defined $target;
+	      $target->{package} = $package;
+	      my $targets = $package->{targets};
+	      push @$targets, $target;
+	    }
+	  else
+	    {
+	      # Parse the Build.
+	      my $build = handle_build (@lines);
+	      die unless defined $build;
+	      $build->{package} = $package;
+	      my $builds = $package->{builds};
+	      push @$builds, $build;
+
+	      # Compute the name of the src rpm, which will also
+	      # be the prefix for all the other packages.
+	      my $name = $package->{output_name};
+	      $name .= ("-" . $build->{name}) if ($build->{name} ne '{MAIN}');
+	      $build->{package_name} = $name;
+	      $build->{package} = $package;
+	    }
+	  @lines = ( $line );
+	  next;
+	}
+      else
+        {
+	  push @lines, $line;
+	}
+    }
+  if (scalar (@lines) > 0)
+    {
+      die "The last block in a pkgwriteinfo file must always be a target"
+      		unless ($lines[0] =~ /^Target:/i);
+
+      $target = handle_target (@lines);
+      die unless defined $target;
+      my $targets = $package->{targets};
+      push @$targets, $target;
+    }
+  {
+    my $targets = $package->{targets};
+    for my $target (@$targets)
+      {
+	for my $inherited (qw(group))
+	  {
+	    if (!defined($target->{$inherited}))
+	      {
+		$target->{$inherited} = $package->{$inherited}
+	      }
+	  }
+      }
+  }
+  my %BUILDS_BY_NAME = ();
+  {
+    my $targets = $package->{targets};
+    my $builds = $package->{builds};
+    die "malformed package: no targets" if scalar (@$targets) == 0;
+    die "malformed package: no builds" if scalar (@$builds) == 0;
+    for (@$builds)
+      {
+        $BUILDS_BY_NAME{$_->{name}} = $_;
+      }
+    my $needs_noarch = 0;
+    my $needs_arch_specific = 0;
+    for my $target (@$targets)
+      {
+	my $build = $target->{build_name};
+	my $name = $target->{name};
+	$build = '{MAIN}' unless defined $build;
+	if (!defined $BUILDS_BY_NAME{$build})
+	  {
+	    die "no build for target $name named $build";
+	  }
+	if ($target->{arch_indep})
+	  {
+	    $needs_noarch = 1;
+	  }
+	else
+	  {
+	    $needs_arch_specific = 1;
+	  }
+	$target->{build} = $BUILDS_BY_NAME{$build};
+	$target->{package_name} = $package->{output_name};
+	$target->{package} = $package;
+	if ($name ne '{MAIN}')
+	  {
+	    $target->{package_name} .= "-$name";
+	  }
+      }
+    $package->{needs_noarch} = $needs_noarch;
+    $package->{needs_arch_specific} = $needs_arch_specific;
+  }
+
+  # Add conflicts based purely on `Files:' lists.
+  add_automatic_conflicts ($package);
+  return $package;
+}
+
+# --- handle_package: create a $package from a pkgwrite intro ---
+sub handle_package
+{
+  my $package = {};
+  $package->{type} = 'package';
+  $package->{targets} = [];
+  $package->{builds} = [];
+  $package->{upstream_is_packager} = 1;
+  my $in_description = 0;
+  for (@_)
+    {
+      if ($in_description)
+        {
+	  if (/^\S/)
+	    {
+	      $in_description = 0;
+	    }
+	  else
+	    {
+	      s/^\s//;
+	      $package->{description} .= "\n$_";
+	      next;
+	    }
+	}
+
+      if (/^Package:\s*(.*)/)
+        {
+	  $package->{name} = $1;
+	}
+      elsif (/^Output-Package:\s*(.*)/)
+        {
+	  $package->{output_name} = $1;
+	}
+      elsif (/^Section:\s*(.*)/)
+        {
+	  $package->{section} = $1;
+	}
+      elsif (/^Group:\s*(.*)/)
+        {
+	  $package->{group} = $1;
+	}
+      elsif (/^Priority:\s*(.*)/)
+        {
+	  $package->{priority} = $1;
+	}
+      elsif (/^Home-Page:\s*(.*)/)
+        {
+	  $package->{home_page} = $1;
+	}
+      elsif (/^Source-Url:\s*(.*)/)
+        {
+	  $package->{url} = $1;
+	}
+      elsif (/^Version:\s*(.*)/)
+        {
+	  $package->{version} = $1;
+	}
+      elsif (/^Release:\s*(.*)/)
+        {
+	  $package->{release} = $1;
+	}
+      elsif (/^Change[lL]og:\s*(.*)/)
+        {
+	  $package->{changelog} = $1;
+	}
+      elsif (/^Author:\s*(.*)/)
+        {
+	  my $author = $1;
+	  $package->{authors} = [] unless defined $package->{authors};
+	  my $authors = $package->{authors};
+	  push @$authors, $author;
+	}
+      elsif (/^Description:\s*(.*)/)
+        {
+	  $package->{description} = $1;
+	  $in_description = 1;
+	}
+      elsif (/^Synopsis:\s*(.*)/)
+        {
+	  $package->{summary} = $1;
+	}
+      elsif (/^License:\s*(.*)/)
+        {
+	  $package->{license} = $1;
+	}
+      elsif (/^Packager:\s*(.*)/)
+        {
+	  $package->{packager} = $1;
+	}
+      elsif (/^Packager-Email:\s*(.*)/)
+        {
+	  $package->{packager_email} = $1;
+	}
+      elsif (/^Upstream-is-Packager:\s*(.*)/i)
+        {
+	  $package->{upstream_is_packager} = $1;
+        }
+      else
+        {
+	  chomp;
+	  die "unparsable line in pkgwriteinfo file: $_";
+	}
+    }
+
+  $package->{changelog_file} 
+    = $package->{upstream_is_packager} ? "changelog.gz" : "changelog.Debian.gz";
+
+  # check that all the needed fields have been found.
+  check_field ($package, 'name', 'Package');
+  check_field ($package, 'section', 'Section');
+  check_field ($package, 'version', 'Version');
+  check_field ($package, 'release', 'Release');
+  check_field ($package, 'priority', 'Priority');
+  check_field ($package, 'authors', 'Author');
+  check_field ($package, 'description', 'Description');
+  check_field ($package, 'summary', 'Synopsis');
+  check_field ($package, 'license', 'License');
+  check_field ($package, 'packager', 'Packager');
+  check_field ($package, 'packager_email', 'Packager-Email');
+
+  $package->{output_name} = $package->{name} unless defined $package->{output_name};
+  $package->{upstream_fullname} = $package->{name} . '-' . $package->{version};
+  $package->{fullname} = $package->{output_name}
+                       . '-' . $package->{version}
+                       . '-' . $package->{release};
+  $package->{lcname} = lc($package->{name});
+
+  return $package;
+}
+
+# --- handle_target: create a $target from a pkgwriteinfo entry ---
+sub handle_target
+{
+  my $target = {};
+  my $in_description = 0;
+  $target->{type} = 'target';
+  $target->{manpages} = [];
+  $target->{source_docs} = [];
+  $target->{installed_docs} = [];
+  $target->{arch_indep} = 0;
+  $target->{debian_data} = {};
+
+  for (@_)
+    {
+      if ($in_description)
+        {
+	  if (/^\S/)
+	    {
+	      $in_description = 0;
+	    }
+	  else
+	    {
+	      s/^\s//;
+	      $target->{description} .= "\n$_";
+	      next;
+	    }
+	}
+
+      if (/^Target:\s*(.*)/)
+        {
+	  $target->{name} = $1;
+	}
+      elsif (/^Depends:\s*(.*)/)
+        {
+	  my $dep = $1;
+	  if (defined($target->{depends}))
+	    {
+	      $target->{depends} = $target->{depends} . ", " . $dep;
+	    }
+	  else
+	    {
+	      $target->{depends} = $dep;
+	    }
+	}
+      elsif (/^Redhat-Requires:\s*(.*)/)
+        {
+	  $target->{redhat_requires} = $1;
+	}
+      elsif (/^Conflicts:\s*(.*)/)
+        {
+	  my $conflict = $1;
+	  if (defined($target->{conflicts}))
+	    {
+	      $target->{conflicts} = $target->{conflicts} . ", " . $conflict;
+	    }
+	  else
+	    {
+	      $target->{conflicts} = $conflict;
+	    }
+	}
+      elsif (/^Redhat-Conflicts:\s*(.*)/)
+        {
+	  $target->{redhat_conflicts} = $1;
+	}
+      elsif (/^Synopsis:\s*(.*)/)
+        {
+	  $target->{summary} = $1;
+	}
+      elsif (/^Files:\s*(.*)/)
+        {
+	  my $pattern = $1;
+	  $target->{files} = [] unless defined $target->{files};
+	  my $files = $target->{files};
+	  push @$files, $pattern;
+	}
+      elsif (/^Description:\s*(.*)/)
+        {
+	  $target->{description} = $1;
+	  $in_description = 1;
+	}
+      elsif (/^Man-Page:\s*(.*)/)
+        {
+	  my $manpage = $1;
+	  my $manpages = $target->{manpages};
+	  push @$manpages, $manpage;
+	}
+      elsif (/^Doc:\s*(.*)/)
+        {
+	  my $doc = $1;
+	  my $docs = $target->{installed_docs};
+	  push @$docs, $doc;
+	}
+      elsif (/^Source-Doc:\s*(.*)/)
+        {
+	  my $doc = $1;
+	  my $docs = $target->{source_docs};
+	  push @$docs, $doc;
+	}
+      elsif (/^Platform-Independent:\s*(.*)/)
+        {
+	  $target->{arch_indep} = string_to_boolean ($1);
+	}
+      elsif (/^Needs-[lD]dconfig:\s*(.*)/)
+        {
+	  $target->{needs_ldconfig} = string_to_boolean ($1);
+	}
+      elsif (/^Which-Build:\s*(.*)/)
+        {
+	  $target->{build_name} = $1;
+	}
+      else
+        {
+	  chomp;
+	  die "unparsable line in pkgwriteinfo file: $_";
+	}
+    }
+
+  # check that all the needed fields have been found.
+  check_field ($target, 'name', 'Target');
+
+  if (undef_or_empty ($target->{installed_docs})
+   && undef_or_empty ($target->{source_docs})
+   && undef_or_empty ($target->{files}))
+    {
+      die "either Files, Doc, Source-Doc are required but missing in target "
+               . $target->{name};
+    }
+
+  if ($target->{name} ne '{MAIN}')
+    {
+      check_field ($target, 'description', 'Description');
+      check_field ($target, 'summary', 'Synopsis');
+    }
+
+  # --- Figure out other information about this target. ---
+
+  # Figure out if ldconfig must be run after this package
+  # is installed.
+  if (!defined ($target->{needs_ldconfig}))
+    {
+      my $needs_ldconfig = 0;
+      my $files = $target->{files};
+      $files = [] unless defined $files;
+      PER_FILE: for my $file (@$files)
+	{
+	  my $tmp = $file;
+	  $tmp =~ s,/[^/]+$,,;
+	  for my $dir (@ldconfig_dirs)
+	    {
+	      if ($tmp eq $dir)
+		{
+		  $needs_ldconfig = 1;
+		  last PER_FILE;
+		}
+	    }
+	}
+      $target->{needs_ldconfig} = $needs_ldconfig;
+    }
+
+  return $target;
+}
+
+# --- handle_build: create a $build from a pkgwriteinfo entry ---
+sub handle_build
+{
+  my $build = {};
+  $build->{type} = 'build';
+  $build->{extra_build_targets} = [];
+  $build->{extra_install_targets} = [];
+  for (@_)
+    {
+      if (/^Build:\s*(.*)/)
+        {
+	  $build->{name} = $1;
+	}
+      elsif (/^Configure-Flags:\s*(.*)/)
+        {
+	  $build->{configure_flags} = $1;
+	}
+      elsif (/^Configure-Envars:\s*(.*)/)
+        {
+	  $build->{configure_envars} = $1;
+	}
+      elsif (/^Make-Flags:\s*(.*)/)
+        {
+	  $build->{make_flags} = $1;
+	}
+      elsif (/^Install-Flags:\s*(.*)/)
+        {
+	  $build->{install_flags} = $1;
+	}
+      elsif (/^Build-Flags:\s*(.*)/)
+        {
+	  $build->{build_flags} = $1;
+	}
+      elsif (/^Extra-Build-Targets:\s*(.*)/)
+        {
+	  my $list = $build->{extra_build_targets};
+	  push @$list, $1;
+	}
+      elsif (/^Extra-Install-Targets:\s*(.*)/)
+        {
+	  my $list = $build->{extra_install_targets};
+	  push @$list, $1;
+	}
+      else 
+        {
+	  die "unrecognized line under Build ($_)";
+	}
+    }
+  return $build;
+}
+
+# --- add_automatic_conflicts ---
+# Add packages to eachothers conflict lists whenever they
+# have Files: entries that are the same and don't have wildcards.
+sub add_automatic_conflicts ($)
+{
+  my ($package) = @_;
+  my $targets = $package->{targets};
+
+  # a table: defined ($conflict_table->{A}->{B}) => A and B conflict.
+  my $conflict_table = {};
+
+  # a table mapping a filename that doesn't contain
+  # wildcards, to a list of packages containing that file.
+  my $by_installed_file = {};
+
+  # Traverse all the targets, flush one $conflict_table.
+  #
+  # Basically, if any two packages are in the same list,
+  # they must have a conflict.
+  for my $target (@$targets)
+    {
+      my $files = $target->{files};
+      for my $file (@$files)
+        {
+	  next if $file =~ /[\*\?\[\]]/;
+	  my $list = $by_installed_file->{$file};
+	  $list = $by_installed_file->{$file} = [] unless defined ($list);
+	  push @$list, $target;
+	}
+    }
+
+  my %name_to_target = ();
+
+  # Build a table of all the conflicted package pairs,
+  # by scanning the above lists.
+  for my $conflicted_targets (values %$by_installed_file)
+    {
+      my $count = scalar (@$conflicted_targets);
+      next if ($count < 2);
+      for (my $i = 0; $i < $count; $i++)
+        {
+	  my $t1 = $conflicted_targets->[$i];
+	  my $p1 = $t1->{package_name};
+	  $name_to_target{$p1} = $t1;
+	  for (my $j = 0; $j < $count; $j++)
+	    {
+	      next if $i == $j;
+	      my $t2 = $conflicted_targets->[$j];
+	      my $p2 = $t2->{package_name};
+	      my $t = $conflict_table->{$p1};
+	      $t = $conflict_table->{$p1} = {} unless defined $t;
+	      $t->{$p2} = 1;
+	    }
+	}
+    }
+
+  # Add those conflicts, unless they have been explicitly mentioned already.
+  my $file_a;
+  my $hash_b;
+  while (($name_a, $hash_b) = each %$conflict_table)
+    {
+      my $target_a = $name_to_target{$name_a};
+      my $cstring = $target_a->{conflicts};
+
+      # Compute the initial list of conflicted packages.
+      my @conflicts;
+      if (!defined ($cstring) || $cstring eq '')
+        {
+	  @conflicts = ();
+	}
+      else
+        {
+	  @conflicts = map { s/^\s+//; s/\s+$//; $_ } (split /,/, $cstring);
+	}
+
+      for my $name_b (keys %$hash_b)
+        {
+	  my $preconflicted = 0;
+	  my $target_b = $name_to_target{$name_a};
+	  for (@conflicts)
+	    {
+	      if (/^$target_b / || ($_ eq $target_b))
+	        {
+		  $preconflicted = 1;
+		  last;
+		}
+	    }
+	  
+	  # Add a conflict if needed.
+	  unless ($preconflicted)
+	    {
+	      if (!defined ($cstring) || $cstring eq '')
+	        {
+		  $target_a->{conflicts} = $name_b;
+		}
+	      else
+	        {
+		  $target_a->{conflicts} .= ", $name_b";
+		}
+	    }
+	}
+    }
+}
+
+
+#=====================================================================
+# Section 3: Verify that a package is correctly formed.
+#=====================================================================
+
+# Run a user-specified function (a predicate) on a package and all its targets.
+# (only possible b/c they are both hash-tables).
+#
+# Return the first package for which the predicate returns true,
+# or `undef' if none is found.
+sub search_package_and_targets ($$)
+{
+  my ($package, $func) = @_;
+
+  return $package if &$func ($package);
+
+  my $targets = $package->{targets};
+  for my $target (@$targets)
+    {
+      return $target if &$func ($target);
+    }
+  return undef;
+}
+
+# check that a package is valid.
+sub sanity_check_package ($)
+{
+  my $package = $_[0];
+  my $targets = $package->{targets};
+  my $builds = $package->{builds};
+
+  # Verify that $package->{group} and $package->{section} are valid. 
+  my $invalid = search_package_and_targets 
+  			($package,
+			 sub {
+			   my $p = $_[0];
+			   return 0 unless defined $p->{group};
+			   return 0 if defined $RPM_GROUPS{lc($p->{group})};
+			   print STDERR "WARNING: "
+			              . "The Group: `" . $p->{group}
+			              . "'is unknown.\n";
+			   return 1;
+			 });
+  if (defined($invalid))
+    {
+      die "try pkgwrite --query-list=rpm-groups";
+    }
+  $invalid = search_package_and_targets 
+  			($package,
+			 sub {
+			   my $p = $_[0];
+			   return 0 unless defined $p->{section};
+			   my $s = lc ($p->{section});
+			   return 0 if defined $DPKG_SECTIONS{$s};
+			   print STDERR "WARNING: "
+			              . "The Section: `" . $p->{section}
+			              . "'is unknown.\n";
+			   return 1;
+			 });
+  if (defined($invalid))
+    {
+      die "invalid Section:  try pkgwrite --query-list=deb-sections for a list";
+    }
+
+  # Verify that documentation doesn't contain wildcards.
+  $invalid = search_package_and_targets 
+  			($package,
+			 sub {
+			   my $p = $_[0];
+			   my @docs;
+			   my $sd = $p->{source_docs};
+			   my $id = $p->{installed_docs};
+			   @docs = ( ((defined $id) ? @$id : ()),
+			             ((defined $sd) ? @$sd : ()) );
+			   for (@docs)
+			     {
+			       if (/\*/ || /\?/)
+			         {
+				   print STDERR "WARNING: "
+				              . "documentation specifications "
+					      . "may not contain wildcards."
+					      . "($_)\n";
+				    return 1;
+				  }
+			      }
+			    return 0;
+			 });
+  if (defined($invalid))
+    {
+      die $invalid->{type} . " " . $invalid->{name}
+        . " had an invalid documentation entry";
+    }
+
+  # Verify that the manpages are in valid sections.
+  $invalid = search_package_and_targets 
+  			($package,
+			 sub {
+			   my $p = $_[0];
+			   my $m = $p->{manpages};
+			   my @manpages = (defined ($m) ? @$m : ());
+			   for (@manpages)
+			     {
+			       if (!defined (get_manpage_section ($_)))
+			         {
+				   print STDERR "WARNING: "
+				              . "manpage $_ was not in any "
+					      . "known man section.\n";
+				   return 1;
+				 }
+			       if (/\//)
+				 {
+				   print STDERR "ERROR: "
+				              . "manpage $_ contained a /; it "
+					      . "should be a bare filename.\n";
+				   return 1;
+				 }
+			      }
+			    return 0;
+			 });
+  if (defined ($invalid))
+    {
+      die "bad manpage section in $invalid->{type} $invalid->{name}"
+    }
+
+  # Verify that none of the packages have the same names.
+  my %used_names = ();
+  for my $t (@$targets)
+    {
+      my $pname = $t->{package_name};
+      die "two packages are named $pname" if defined $used_names{$pname};
+      $used_names{$pname} = 1;
+    }
+  
+  # Verify that no two installed documents in a single package
+  # have the same name.
+  for my $t (@$targets)
+    {
+      my $pname = $t->{package_name};
+      my @installed_docs = ();
+      my $d1 = $t->{installed_docs};
+      my $d2 = $t->{source_docs};
+      for my $d (@$d1, @$d2)
+        {
+	  next unless $d =~ m,([^/]+)/?$,;
+	  my $base = $1;
+	  if (defined ($used_names{$base}))
+	    {
+	      die "two documents in $pname are named $base";
+	    }
+	  $used_names{$base} = 1;
+	}
+    }
+}
+
+
+#=====================================================================
+# Section 4: ChangeLog parsing code.
+#=====================================================================
+# create a new changelog parser.
+# doesn't parse any entries.
+#
+# you may pass in anything that may be open()d for reading: a filename
+# or `program |'.
+sub changelog_parser_new ($)
+{
+  my $fh = gensym ();
+  open $fh, "$_[0]" or return undef;
+  my $cp = {};
+  $cp->{fh} = $fh;
+  $cp->{filename} = $_[0];
+  $cp->{lineno} = 0;
+  return $cp;
+}
+
+# skip empty lines, but also keep around the line number for error reporting.
+sub _cp_skip_empty_lines ($)
+{
+  my $rv = skip_empty_lines ($_[0]->{fh});
+  $_[0]->{lineno} = $.;
+  return $rv;
+}
+
+# parse one entry: store it in the public fields of $changelog_parser:
+#    {package} => PACKAGE_NAME
+#    {version} => VERSION-RELEASE
+#    {change_text} => raw text of the changes
+#    {full_name} => NAME-OF-AUTHOR
+#    {email} => EMAIL-OF-AUTHOR
+#    {date} => ENTRY-DATE (in rfc 822, eg date -R)
+# return whether this fields are valid.
+sub changelog_parser_advance ($)
+{
+  my $cp = $_[0];
+  my $package_line = _cp_skip_empty_lines ($cp);
+  return 0 unless defined $package_line;
+  if ($package_line !~ /^([a-zA-Z0-9\-_]+)\s\(([^\(\)]+)\)/)
+    {
+      die "error parsing changelog package line ($package_line) ("
+         . $cp->{filename} . ", line " . $cp->{lineno} . ")";
+    }
+  $cp->{package} = $1;
+  $cp->{version} = $2;
+
+  my $byline;
+
+  # grab the text.
+  my $text = _cp_skip_empty_lines ($cp);
+  my $was_empty = 0;
+
+  # got a header line, but nothing else:  that's an error.
+  if (!defined ($text))
+    {
+      die "no changelog entry was encountered: premature eof at "
+	     . $cp->{filename} . ", line " . $cp->{lineno};
+    }
+  $text .= "\n";
+
+  # Data to be parsed from the packager's byline
+  # (which we will do in order to detect the end-of-record anyway).
+  my $full_name;
+  my $email;
+  my $date;
+  my $got_byline = 0;
+  my $fh = $cp->{fh};
+  while (defined ($text))
+    {
+      my $line = scalar (<$fh>);
+      last unless defined $line;
+
+      if ($line =~ /^\s+-- ([^<>]+) <([^<>]+)>\s+(.*)/)
+        {
+	  $full_name = $1;
+	  $email = $2;
+	  $date = $3;
+	  $got_byline = 1;
+	  last;
+	}
+      $text .= $line;
+    }
+  $text =~ s/\n\n+$/\n/s;
+
+  # parse the byline.
+  if (!$got_byline)
+    {
+      die "missing byline at " . $cp->{filename} . ", line " . $cp->{lineno};
+    }
+  $cp->{change_text} = $text;
+  $cp->{full_name} = $full_name;
+  $cp->{email} = $email;
+  $cp->{date} = $date;
+
+  return 1;
+}
+
+# Write a debian-style changelog entry.
+# (on a debian system, look in /usr/share/doc/packaging-manual/manual.text.gz)
+sub changelog_write_debian_style ($$)
+{
+  my ($cp, $ofh) = @_;
+  my $lcpackage = lc($cp->{package});
+  print $ofh $lcpackage,
+             " (", $cp->{version}, ") $debian_dist; urgency=low\n\n",
+	     $cp->{change_text},
+	     "\n -- ", $cp->{full_name},
+	     " <", $cp->{email}, ">  ", $cp->{date}, "\n\n";
+}
+
+# Write a redhat-style changelog entry.
+# (see http://www.rpm.org/RPM-HOWTO/build.html#CHANGELOG)
+sub changelog_write_redhat_style ($$)
+{
+  my ($cp, $ofh) = @_;
+
+  # Convert the date from
+  #   `date -R' format (complies with rfc 822)
+  # to
+  #   `date +"%a %b %d %Y"' format
+  # HMM: it'd be nice to support an rfc 822 date parser here,
+  #      but i'm hesitant unless such a beast comes with perl.
+  if ($cp->{date} !~ /^([A-Z][a-z][a-z]),\s+(\d+) ([A-Z][a-z][a-z]) (\d+)/)
+    {
+      die "could not parse date " . $cp->{date};
+    }
+  my ($day_of_week, $day_of_month, $month_shortname, $year) = ($1, $2, $3, $4);
+  $day_of_month = "0$day_of_month" unless $day_of_month >= 10;
+  my $short_date = "$day_of_week $month_shortname $day_of_month $year";
+
+  print $ofh "* $short_date  ", $cp->{full_name}, " <", $cp->{email}, ">\n\n";
+
+  # XXX: not part of any packaging standard.
+  print $ofh "  Version ", $cp->{version}, "\n";
+
+  for (split /\n/, $cp->{change_text})
+    {
+      # hmm, convert * to - for readability (?!?)
+      s/^  \*/  -/;
+      print $ofh $_, "\n";
+    }
+  print $ofh "\n\n";
+}
+
+# destroy the changelog parser.
+sub changelog_parser_destroy ($)
+{
+  my $cp = $_[0];
+  if (! close ($cp->{fh}))
+    {
+      die "error running $cp->{filename}: $?";
+    }
+}
+
+
+#=====================================================================
+# Section 5: Redhat tape.
+#=====================================================================
+# if $make_script == 1,
+# return a list of commands (newline-terminated)
+# to concatenate into a script which will copy said
+# docs into /usr/doc/PACKAGE-VERSION-RELEASE.
+#
+# if $make_script == 0, just return a list of files,
+# `${prefix}/doc/PACKAGE-VERSION-RELEASE/FILENAME'.
+sub redhat_make_install_doc_section ($$)
+{
+  my ($package, $build) = @_;
+  my @cmds = ();
+  my $targets = $package->{targets};
+  my $docs = $target->{installed_docs};
+  my $buildfullname = $build->{package_name} . '-' . $package->{version};
+  my $docdir = "%{_topdir}/%{prefix}/doc/" . join ('-',
+                                                   $package->{name},
+                                                   $package->{version},
+                                                   $package->{release});
+
+  # the union of all source docs for this build.
+  my %source_docs = ();
+
+  # the union of all installed docs for this build.
+  my %installed_docs = ();
+
+  for my $target (@$targets)
+    {
+      # skip unrelated targets.
+      next unless $target->{build} == $build;
+
+      my $doc_list;
+
+      $doc_list = $target->{source_docs};
+      for (@$doc_list) { $source_docs{$_} = 1 }
+
+      $doc_list = $target->{installed_docs};
+      for (@$doc_list) { $installed_docs{$_} = 1 }
+    }
+
+  # if there is no documentation to install, skip out rather than make
+  # an empty doc directory.
+  if (scalar(keys(%source_docs)) == 0 && scalar(keys(%installed_docs)) == 0)
+    {
+      return;
+    }
+
+  # mkdir -p isn't generally portable, but it works under redhat. hmm...
+  push @cmds, "test -d $docdir || mkdir -p $docdir\n";
+
+  for my $doc (sort keys %source_docs)
+    {
+      # Produce commands to copy $src_doc from the unpacked tarball
+      # to the $docdir.
+      my $base;
+      $doc =~ m,([^/]+/?)$,;
+      $base = $1;
+      if ($doc =~ m,/$,)
+        {
+	  # directory
+	  push @cmds, "rm -rf $docdir/$base\n",
+	             "cp -dpr %{_builddir}/$buildfullname/$doc $docdir/$base\n";
+	}
+      else
+        {
+	  # file.
+	  push @cmds, "cp -dpf %{_builddir}/$buildfullname/$doc $docdir/\n";
+	}
+    }
+
+  for my $doc (sort keys %installed_docs)
+    {
+      # Produce commands to copy $installed_doc from the installed
+      # area to the $docdir.
+      my $base;
+      $doc =~ m,([^/]+/?)$,;
+      $base = $1;
+
+      # Try to avoid copying a file over itself.
+      my $srcpath = "%{_topdir}/$doc";
+      my $dstpath = "$docdir/$base";
+      $srcpath =~ s,/+$,,; $srcpath =~ s,//+,/,;
+      $dstpath =~ s,/+$,,; $dstpath =~ s,//+,/,;
+      next if $srcpath eq $dstpath;
+
+      # Write the script if needed.
+      if ($doc =~ m,/$,)
+        {
+	  # directory
+	  push @cmds, "rm -rf $docdir/$base\n",
+	              "cp -r %{_topdir}/$doc $docdir/$base\n";
+	}
+      else
+        {
+	  # file.
+	  push @cmds, "cp -dpf %{_topdir}/$doc $docdir/\n";
+	}
+    }
+  return @cmds;
+}
+
+# output a list of file including their path.
+sub redhat_make_doc_section_list ($$$)
+{
+  my ($fh, $package, $target) = @_;
+  my $docs;
+  my $docdir = "%{prefix}/doc/" . join ('-',
+                                        $package->{name},
+                                        $package->{version},
+                                        $package->{release});
+  $docs = $target->{installed_docs};
+  for (@$docs)
+    {
+      next unless m/([^\/]+\/?)$/;
+      push @docs, "$docdir/$1";
+    }
+  $docs = $target->{source_docs};
+  for (@$docs)
+    {
+      next unless m/([^\/]+\/?)$/;
+      push @docs, "$docdir/$1";
+    }
+  return @docs;
+}
+
+# Print either an opening or closing architecture conditional
+# for a certain target.
+sub print_arch_conditional ($$$)
+{
+  my ($fh, $target, $is_open) = @_;
+  my $arch_indep = $target->{arch_indep};
+  if ($is_open)
+    {
+      print $fh ($arch_indep ? "%ifarch noarch\n" : "%ifnarch noarch\n");
+    }
+  else
+    {
+      print $fh "%endif  # ", ($arch_indep ? "noarch" : "!noarch"), "\n";
+    }
+}
+
+sub make_redhat_specfile($$$)
+{
+  my ($package, $build, $spec_file_out) = @_;
+
+  open SPECFILE, ">$spec_file_out" or die "could not create $spec_file_out: $!";
+
+  my $rh_requires = compute_redhat_requires ($package);
+  my $download_url = $package->{url};
+  print SPECFILE "\%define prefix /usr\n";
+
+  # For now, disable this "fascist" option.
+  # For some reason, our .tar.gz winds up in the list of
+  # files, which kills us.
+  print SPECFILE "\%define _unpackaged_files_terminate_build 0\n";
+
+  write_entries ('SPECFILE', $build, 
+                 [qw(Name)],
+                 [qw(package_name)]);
+  write_entries ('SPECFILE', $package, 
+                 [qw(Version Release Copyright Vendor URL
+                     Group Summary Provides License)],
+                 [qw(version release copyright vendor home_page
+                     group summary output_name license)]);
+
+
+  # Table of all the manpages we will need to gzip.
+  my %build_manpages = ();
+
+  # The primary target, that is, the target whose name is the
+  # build's name (the same as the .src.rpm will assume).
+  my $primary_target;
+
+  # Compute the primary target and build_manpages.
+  my $targets = $package->{targets};
+  for my $target (@$targets)
+    {
+      next unless $target->{build} == $build;
+        
+      if ($target->{name} eq $build->{name})
+        {
+	  $primary_target = $target;
+	}
+      my $manpages = $target->{manpages};
+      for my $manpage (@$manpages)
+        {
+	  $build_manpages{$manpage} = 1;
+	}
+    }
+
+  my $tarball = $package->{name} . '-' . $package->{version} . ".tar.gz";
+  print SPECFILE "Source: $tarball\n";
+  #print SPECFILE "Packager: $packager_id\n";
+  print SPECFILE "Prefix: /usr\n";
+  print SPECFILE "BuildRoot: %{_topdir}\n";
+  # Print flags that actually pertain to the primary target.
+
+  my $needs_arch_conditionals = 0;
+  if ($package->{needs_noarch})
+    {
+      if ($package->{needs_arch_specific})
+        {
+	  print SPECFILE "BuildArch: noarch $default_redhat_archs\n";
+	  $needs_arch_conditionals = 1;
+	}
+      else
+        {
+	  print SPECFILE "BuildArch: noarch\n";
+	}
+    }
+  if (defined ($primary_target))
+    {
+      # Print dependencies and conflicts.
+      my $rh_requires = compute_redhat_requires ($primary_target);
+      print SPECFILE "Requires: $rh_requires\n" if ($rh_requires ne '');
+
+      my $rh_conflicts = compute_redhat_conflicts ($primary_target);
+      print SPECFILE "Conflicts: $rh_conflicts\n" if ($rh_conflicts ne '');
+    }
+
+  print SPECFILE "%description\n", 
+                 make_debian_description ($package->{description}),
+		 "\n";
+
+  my $config_flags;
+  $config_flags = $redhat_config_flags
+                      . " " .
+		       (defined ($build->{configure_flags})
+                               ? $build->{configure_flags}
+			       : '');
+  my $env_settings = (defined ($build->{configure_envars})
+                        ? "$build->{configure_envars} "
+			: "");
+  my $make_flags = defined ($build->{make_flags}) 
+  					? $build->{make_flags} : '';
+  my $build_flags = defined ($build->{build_flags}) 
+  					? $build->{build_flags} : '';
+  my $install_flags = defined ($build->{install_flags})
+  					? $build->{install_flags} : '';
+  $build_flags .= " $make_flags";
+  $install_flags .= " $make_flags";
+  my $full_main_package = "$package->{name}-$package->{version}";
+  my $full_target_package = "$build->{package_name}-$package->{version}";
+  print SPECFILE 
+         "%prep\n",
+	 "rm -rf \$RPM_BUILD_DIR/$full_main_package\n",
+	 "rm -rf \$RPM_BUILD_DIR/$full_target_package\n",
+	 "zcat \$RPM_SOURCE_DIR/$full_main_package.tar.gz | tar -xvf -\n",
+	 ($full_main_package eq $full_target_package
+	    ? ''
+	    : "mv $full_main_package $full_target_package\n"),
+	 "%build\n",
+	 "test -d \$RPM_BUILD_DIR || mkdir -p \$RPM_BUILD_DIR\n",
+	 "cd \$RPM_BUILD_DIR/$full_target_package\n",
+	 "$env_settings ./configure $config_flags\n",
+	 "make PREFIX=/usr $build_flags\n\n";
+
+  my $make_targets = $build->{extra_build_targets};
+  for (@$make_targets)
+    {
+      print SPECFILE "make $_ PREFIX=/usr $build_flags\n";
+    }
+  print SPECFILE
+	 "%install\n",
+	 "cd \$RPM_BUILD_DIR/$full_target_package\n",
+	 "make install PREFIX=/usr DESTDIR=%{_topdir} $install_flags\n";
+  $make_targets = $build->{extra_install_targets};
+  for (@$make_targets)
+    {
+      print SPECFILE "make $_ PREFIX=/usr DESTDIR=%{_topdir} $install_flags\n";
+    }
+  
+  print SPECFILE redhat_make_install_doc_section ($package, $build);
+  
+  for my $manpage (keys %build_manpages)
+    {
+      my $man_section = get_manpage_section ($manpage);
+      print SPECFILE "gzip -9 -f %{_topdir}/usr/man/man$man_section/$manpage\n";
+    }
+  print SPECFILE "\n";
+  
+  print SPECFILE
+	 "%clean\n",
+	 "rm -rf %{_builddir}\n",
+	 "mkdir %{_builddir}\n", # without the mkdir, this doesn't run twice...
+	 "\n\n";
+
+  if (defined ($primary_target))
+    {
+      if ($needs_arch_conditionals)
+        {
+	  print_arch_conditional ('SPECFILE', $primary_target, 1)
+	}
+      if ($primary_target->{needs_ldconfig})
+        {
+	  # This is from the gtk+.spec file.
+	  # Usually they are all pretty godly, but i'll be damned
+	  # if this works :)  Furthermore all documentation alludes
+	  # to the next method; -p is wholy undocumented as far as i can tell.
+	  #print SPECFILE "%post -p /sbin/ldconfig\n\n",
+	  #               "%postun -p /sbin/ldconfig\n\n";
+
+	  print SPECFILE "%post\n",
+	                 "/sbin/ldconfig\n\n",
+	                 "%postun\n",
+	                 "/sbin/ldconfig\n\n",
+	}
+      write_redhat_files_section ('SPECFILE', $primary_target);
+      if ($needs_arch_conditionals)
+        {
+	  print_arch_conditional ('SPECFILE', $primary_target, 0)
+	}
+    }
+
+  for my $target (@$targets)
+    {
+      my $rh_requires = compute_redhat_requires ($target);
+      my $target_name = $target->{package_name};
+
+      # Only process $target if it pertains to the current $build.
+      next if $target->{build} != $build;
+
+      # For the main package, the remaining data are
+      # handled in the main preamble.
+      next if ($target->{name} eq $build->{name});
+
+      if ($needs_arch_conditionals)
+        {
+	  print_arch_conditional ('SPECFILE', $target, 1);
+	}
+
+      # Various standard fields for the non-major package.
+      # XXX: should probably try to avoid needless `-n' flags.
+      print SPECFILE "%package -n $target_name\n";
+      write_entries ('SPECFILE', $target, 
+                     [qw(Group)],
+                     [qw(group)]);
+      print SPECFILE "Requires: $rh_requires\n" if ($rh_requires ne '');
+
+      my $rh_conflicts = compute_redhat_conflicts ($target);
+      print SPECFILE "Conflicts: $rh_conflicts\n" if ($rh_conflicts ne '');
+
+      # Summary is required for Redhat packages,
+      # so we checked the availability of the Synopsis:
+      # field on input, so an undef'd $summary should never occur.
+      my $summary = $target->{summary};
+      die unless defined $summary;
+      print SPECFILE "Summary: $summary\n";
+
+      if ($target->{needs_ldconfig})
+        {
+	  print SPECFILE "%post -n $target_name -p /sbin/ldconfig\n\n",
+	                 "%postun -n $target_name -p /sbin/ldconfig\n\n";
+        }
+
+      # Likewise, Description is mandatory.
+      my $desc = $target->{description};
+      if (!defined($desc)) { $desc = $package->{description}; }
+      die unless defined $desc;
+      print SPECFILE "%description -n $target_name\n$desc\n";
+
+      # Print the %files section (Based on Files: in the pkgwriteinfo file.)
+      write_redhat_files_section ('SPECFILE', $target);
+      if ($needs_arch_conditionals)
+        {
+	  print_arch_conditional ('SPECFILE', $target, 0);
+	}
+      print SPECFILE "\n\n";
+    }
+
+  # If there is a changelog, include it in the specfile.
+  # This is annoying b/c there is not necessarily any unpacked
+  # source code around...
+  my $changelog = $package->{changelog};
+  if (defined ($changelog))
+    {
+      my $cl_file;
+      if ($package->{package_source_dir})
+        {
+	  $cl_file = $package->{package_source_dir} . "/$changelog";
+	}
+      else
+        {
+	  # perform the necessary `tar' command.
+	  $cl_file = "$gunzip < " . $package->{package_tarball}
+	                     . " | tar $untar_to_stdout - "
+			     . $package->{upstream_fullname} . "/$changelog |";
+	}
+      my $cp = changelog_parser_new ($cl_file);
+      print SPECFILE "\n%changelog\n";
+      my $first_time = 1;
+      while (changelog_parser_advance ($cp))
+        {
+	  if ($first_time)
+	    {
+	      my $ver = $package->{version} . '-' .  $package->{release};
+	      if ($strict_changelog_checking && $cp->{version} ne $ver)
+		{
+		  die "package version in changelog (" . $cp->{version} . ")"
+		    . " and in pkgwriteinfo file ($ver) do not match!";
+		}
+	      $first_time = 0;
+	    }
+	  changelog_write_redhat_style ($cp, 'SPECFILE');
+	}
+      changelog_parser_destroy ($cp);
+    }
+  close SPECFILE;
+}
+
+sub write_redhat_files_section($$)
+{
+  my ($fh, $target) = @_;
+  print $fh '%files -n ', $target->{package_name}, "\n";
+  my $files_list = $target->{files};
+  if (defined($files_list))
+    {
+      print $fh '%defattr(-, root, root)', "\n";
+      for my $wildcard (@$files_list)
+	{
+	  my $tmp = $wildcard;
+	  $tmp =~ s,^/usr/,%{prefix}/,;
+	  print $fh "$tmp\n";
+	}
+    }
+  my $manpages = $target->{manpages};
+  for my $manpage (@$manpages)
+    {
+      my $section = get_manpage_section ($manpage);
+      print $fh "%{prefix}/man/man$section/$manpage.gz\n"
+    }
+  for my $doc (redhat_make_doc_section_list ($fh, $target->{package}, $target))
+    {
+      print $fh "%doc $doc\n";
+    }
+}
+
+# --- print canned rpmrc ---
+# This is based on the spec file distributed with rpm 4.0.  
+# See comments in the legal section of pkgwrite.
+sub print_canned_rpmrc ($)
+{
+  my $fh = $_[0];
+  for (qw(i386 i486 i586 i686 athlon))
+    { print $fh "optflags: $_ -O2 -march=$_\n" }
+  for (qw(ia64 mipseb mipsel ia64))
+    { print $fh "optflags: $_ -O2\n" }
+  print $fh "optflags: alpha -O2 -mieee\n";
+  for (qw(ev5 ev56 pca56 ev6 ev67))
+    {  print $fh "optflags: alpha$_ -O2 -mieee -mcpu=$_\n" }
+  print $fh "optflags: sparc -O2 -m32 -mtune=ultrasparc\n";
+  print $fh "optflags: sparcv9 -O2 -m32 -mcpu=ultrasparc\n";
+  print $fh "optflags: sparc64 -O2 -m64 -mcpu=ultrasparc\n";
+  print $fh "optflags: ppc -O2 -fsigned-char\n";
+  for (qw(parisc hppa1.0 hppa1.1 hppa1.2 hppa2.0))
+    {  print $fh "optflags: $_ -O2 -mpa-risc-1-0\n" }
+  for (qw(armv4b armv4l))
+    {  print $fh "optflags: $_ -O2 -fsigned-char -fomit-frame-pointer\n" }
+  for (qw(m68k atarist atariste ataritt falcon atariclone milan hades))
+    {  print $fh "optflags: $_ -O2 -fomit-frame-pointer\n" }
+  for (qw(athlon i686 i586 i486 i386))
+    {  print $fh "arch_canon:	$_: $_ 1\n" }
+  for (qw(alpha alphaev5 alphaev56 alphapca56 alphaev6 alphaev67))
+    {  print $fh "arch_canon:	$_: $_ 2\n" }
+  for (qw(alpha alphaev5 alphaev56 alphapca56 alphaev6 alphaev67))
+    {  print $fh "arch_canon:	$_: sparc 3\n" }
+  for (qw(sparcv9))
+    {  print $fh "arch_canon:	$_: $_ 3\n" }
+  print $fh <<'EOF';
+arch_canon:	mipseb:	mipseb	4
+arch_canon:	ppc:	ppc	5
+arch_canon:	m68k:	m68k	6
+arch_canon:	IP:	sgi	7
+arch_canon:     rs6000:	rs6000  8
+arch_canon:     ia64:	ia64	9
+arch_canon:	sparc64:sparc64 10
+arch_canon:	sun4u:	sparc64 10
+arch_canon:	mipsel:	mipsel	11
+arch_canon:     armv4b:	armv4b 	12
+arch_canon:     armv4l:	armv4l 	12
+EOF
+  for (qw(atarist atariste ataritt falcon atariclone milan hades))
+    { print $fh "arch_canon:	$_: m68kmint	13\n" }
+  for (qw(s398 i370))
+    { print $fh "arch_canon:  $_: $_     14\n" }
+  
+  print $fh <<'EOF';
+# Canonical OS names and numbers
+
+os_canon:	Linux:	Linux	1
+os_canon:	IRIX:	Irix	2
+# This is wrong
+os_canon:	SunOS5:	solaris	3
+os_canon:	SunOS4:	SunOS	4
+
+os_canon:      AmigaOS: AmigaOS 5
+os_canon:          AIX: AIX     5
+os_canon:        HP-UX: hpux10  6
+os_canon:         OSF1: osf1    7
+os_canon:       osf4.0: osf1    7
+os_canon:       osf3.2: osf1    7
+os_canon:      FreeBSD: FreeBSD 8
+os_canon:       SCO_SV: SCO_SV3.2v5.0.2  9
+os_canon:	IRIX64: Irix64  10
+os_canon:     NEXTSTEP: NextStep 11
+os_canon:       BSD/OS: BSD_OS 12
+os_canon:      machten: machten 13
+os_canon:  CYGWIN32_NT: cygwin32 14
+os_canon:  CYGWIN32_95: cygwin32 15
+os_canon:      UNIX_SV: MP_RAS: 16
+os_canon:         MiNT: FreeMiNT 17
+os_canon:       OS/390: OS/390	18
+os_canon:       VM/ESA: VM/ESA	19
+os_canon:    Linux/390: OS/390	20
+os_canon:    Linux/ESA: VM/ESA	20
+EOF
+
+  for (qw(s398 i370))
+    { print $fh "arch_canon:  $_: $_     14\n" }
+  for (qw(osfmach3_i686 osfmach3_i586 osfmach3_i486 osfmach3_i386
+          athlon i686 i586 i486 i386))
+    { print $fh "buildarchtranslate: $_: i386\n" }
+  for (qw(ia64))
+    { print $fh "buildarchtranslate: $_: ia64\n" }
+  for (qw(osfmach3_ppc powerpc powerppc))
+    { print $fh "buildarchtranslate: $_: ppc\n" }
+  for (qw(alphaev5 alphaev56 alphapca56 alphaev6 alphaev67))
+    { print $fh "buildarchtranslate: $_: alpha\n" }
+  for (qw(sun4c sun4d sun4m sparcv9))
+    { print $fh "buildarchtranslate: $_: sparc\n" }
+  for (qw(sun4u))
+    { print $fh "buildarchtranslate: $_: sparc64\n" }
+  for (qw(atarist atariste ataritt falcon atariclone milan hades))
+    { print $fh "buildarchtranslate: $_: m68kmint\n" }
+  for ('alphaev67: alphaev6', 'alphaev6: alphapca56', 'alphapca56: alphaev56',
+       'alphaev56: alphaev5', 'alphaev5: alpha', 'alpha: axp noarch',
+       'ia64: noarch', 'athlon: i686', 'i686: i586', 'i586: i486',
+       'i486: i386', 'i386: noarch', 'osfmach3_i686: i686 osfmach3_i586',
+       'osfmach3_i586: i586 osfmach3_i486',
+       'osfmach3_i486: i486 osfmach3_i386', 'osfmach3_i386: i486',
+       'osfmach3_ppc: ppc', 'powerpc: ppc', 'powerppc: ppc',
+       'sun4c: sparc', 'sun4d: sparc', 'sun4m: sparc', 'sun4u: sparc64',
+       'sparc64: sparcv9', 'sparcv9: sparc', 'sparc: noarch',
+       'ppc: rs6000', 'rs6000: noarch', 'mipseb: noarch', 'mipsel: noarch',
+       'hppa2.0: hppa1.2', 'hppa1.2: hppa1.1', 'hppa1.1: hppa1.0',
+       'hppa1.0: parisc', 'parisc: noarch',
+       'armv4b: noarch', 'armv4l: noarch',
+       'atarist: m68kmint noarch', 'atariste: m68kmint noarch',
+       'ataritt: m68kmint noarch', 'falcon: m68kmint noarch',
+       'atariclone: m68kmint noarch', 'milan: m68kmint noarch',
+       'hades: m68kmint noarch', 's390: i370', 'i370: noarch',
+       'ia64: noarch')
+    { print $fh "arch_compat: $_\n" }
+  print $fh <<'EOF';
+os_compat:   IRIX64: IRIX
+os_compat: solaris2.7: solaris2.3 solaris2.4 solaris2.5 solaris2.6
+os_compat: solaris2.6: solaris2.3 solaris2.4 solaris2.5
+os_compat: solaris2.5: solaris2.3 solaris2.4
+os_compat: solaris2.4: solaris2.3
+
+os_compat: hpux11.00: hpux10.30
+os_compat: hpux10.30: hpux10.20
+os_compat: hpux10.20: hpux10.10
+os_compat: hpux10.10: hpux10.01
+os_compat: hpux10.01: hpux10.00
+os_compat: hpux10.00: hpux9.07
+os_compat: hpux9.07: hpux9.05
+os_compat: hpux9.05: hpux9.04
+
+os_compat: osf4.0: osf3.2 osf1
+
+os_compat: ncr-sysv4.3: ncr-sysv4.2
+
+os_compat: FreeMiNT: mint MiNT TOS
+os_compat: MiNT: FreeMiNT mint TOS
+os_compat: mint: FreeMiNT MiNT TOS
+os_compat: TOS: FreeMiNT MiNT mint
+
+buildarch_compat: ia64: noarch
+
+buildarch_compat: athlon: i686
+buildarch_compat: i686: i586
+buildarch_compat: i586: i486
+buildarch_compat: i486: i386
+buildarch_compat: i386: noarch
+
+buildarch_compat: sun4c: noarch
+buildarch_compat: sun4d: noarch
+buildarch_compat: sun4m: noarch
+buildarch_compat: sun4u: noarch
+buildarch_compat: sparc64: noarch
+buildarch_compat: sparcv9: sparc
+buildarch_compat: sparc: noarch
+
+buildarch_compat: alphaev67: alphaev6
+buildarch_compat: alphaev6: alphapca56
+buildarch_compat: alphapca56: alphaev56
+buildarch_compat: alphaev56: alphaev5
+buildarch_compat: alphaev5: alpha
+buildarch_compat: alpha: noarch
+
+buildarch_compat: m68k: noarch
+buildarch_compat: ppc: noarch
+buildarch_compat: mipsel: noarch
+buildarch_compat: mipseb: noarch
+buildarch_compat: armv4b: noarch
+buildarch_compat: armv4l: noarch
+buildarch_compat: parisc: noarch
+
+buildarch_compat: atarist: m68kmint noarch
+buildarch_compat: atariste: m68kmint noarch
+buildarch_compat: ataritt: m68kmint noarch
+buildarch_compat: falcon: m68kmint noarch
+buildarch_compat: atariclone: m68kmint noarch
+buildarch_compat: milan: m68kmint noarch
+buildarch_compat: hades: m68kmint noarch
+
+buildarch_compat: ia64: noarch
+buildarch_compat: s390: noarch
+EOF
+}
+
+# --- make redhat dir ---
+#
+# Make a bunch of files needed to produce an rpm
+# and writes them in $dir, which it creates.
+#
+# Return a list of commands that should be run to build
+# the RPM given this directory.
+#
+# Also needs a distribution tarball (made by `make dist')
+# and an architecture.
+sub make_redhat_dir ($$$$)
+{
+  my ($package, $dir, $tarball, $arch) = @_;
+
+  run ("rm -rf $dir");
+  safe_mkdir ("$dir");
+  safe_mkdir ("$dir/rpm-tmp");
+  safe_mkdir ("$dir/rpm-tmp/usr");
+  safe_mkdir ("$dir/rpm-tmp/usr/src");
+  safe_mkdir ("$dir/rpm-tmp/usr/src/redhat");
+  safe_mkdir ("$dir/tmp");
+  for (qw(SOURCES SPECS BUILD RPMS SRPMS))
+    {
+      safe_mkdir ("$dir/rpm-tmp/usr/src/redhat/$_");
+    }
+  run ("cp $tarball $dir/rpm-tmp/usr/src/redhat/SOURCES");
+  chdir ($dir) or die;
+  $dir = `pwd`;
+  chomp($dir);
+  #$REDHAT_DIR = $dir;
+  $BUILD_TOP = "$dir/tmp";
+  $STAGING_TOP = "$dir/rpm-tmp";
+
+  my $tmp_rpm_macros_fname = "$dir/rpmmacros.tmp";
+  my $tmp_rpm_rc_fname = "$dir/rpmrc.tmp";
+
+  open T, ">$tmp_rpm_macros_fname" 
+  		or die "couldn't create $tmp_rpm_macros_fname";
+  print T <<"EOF";
+%_builddir		${BUILD_TOP}
+%_buildshell		/bin/sh
+%_dbpath		%{_var}/lib/rpm
+%_defaultdocdir		%{_usr}/doc
+%_instchangelog		5
+%_rpmdir		${STAGING_TOP}/usr/src/redhat/RPMS
+%_rpmfilename		%%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm
+%_signature		none
+%_sourcedir		${STAGING_TOP}/usr/src/redhat/SOURCES
+%_specdir		${STAGING_TOP}/usr/src/redhat/SPECS
+%_srpmdir		${STAGING_TOP}/usr/src/redhat/SRPMS
+%_srcrpmdir		${STAGING_TOP}/usr/src/redhat/SRPMS
+%_tmppath		/tmp
+%_topdir		${STAGING_TOP}
+EOF
+  close T;
+
+
+  open (RPMRC, ">$tmp_rpm_rc_fname") or die "couldn't create $tmp_rpm_rc_fname";
+  print RPMRC "macrofiles: ",
+               join (':', '/usr/lib/rpm/macros',
+ 			  '/usr/lib/rpm/%{_target}/macros',
+			  '/etc/rpm/macros',
+                          '/etc/rpm/%{_target}/macros', 
+                          $tmp_rpm_macros_fname);
+  print RPMRC "\n\n\n";
+
+  # If available, include the system-installed version
+  # (w/o its `macrofiles:' lines), instead of the "canned" one;
+  # (which actually just comes from rpm 4.0, see above);
+  # the system version should be /var/lib/rpm/rpmrc.
+  if (-r $system_rpmrc_file)
+    {
+      open SYSRPMRC, $system_rpmrc_file or die "internal error: " .
+      				"couldn't open $system_rpmrc_file";
+      while (<SYSRPMRC>)
+        {
+	  next if /^\s*macrofiles:/i;
+	  print RPMRC $_;
+	}
+      close SYSRPMRC;
+    }
+  else
+    {
+      print_canned_rpmrc ('RPMRC');
+    }
+
+  close RPMRC;
+
+  my $builds = $package->{builds};
+  my @commands = ();
+  my $targets = $package->{targets};
+  for my $build (@$builds)
+    {
+      my $tmp_specfile_name;
+      if ($build->{name} eq '{MAIN}')
+        {
+	  $tmp_specfile_name = "$dir/" . $package->{name} . ".spec";
+	}
+      else
+        {
+	  $tmp_specfile_name = "$dir/" . $package->{name} .
+	                       '-' . $build->{name} . ".spec";
+	}
+
+      make_redhat_specfile($package, $build, $tmp_specfile_name);
+      push @commands, "test -d $BUILD_TOP || mkdir $BUILD_TOP";
+
+	  my $cmd = join (' ',
+			  "rpmbuild",
+			  "--target=$arch",
+			  "--rcfile $tmp_rpm_rc_fname",
+			  "-ba",
+			  "$tmp_specfile_name");
+	   push @commands, $cmd;
+    }
+  return @commands;
+}
+
+
+# --- Automatic Depedency Conversions (Guessing involved) ---
+sub deb_to_rh_package_spec_list ($)
+{
+  my $depends = $_[0];
+  my @pieces = ();
+  for (split /,/, $depends)
+    {
+      s/^\s+//;
+      s/\s+$//;
+      s/[()]//g;
+      push @pieces, $_;
+    }
+  return join(', ', @pieces);
+}
+
+#
+# convert debian-style dependencies to redhat-style.
+# (redhat calls the line `Requires')
+# debian/pkgwrite format:
+#Depends: libglade0, libglib1.2 (>= 1.2.0), libgtk1.2 (>= 1.2.5), libxml1, libz1, xlib6g, mpg123
+#Requires: libglade >= 0.11, gtk+ >= 1.2, libxml >= 1.7, mpg123
+# As you can see, this cannot necessarily be automated,
+# so we support Redhat-Requires: for override purposes.
+sub compute_redhat_requires($)
+{
+  my $object = $_[0];
+  if (defined($object->{redhat_requires}))
+    {
+      return $object->{redhat_requires};
+    }
+  elsif (defined($object->{depends}))
+    {
+      return deb_to_rh_package_spec_list ($object->{depends});
+    }
+  else
+    {
+      return '';
+    }
+}
+sub compute_redhat_conflicts($)
+{
+  my $object = $_[0];
+  if (defined($object->{redhat_conflicts}))
+    {
+      return $object->{redhat_conflicts};
+    }
+  elsif (defined($object->{conflicts}))
+    {
+      return deb_to_rh_package_spec_list ($object->{conflicts});
+    }
+  else
+    {
+      return '';
+    }
+}
+
+
+#=====================================================================
+# Section 6: Debian tape.
+#=====================================================================
+sub copy_docs ($$$$)
+{
+  my ($fh, $basedir, $list, $targetdocdir) = @_;
+  my @rv = ();
+
+  for my $doc (@$list)
+    {
+      my $docbase;
+      next unless $doc =~ m,([^/]+)/?$,;
+      $docbase = $1;
+      if ($doc =~ /\/$/)
+        {
+	  print $fh "\t( cd $basedir/$doc/.. && \\\n",
+	            "\t  tar cf - $docbase | \\\n",
+	            "\t  $gzip || exit 1 \\\n",
+		    "\t) > $targetdocdir/$docbase.tar.gz\n";
+	  push @rv, $docbase;
+	}
+      elsif ($doc =~ /\.gz$/)
+        {
+	  print $fh "\tcp -dp $basedir/$doc $targetdocdir\n";
+	  push @rv, $docbase;
+	}
+      else
+        {
+	  print $fh "\t$gzip < $basedir/$doc > $targetdocdir/$docbase.gz\n";
+	  push @rv, "$docbase.gz";
+	}
+    }
+}
+
+# debian_docs_from_list: return a list of full paths to documentation.
+sub debian_docs_from_list ($)
+{
+  my $list = $_[0];
+
+  # Treat directories, gzipped and non-gzipped files differently.
+  return map  { my $base;
+                if (/\//)
+	          {
+		    $base = $_;
+		  }
+		elsif (/\.gz$/)
+		  {
+		    s/^.*\///;
+		    $base = $_;
+		  }
+		else
+		  {
+		    s/^.*\///;
+		    $base = "$_.gz";
+		  }
+               "/usr/share/doc/" . $target->{package_name} . "/$base";
+	     } @$list;
+}
+
+# --- Create a debian `rules' file. ---
+sub write_rules_file ($$)
+{
+  my ($fname, $package) = @_;
+  open RULES, ">$fname" or die "couldn't create rules file ($fname)";
+  print RULES <<'EOF';
+#!/usr/bin/make -f
+EOF
+  print RULES "CONFIG_OPTS = $debian_config_flags\n";
+
+  print RULES <<'EOF';
+# --- make the configure script itself (only needed from CVS) ---
+configure:
+	if test -x configure ; then                    \
+	  true ;                                       \
+	else                                           \
+	  if test -x bootstrap ; then                  \
+	    ./bootstrap ;                              \
+	  elif test -x autogen.sh ; then               \
+	    ./autogen.sh ;                             \
+	  fi                                           \
+	fi
+	test -x configure
+EOF
+
+  # Different "builds" -- these are completely rebuilt versions
+  # of the source code, usually with just different configure flags, etc.
+  my $builds = $package->{builds};
+  my $install_targets = '';
+  my $binary_package_targets = '';
+  for my $build (@$builds)
+    {
+      my $suffix; my $path;
+      if ($build->{name} eq '{MAIN}')
+        {
+          $suffix = '';
+	  $path = 'MAIN';
+	}
+      else
+        {
+	  $path = $build->{name};
+          $suffix = "-$path";
+	}
+      my $cfg_envars = $build->{configure_envars};
+      my $cfg_flags = $build->{configure_flags};
+
+      print RULES '#', ('='x69), "\n",
+		  '# Methods for building', $build->{name}, "\n",
+                  '#', ('='x69), "\n";
+
+      # figure out how to run configure.
+      print RULES <<"EOF";
+configured$suffix: configured$suffix.pkgwrite-stamp
+configured$suffix.pkgwrite-stamp: configure
+EOF
+      $has_configure = 1;
+      if ($has_configure)
+        {
+	  print RULES "\ttest -d debian/BUILDS || mkdir debian/BUILDS\n";
+	  print RULES "\trm -rf debian/BUILDS/$path\n";
+	  print RULES "\tmkdir debian/BUILDS/$path\n";
+	  print RULES "\tcd debian/BUILDS/$path && \\\n";
+	  print RULES "\t$cfg_envars \\\n" if defined $cfg_envars;
+	  $cfg_flags = '' unless defined ($cfg_flags);
+	  $cfg_flags .= " $debian_config_flags";
+	  print RULES "\t../../../configure $cfg_flags\n";
+	  print RULES "\ttouch configured$suffix.pkgwrite-stamp\n";
+	}
+      print RULES "\n";
+
+      # figure out how to build.
+      my $build_flags = join (' ',
+                              $build->{make_flags} || '',
+			      $build->{build_flags} || '');
+      print RULES <<"EOF";
+build$suffix: build$suffix.pkgwrite-stamp
+build$suffix.pkgwrite-stamp: configured$suffix.pkgwrite-stamp
+	cd debian/BUILDS/$path && \$(MAKE) PREFIX=/usr $build_flags
+EOF
+      my $make_targets = $build->{extra_build_targets};
+      for (@$make_targets)
+        {
+	  print RULES "\tcd debian/BUILDS/$path && \\\n",
+	              "\t\t\$(MAKE) PREFIX=/usr $_ $build_flags\n";
+	}
+
+      # figure out how to install.
+      my $make_flags = $build->{make_flags};
+      my $install_flags = $build->{install_flags};
+      $install_flags = '' unless defined $install_flags;
+      $install_flags .= " $make_flags" if defined $make_flags;
+
+      print RULES <<"EOF";
+install$suffix: install$suffix.pkgwrite-stamp
+install$suffix.pkgwrite-stamp: build$suffix.pkgwrite-stamp
+	test -d debian/INSTALLS || mkdir debian/INSTALLS
+	test -d debian/INSTALLS/$path || mkdir debian/INSTALLS/$path
+	cd debian/BUILDS/$path && \\
+	  \$(MAKE) PREFIX=/usr DESTDIR=`pwd`/../../INSTALLS/$path \\
+	    $install_flags install
+EOF
+      $make_targets = $build->{extra_install_targets};
+      for (@$make_targets)
+        {
+	  print RULES "\tcd debian/BUILDS/$path && \\\n",
+	              "\t\t\$(MAKE) PREFIX=/usr \\\n",
+		      "\t\tDESTDIR=`pwd`/../../INSTALLS/$path \\\n",
+	    	      "\t\t$install_flags $_\n";
+        }
+      print RULES <<"EOF";
+	touch install$suffix.pkgwrite-stamp
+	rm -f target-dist.pkgwrite-stamp
+EOF
+      $install_stamp_targets .= " install$suffix.pkgwrite-stamp";
+      $install_targets .= " install$suffix";
+    }
+
+
+  print RULES '#', ('='x69), "\n",
+	      "# Copying files into per-target directories.\n",
+	      '#', ('='x69), "\n",
+	      "target-dist: target-dist.pkgwrite-stamp\n",
+	      "target-dist.pkgwrite-stamp: $install_stamp_targets\n";
+  my $targets = $package->{targets};
+  my %MADE_DIRS = ();
+  for my $target (@$targets)
+    {
+      my $suffix = '';
+
+      my $pname = $target->{package_name};
+      # Move file from the build area to a target directory.
+      my $files = $target->{files};
+
+      # figure out the target's build's directory name.
+      my $buildname = $target->{build}->{name};
+      if ($buildname eq '{MAIN}')
+        {
+	  $buildname = 'MAIN';
+	}
+
+      # find the string to suffix makefile targets with.
+      if ($target->{name} ne '{MAIN}')
+        {
+	  $suffix = "-" . $target->{name};
+	}
+      for my $pattern (@$files)
+        {
+	  my $dir = $pattern;
+	  my $cp_command = 'cp -dp';
+	  $cp_command = 'cp -dpr' if $dir =~ s,/$,,;
+
+	  # Are there any wild-cards in the directory part
+	  # of the pattern:  they will require a different
+	  # strategy.
+	  if ($pattern =~ /.*[\?\*].*\/.*/)
+	    {
+	      print RULES "\tset -e ; (cd debian/INSTALLS/$buildname ; tar cf - ./$pattern) | ( cd debian/TARGETS/$pname ; tar xf -)\n";
+	      next;
+	    }
+
+	  $dir =~ s,/[^/]+$,,;
+	  maybe_print_make_dirs (\%MADE_DIRS,
+	                         'RULES',
+				 "debian/TARGETS/$pname/$dir");
+	  print RULES "\t$cp_command debian/INSTALLS/$buildname/$pattern debian/TARGETS/$pname/$dir\n";
+	}
+      my $manpages = $target->{manpages};
+      for my $manpage (@$manpages)
+        {
+	  my $section = get_manpage_section ($manpage);
+	  maybe_print_make_dirs (\%MADE_DIRS, 'RULES',
+	                   "debian/TARGETS/$pname/usr/share/man/man$section");
+	  my $syspath = "usr/share/man/man$section/$manpage";
+	  print RULES "\tgzip -9 -c < debian/INSTALLS/$buildname/$syspath > debian/TARGETS/$pname/$syspath.gz\n";
+	}
+      my $inst_doc_dir = "debian/INSTALLS/$buildname/usr/share/doc";
+      my $target_doc_dir = "debian/TARGETS/$pname/usr/share/doc";
+      $target_doc_dir .= "/" . $target->{package_name};
+      maybe_print_make_dirs (\%MADE_DIRS, 'RULES', $target_doc_dir);
+      copy_docs ('RULES', "debian/INSTALLS/$buildname",
+		 $target->{installed_docs}, $target_doc_dir);
+      copy_docs ('RULES', ".", $target->{source_docs}, $target_doc_dir);
+
+      # Copy the Changelog, if any, and add it to the list
+      # of files for this target.
+      print RULES "\tgzip -9 -c < debian/changelog > ",
+                  "$target_doc_dir/", $package->{changelog_file}, "\n";
+
+      $binary_package_targets .= " binary-package-target$suffix";
+    }
+  print RULES "\ttouch target-dist.pkgwrite-stamp\n";
+  print RULES "\trm -f $binary_package_targets\n";
+
+  print RULES "\n\n";
+  print RULES '#', ('='x69), "\n",
+	      "# Methods for creating binary packages.\n",
+	      '#', ('='x69), "\n";
+
+  # I don't think there's ever any reason to build
+  # the arch-indep files separately, but someday we
+  # might conceivable support a Platform-Independent flag
+  # for builds; then they could be placed here.
+  print RULES "# Build architecture-independent files here.\n",
+	      "binary-indep:\n",
+	      "\ttrue\n\n";
+
+  print RULES "# Build architecture-dependent files here.\n";
+  for my $target (@$targets)
+    {
+      my $pname = $target->{package_name};
+      my $build = $target->{build};
+      $pname = 'MAIN' if $pname eq '{MAIN}';
+      my $lcpname = lc($pname);
+
+      my $suffix = '';
+      $suffix = ("-" . $target->{name}) if ($target->{name} ne '{MAIN}');
+
+      # build this binary package.
+      print RULES <<"EOF";
+binary-package-target$suffix: binary-package-target$suffix.pkgwrite-stamp
+binary-package-target$suffix.pkgwrite-stamp: target-dist.pkgwrite-stamp
+	# Compose DEBIAN directory (in debian/TARGETS/$pname)
+	test -d debian/TARGETS/$pname/DEBIAN || mkdir debian/TARGETS/$pname/DEBIAN
+	chmod o-w debian/TARGETS/$pname/DEBIAN
+	dpkg-gencontrol -p$lcpname -Pdebian/TARGETS/$pname
+EOF
+      my $ddata = $target->{debian_data};
+
+      # copy various worker scripts into the DEBIAN directory.
+      for my $variant (qw(preinst postinst prerm postrm))
+        {
+	  if (defined ($ddata->{"needs_" . $variant}))
+	    {
+	      my $script = $target->{package_name} .  ".$variant";
+	      print RULES "\tcp debian/$script debian/TARGETS/$pname/DEBIAN\n";
+	      print RULES "\tchmod +x debian/TARGETS/$pname/DEBIAN/$script\n";
+	    }
+	}
+
+      print RULES <<"EOF";
+	# Build the package.
+	dpkg-deb --build debian/TARGETS/$pname ..
+	touch binary-package-target$suffix.pkgwrite-stamp
+EOF
+    }
+    
+  print RULES "# Debian standard targets.\n";
+  print RULES "binary-package: $binary_package_targets\n";
+  print RULES "binary-arch: $binary_package_targets\n";
+  print RULES "binary: binary-indep binary-arch\n\n";
+  print RULES "# these files may not be created by targets of their name.\n";
+  print RULES ".PHONY: build clean binary-indep binary-arch binary\n";
+  print RULES ".PHONY:$binary_package_targets\n";
+  print RULES ".PHONY:$install_targets\n";
+
+  close (RULES);
+  chmod (0755, $fname) or die "could not make `$fname' executable: $!";
+}
+
+sub make_debian_description($)
+{
+  my @new_desc = ();
+  my $old_desc = $_[0];
+  for (split /\n/, $old_desc)
+    {
+      if (/^\S/)
+        { push @new_desc, " $_" }
+      elsif (/\S/)
+        { push @new_desc, $_ }
+      else
+        { push @new_desc, " ." }
+    }
+  return join ("\n", @new_desc);
+}
+
+sub make_debian_directory($$)
+{
+  my ($package, $source_dir) = @_;
+  my $output_dir = "$source_dir/debian";
+
+  mkdir("$output_dir", 0755) 
+  	or die "couldn't make the directory `$output_dir': $!";
+
+  # --- Create control file ---
+  open CONTROL, ">$output_dir/control" or die "couldn't create control file";
+  write_entries ('CONTROL', $package,
+                 [qw(Source Section Priority)],
+                 [qw(lcname section priority)]);
+  if (defined($package->{authors}))
+    {
+      my $author0 = $package->{authors}->[0];
+      print CONTROL "Maintainer: $author0\n";
+    }
+  print CONTROL "Standards-Version: 3.0.1\n\n";
+
+  my $targets = $package->{targets};
+  for my $target (@$targets)
+    {
+      my $target_name = $target->{package_name};
+      my $deb_description;
+      if (defined($target->{description}))
+        { 
+	  $deb_description = make_debian_description ($target->{description});
+	}
+      else
+        { 
+	  $deb_description = make_debian_description ($package->{description});
+	}
+      my $target_arch = 'any';
+      $target_arch = 'all' if $target->{arch_indep};
+      print CONTROL "Package: " . lc($target_name) . "\n",
+                    "Architecture: ",
+		    ($target->{arch_indep} ? "all" : "any"),
+		    "\n";
+      my $depends = $target->{depends};
+      print CONTROL "Depends: $depends\n" if defined $depends;
+      my $conflicts = $target->{conflicts};
+      print CONTROL "Conflicts: $conflicts\n" if defined $conflicts;
+      print CONTROL "Description: $deb_description\n\n";
+    }
+  close CONTROL;
+
+  for my $target (@$targets)
+    {
+      my $target_name = $target->{package_name};
+      my $subname_dot;
+      if ($target->{name} eq '{MAIN}')
+        {
+	  $subname_dot = "";
+	}
+      else
+        {
+	  $subname_dot = "$target_name.";
+	}
+
+      # Create the list of all installed files (including docs).
+      my $list = $target->{files};
+      my $docdir = "/usr/share/doc/" . $target->{package_name};
+      $list = [] unless defined $list;
+      my @files = (
+                    @$list,
+                    debian_docs_from_list ($target->{source_docs}),
+                    debian_docs_from_list ($target->{installed_docs}),
+		    "$docdir/" . $package->{changelog_file}
+		  );
+
+      # --- Create the .files files ---
+      write_list_to_file (\@files, "$output_dir/$target_name.files");
+
+      if (defined $target->{conffiles})
+        {
+	  # --- Create the .conffile files ---
+	  write_list_to_file ($target->{conffiles},
+	                      "$output_dir/$target_name.conffiles");
+	}
+
+      # --- If ldconfig is needed, create .prerm and .postinst files. ---
+      # XXX: i gotta learn if prerm is really correct.
+      if ($target->{needs_ldconfig})
+        {
+	  my $do_ldconfig_script = <<'EOF';
+#! /bin/sh
+
+if test -x /sbin/ldconfig ; then
+  /sbin/ldconfig
+else
+  ldconfig
+fi
+EOF
+          make_file ("$output_dir/$target_name.postinst",
+	             $do_ldconfig_script);
+          make_file ("$output_dir/$target_name.prerm",
+	             $do_ldconfig_script);
+	  $target->{debian_data}->{needs_prerm} = 1;
+	  $target->{debian_data}->{needs_postinst} = 1;
+        }
+    }
+
+  my $prefab_entry;
+  {
+    my $package_name = $package->{name};
+    my $version = $package->{version};
+    my $release = $package->{release};
+    my $packager = $package->{packager};
+    my $packager_email = $package->{packager_email};
+    my $date = `date -R` ; chomp ($date);
+    die unless defined $package_name;
+    die unless defined $version;
+    die unless defined $release;
+    die unless defined $packager;
+    die unless defined $packager_email;
+    $prefab_entry =
+       "$package_name ($version-$release) $debian_dist; urgency=low\n\n" .
+       "  * packaged by pkgwrite\n" .
+       "\n" .
+       " -- $packager <$packager_email>  $date\n";
+  }
+  $changelog = $package->{changelog};
+  if (defined($changelog))
+    {
+      $changelog = "$source_dir/$changelog";
+      my $cp = changelog_parser_new ($changelog);
+      die "couldn't read $changelog" unless defined $cp;
+      my $got_first = 0;
+      open OCL, ">$output_dir/changelog" or die "couldn't create changelog";
+      while (changelog_parser_advance ($cp))
+        {
+	  # Verify that the changelog matches package/version.
+	  unless ($got_first)
+	    {
+	      if ($cp->{package} ne $package->{name})
+	        {
+		  die "package name from changelog (" . $cp->{package} . ") "
+		    . "and according to the pkgwriteinfo "
+		    . "(" . $package->{name} . ")"
+		    . " do not match!";
+		}
+	      my $ver = $package->{version} . '-' .  $package->{release};
+	      if ($cp->{version} ne $ver)
+		{
+		  if ($strict_changelog_checking)
+		    {
+		      die "package version in changelog (".$cp->{version}.")"
+			. " and in pkgwriteinfo file ($ver) do not match!";
+		    }
+		  else
+		    {
+		      print OCL $prefab_entry;
+		    }
+		}
+	      $got_first = 1;
+	    }
+	  
+	  changelog_write_debian_style ($cp, 'OCL');
+	}
+      close OCL;
+      changelog_parser_destroy ($cp);
+    }
+  else
+    {
+      make_file ("$output_dir/changelog", $prefab_entry);
+    }
+
+  # --- Create rules file ---
+  write_rules_file ("$output_dir/rules", $package);
+}
+
+
+#=====================================================================
+# Section 7: Make a package from a tarball.
+#=====================================================================
+sub make_package($$$$$)
+{
+  my ($package, $tarball, $vendor, $arch, $output_dir) = @_;
+  
+  my $workdir = get_work_dir ();
+  chdir ($workdir) or die "couldn't cd $workdir";
+
+  # Assert: Various paths cannot be relative.
+  die unless $tarball =~ m,^/,;
+  die unless $output_dir =~ m,^/,;
+
+  # Make the packages.
+  if ($vendor eq 'redhat')
+    {
+      my $rhdir = "$workdir/redhat";
+      my @rpm_commands = make_redhat_dir ($package, $rhdir, $tarball, $arch);
+      chdir "$rhdir" or die "couldn't cd to $rhdir";
+      for my $rpm_command (@rpm_commands)
+        {
+	  run ("$rpm_command");
+	}
+      my $rpmdir = "$workdir/redhat/rpm-tmp/usr/src/redhat";
+      run ("cp $rpmdir/SRPMS/*.rpm $rpmdir/RPMS/*.rpm $output_dir");
+    }
+  elsif ($vendor eq 'debian')
+    {
+      my $ddir = "$workdir/debian";
+      mkdir ($ddir, 0775) or die "couldn't make the directory $ddir";
+
+      # Untar.
+      chdir ($ddir) or die "couldn't cd to $ddir";
+      run ("zcat $tarball | tar xf -");
+
+      # Make the packaging directory.
+      my $dir;
+      $dir = "$ddir/" . $package->{name} . '-' . $package->{version};
+
+      make_debian_directory ($package, "$dir");
+      chdir ($dir) or die "couldn't cd to $dir";
+      run ("cd $dir && dpkg-buildpackage -rfakeroot -uc -us");
+      run ("mv $ddir/*.deb $output_dir");
+      my $dprefix = $package->{name}
+                  . "_" . $package->{version}
+                  . "-" . $package->{release};
+
+      # Move the debian source package.
+      run ("mv $ddir/$dprefix.tar.gz $output_dir");
+      run ("mv $ddir/$dprefix*.changes $output_dir");
+      run ("mv $ddir/$dprefix*.dsc $output_dir");
+    }
+  else
+   {
+     die "i can only make `redhat' and `debian' packages";
+   }
+}
+
+
+#=====================================================================
+# Section 8: Usage message.
+#=====================================================================
+sub usage
+{
+  print STDERR <<"EOF";
+usage: pkgwrite (--tarball=TARBALL | --srcdir=SRCDIR) 
+                [--pkgwriteinfo-file=pkgwriteinfo]
+		[--no-cleanup]
+		[--no-strict-changelog]
+		[--debian-dist=DIST]
+		 --format=(redhat|debian|all)
+		 --output=OUTPUT
+		 --arch=ARCH
+
+Make either redhat or debian packages for source code and
+a pkgwriteinfo file.
+
+(Run pkgwrite --extra-help for unusual command-line flags.)
+
+EOF
+  print STDERR "The system supports .rpm building.\n" if $has_rpm_support;
+  print STDERR "The system supports .deb building.\n" if $has_dpkg_support;
+  exit (1);
+}
+
+sub extra_usage
+{
+  print STDERR <<"EOF";
+usage: pkgwrite [flags]
+
+Querying hardcoded lists of values in pkgwrite:
+
+    pkgwrite --query-list={deb-sections,rpm-groups,deb-priorities}
+EOF
+  exit (1);
+}
+
+sub version
+{
+  print "This is pkgwrite, version $PKGWRITE_VERSION.\n";
+  exit 0;
+}
+
+
+
+
+#=====================================================================
+# Section 9: Main program.
+#=====================================================================
+my $pkg_tarball;
+my $pkg_sourcedir;
+my $pkgwriteinfo_file;
+my $pkg_format;
+my $pkg_arch;
+my $output_dir;
+
+# --- Process arguments ---
+while (defined($arg=shift(@ARGV)))
+  {
+    # Arguments that cause us to print something and exit.
+    if ($arg eq '--help') { usage () }
+    if ($arg eq '--extra-help') { extra_usage () }
+    if ($arg eq '--version') { version () }
+    if ($arg =~ s/--query-list=//)          { dump_list ($arg);               }
+
+    # Other flags.
+    if ($arg eq '--no-strict-changelog')    { $strict_changelog_checking = 0; }
+    elsif ($arg eq '--skip-sanity-check')   { $do_sanity_check = 0;           }
+    elsif ($arg eq '--no-cleanup')          { $do_cleanup = 0;                }
+    elsif ($arg =~ s/--tarball=//)          { $pkg_tarball = $arg;            }
+    elsif ($arg =~ s/--source-dir=//)       { $pkg_sourcedir = $arg;          }
+    elsif ($arg =~ s/--output=//)           { $output_dir = $arg;             }
+    elsif ($arg =~ s/--pkgwriteinfo-file=//){ $pkgwriteinfo_file = $arg;      }
+    elsif ($arg =~ s/--debian-dist=//)      { $debian_dist = $arg;            }
+    elsif ($arg =~ s/--arch=//)             { $pkg_arch = $arg;               }
+    elsif ($arg =~ s/--format=//)           { $pkg_format = $arg;             }
+    elsif (($arg eq '--tarball')
+        || ($arg eq '--source-dir')
+        || ($arg eq '--output')
+        || ($arg eq '--pkgwriteinfo-file')
+        || ($arg eq '--format')
+	|| ($arg eq '--arch')
+	|| ($arg eq '--debian-dist')
+	|| ($arg eq '--query-list'))
+      {
+	my $newarg = shift(@ARGV);
+	die "$arg requires a parameter" unless defined $newarg;
+	if ($arg eq '--tarball')            { $pkg_tarball = $newarg;         }
+	elsif ($arg eq '--source-dir')      { $pkg_sourcedir = $newarg;       }
+	elsif ($arg eq '--pkgwriteinfo-file'){ $pkgwriteinfo_file = $newarg;  }
+	elsif ($arg eq '--output')          { $output_dir = $newarg;          }
+	elsif ($arg eq '--arch')            { $pkg_arch = $newarg;            }
+	elsif ($arg eq '--debian-dist')     { $debian_dist = $newarg;         }
+	elsif ($arg eq '--format')          { $pkg_format = $newarg;          }
+	elsif ($arg eq '--query-list')      { dump_list ($newarg);            }
+	else                                { die "internal error"            }
+      }
+    else
+      {
+        warn "unrecognized argument: $arg";
+	usage ();
+      }
+  }
+
+unless (defined($pkg_tarball) || defined($pkg_sourcedir))
+  {
+    die "either --tarball or --source-dir must be specified"
+  }
+unless (defined ($pkg_format))
+  {
+    die "--format must be specified";
+  }
+unless (defined ($output_dir))
+  {
+    die "--output must be specified";
+  }
+unless (defined ($pkg_arch))
+  {
+    die "--arch must be specified";
+  }
+if ($pkg_format ne 'all'
+ && $pkg_format ne 'debian'
+ && $pkg_format ne 'redhat')
+  {
+    my $valid = join (', ', qw(all debian redhat));
+    die "format `$pkg_format' was invalid: only $valid are known";
+  }
+if (($pkg_format eq 'all' || $pkg_format eq 'redhat')
+ && !$has_rpm_support)
+  {
+    die "cannot make RPMs on this system";
+  }
+if (($pkg_format eq 'all' || $pkg_format eq 'debian')
+ && !$has_dpkg_support)
+  {
+    die "cannot make Debian packages on this system";
+  }
+
+
+# Make all paths absolute.
+#
+# We are about to `chdir' all over the place.
+# While technically `make_absolute' is cheesy 
+# (b/c eg it doesn't work if `pwd` has been deleted),
+# it least it works in practice,
+# and makes the programming much easier.
+if (defined($pkg_tarball))
+  { $pkg_tarball = make_absolute ($pkg_tarball) }
+if (defined($pkg_sourcedir))
+  { $pkg_sourcedir = make_absolute ($pkg_sourcedir) }
+if (defined($pkgwriteinfo_file))
+  { $pkgwriteinfo_file = make_absolute ($pkgwriteinfo_file) }
+if (defined($output_dir))
+  { $output_dir = make_absolute ($output_dir);
+    run ("mkdir -p $output_dir"); }
+if (defined($debian_changelog))
+  { $debian_changelog = make_absolute ($debian_changelog) }
+
+
+# Create pkgwriteinfo_file if necessary.
+if (!defined($pkgwriteinfo_file))
+  {
+    # Build a temporary working area to monkey with the source code.
+    my $workdir = get_work_dir ();
+    my $edir = "$workdir/pkgwriteinfo-tmp-extract";
+    mkdir ($edir, 0755) or die;
+    my $tmp_source_dir;
+
+    # Extract the source code, to (hopefully) find a pkgwriteinfo{,.in} file.
+    if (defined($pkg_tarball))
+      {
+	run ("cd $edir ; $gunzip < $pkg_tarball | tar xf -");
+
+	# find the tmp source directory inside $edir.
+	opendir X, "$edir" or die "error scanning $edir";
+	for (readdir X)
+	  {
+	    next if $_ eq '.';
+	    next if $_ eq '..';
+	    next unless -d "$edir/$_";
+	    $tmp_source_dir = "$edir/$_";
+	    last;
+	  }
+	closedir X;
+      }
+    else
+      {
+        $tmp_source_dir = $pkg_sourcedir;
+      }
+    die "could not find directory in tarball" unless defined $tmp_source_dir;
+
+    # If there isn't a pkgwriteinfo file, try running configure.
+    if (!-e "$tmp_source_dir/pkgwriteinfo")
+      {
+        if (-e "$tmp_source_dir/pkgwriteinfo.in")
+	  {
+	    if (! -x "$tmp_source_dir/configure")
+	      {
+		# Uh, maybe `bootstrap' or `autogen.sh' will help?
+	        if (-x "$tmp_source_dir/bootstrap")
+		  {
+		    run ("cd $tmp_source_dir; ./bootstrap");
+		    run ("cd $tmp_source_dir; ./configure --quiet");
+		  }
+		elsif (-x "$tmp_source_dir/autogen.sh")
+		  {
+		    run ("cd $tmp_source_dir; ./autogen.sh --quiet");
+		  }
+	      }
+	    else
+	      {
+		# Excellent: configure it.
+		run ("cd $tmp_source_dir; ./configure --quiet");
+	      }
+	    unless (-e "$tmp_source_dir/pkgwriteinfo.in")
+	      {
+	        warn "pkgwriteinfo is probably needed in AC_OUTPUT";
+	      }
+	  }
+	else
+	  {
+	    die "could not find pkgwriteinfo{.in} in the tarball";
+	  }
+      }
+
+    # If there isn't a pkgwriteinfo file, it's an error.
+    if (!-e "$tmp_source_dir/pkgwriteinfo")
+      {
+        die "couldn't make pkgwriteinfo file";
+      }
+
+    # Copy the pkgwriteinfo file about and remove $edir.
+    $pkgwriteinfo_file = "$workdir/pkgwriteinfo";
+    run ("cp $tmp_source_dir/pkgwriteinfo $pkgwriteinfo_file");
+    run ("rm -rf $edir");
+  }
+
+# --- Build the package(s) ---
+my $package = parse_pkgwriteinfo_file ($pkgwriteinfo_file);
+die "couldn't parse package from $pkgwriteinfo_file" unless defined $package;
+
+# Sanity check the package.
+sanity_check_package ($package) if ($do_sanity_check);
+
+$package->{package_tarball} = $pkg_tarball;
+$package->{package_source_dir} = $pkg_sourcedir;
+
+# Produce a list of formats.
+my @format_list;
+if ($pkg_format eq 'all')
+  {
+    @format_list = qw(debian redhat)
+  }
+else
+  {
+    @format_list = ( $pkg_format );
+  }
+
+# Make all the desired formats.
+for my $format (@format_list)
+  {
+    make_package ($package, $pkg_tarball, $format, $pkg_arch, $output_dir);
+  }
+
+# Clean up.
+remove_work_dir ();
+
+exit (0);
+
+# --- Miscellaneous "main" helper functions ---
+
+# dump_table: Print the values of a hash-table reference to standard-output.
+sub dump_table ($)
+{
+  my $table = $_[0];
+  for (sort keys %$table)
+    {
+      print $table->{$_}, "\n";
+    }
+  exit (0);
+}
+
+# dump_list: dump one of the standard builtin hashtables to standard output.
+sub dump_list ($)
+{ 
+  my $list = $_[0];
+  if ($list eq 'deb-sections') { dump_table (\%DPKG_SECTIONS); }
+  elsif ($list eq 'deb-priorities') { dump_table (\%DPKG_PRIORITY_LEVELS); }
+  elsif ($list eq 'rpm-groups') { dump_table (\%RPM_GROUPS); }
+  else { die "unknown list to dump (to --query-list): $list" }
+}
+
+
+#=====================================================================
+# Section 10: POD Documention.
+#=====================================================================
+=pod
+
+=head1 NAME
+
+pkgwrite - Make RedHat and Debian packages from the same source.
+
+=head1 SYNOPSIS
+
+ pkgwrite  (--tarball=TARBALL | --srcdir=SRCDIR) \
+          [--pkgwriteinfo-file=pkgwriteinfo] \
+	  --arch=ARCH \
+	  --format={redhat,debian}
+	  [options]
+
+
+ pkgwrite --query-list=LISTNAME
+
+=head1 DESCRIPTION
+
+pkgwrite takes a standard automake package, either from a source directory
+or from a distributed tarball, and a C<pkgwrite> input file
+and makes either RedHat or Debian packages.
+
+The actual package source code must be specified either by
+directory (using --srcdir) or from a tarball created with `make dist'
+(using --tarball).
+
+Additional packaging information is taken from pkgwriteinfo.
+If --pkgwriteinfo-file is omitted, pkgwriteinfo from the source
+directory or tarball is taken instead. (after configure is run,
+so you might generally use a pkgwriteinfo.in).
+
+There are a few command-line parameters which affect the package-making:
+
+=over 4
+
+=item --no-strict-changelog
+
+Don't force the user's changelog and pkgwriteinfo file to 
+have the same version.  (If the packaging system
+requires that the changelog's latest entry be equal to
+the package's version, then pkgwrite will generate a 
+changelog entry.  This happens under Debian.)
+
+=item --no-cleanup
+
+Don't remove the temporary directory (which will
+be C</tmp/mkpkg-###-$USER>).  Useful for debugging.
+
+=item --debian-dist=DIST
+
+Generate packaging for the given debian distribution:
+this mostly affects the changelog so
+setting DIST to C<stable> or C<unstable> is recommended.
+
+=item --skip-sanity-check
+
+Disable the usual checks that the package is valid.
+The package may still partially work, even if a sanity-check
+would normally fail.
+
+=back
+
+=head1 TERMINOLOGY
+
+=over 4
+
+=item package
+
+A family of packages for various distributions
+which all come from one tarball and one pkgwriteinfo file.
+
+=item build
+
+A compilation of the source code into binaries.
+Some packages require multiple builds, for example, to make debugging
+and nondebugging versions of a libraries.
+Normally you just use the C<{MAIN}> build.
+
+=item target
+
+A single set of installed files in a package.
+Simple packages only have a single target C<{MAIN}>
+because the package is an all-or-nothing proposition.
+
+Some packages contain many parts, not all applicable to all users.
+These packages should be broken in to different targets.
+
+For example, a client/server based application might be
+conveniently packaged C<foo-server>, C<foo-client-curses>, C<foo-client-gtk>.
+That way, users without X can use the curses version without
+installing gtk+, often the clients and servers are run exclusively on
+different machines, so installing both is a waste of disk space.
+
+=back
+
+The resulting system-dependent binary's name is just 
+the main C<Package:> name if the C<Target:> is C<{MAIN}>;
+otherwise it will be the C<Package> and C<Target> separated by
+a hyphen (C<->).
+
+=head1 MAINTAINING CHANGELOGS
+
+We recommend that you maintain a changelog in debian format,
+here is an example:
+  
+ gdam (0.934-1) unstable; urgency=low
+
+   * many bug fixes
+   * split into many packages
+
+  -- David Benson <daveb@ffem.org>  Wed, 17 Jan 2000 13:09:36 -0800
+
+(No spaces for each version banner; 2 spaces on each bullet;
+1 space before the packager byline.)
+
+If you don't maintain a changelog, we will generate a changelog
+with just this version of the package in it.
+
+You should specify the changelog using the C<Changelog:> directive.
+
+=head1 EXAMPLES
+
+Here are a few examples of common types of packages.
+The pkgwrite distribution includes these packages
+inside the C<examples/tiny> directory.
+
+=head2 EXAMPLE: SINGLE-TARGET PACKAGE
+
+The most common type of package has one set of files
+it installs or uninstalls:  there are no packaged bits or pieces.
+(A Target in pkgwrite terminology is the installed set of files.)
+
+Here is the pkgwrite file from the single-target example
+included with the pkgwrite distribution:
+
+  Package: aa
+  Section: text
+  Group: Applications/Text
+  Priority: low
+  Home-Page: NONE
+  Source-Url: NONE
+  Author: David Benson <daveb@ffem.org>
+  Version: 0.0.8
+  Release: 1
+  Synopsis: test package aa
+  Packager: daveb
+  Packager-Email: daveb@ffem.org
+  License: NONE
+  Description: test package (aa).
+
+  Build: {MAIN}
+
+  Target: {MAIN}
+  Files: /usr/bin/dummy-*
+  Synopsis: test a (single-target package)
+
+This package's name is C<aa>; this file will produce a binary RPM
+named C<aa-0.0-1.$ARCH.rpm>.
+
+=over 4
+
+=item *
+
+we wanted to name this C<a>, but debian packages must be at least two
+letters.
+
+=item *
+
+$ARCH is the target architecture, for example
+C<i386>, C<alpha>, or C<powerpc>.
+
+=item *
+
+The Target C<{MAIN}> is special, it
+means "don't use any suffix" -- the package's
+name is to be C<aa>.  For any other Target line,
+if STRING was specified, the resulting
+RPM or deb would have the name C<aa-STRING>.
+
+=item *
+
+Each wildcard from Files lines describe a file or files to move
+into that target.
+
+=item *
+
+Unlisted files will not wind up in any binary package.
+
+=back
+
+=head2 EXAMPLE: MULTI-TARGET PACKAGE
+
+A multi-target, single-build package is a package that need
+only be compiled once, but which must be separated into
+several system packages, because the targets appeal to
+different users or have different dependencies.
+
+Here is the pkgwriteinfo file from the example multi-target single-build
+package:
+
+
+  Package: bb
+  Section: text
+  Group: Applications/Text
+  Priority: low
+  Home-Page: NONE
+  Source-Url: NONE
+  Author: David Benson <daveb@ffem.org>
+  Version: 0.0
+  Release: 1
+  Synopsis: test package bb
+  Packager: daveb
+  Packager-Email: daveb@ffem.org
+  License: NONE
+  Description: test package (bb).
+
+  Build: {MAIN}
+
+  Target: a
+  Files: /usr/bin/bb-a
+  Synopsis: part a of package bb
+  Description: whatever (bb-a)
+
+  Target: b
+  Files: /usr/bin/bb-b
+  Synopsis: part b of package bb
+  Description: whatever (bb-b)
+
+In this package, only a single default Build: is required.
+Some packages may require the C<Configure-Flags> or
+C<Configure-Envars> fields in order to compile correctly.
+
+By default, all the targets use the C<{MAIN}> Build.
+
+Then each package contains a default file list,
+a description and a synopsis.
+
+=head2 EXAMPLE: MULTI-BUILD PACKAGE
+
+The most complex type of package must be built multiple times,
+with different configure or make flags.  Each target must then
+refer to the build from which it was produced,
+using the C<Which-Build> field (the default is C<{MAIN}>).
+
+Here is the example of such a package from the C<pkgwrite>
+distribution:
+
+  Package: cc
+  Section: text
+  Group: Applications/Text
+  Priority: low
+  Home-Page: NONE
+  Source-Url: NONE
+  Author: David Benson <daveb@ffem.org>
+  Version: 0.0
+  Release: 1
+  Synopsis: test package cc
+  Packager: daveb
+  Packager-Email: daveb@ffem.org
+  License: NONE
+  Description: test package (cc).
+
+  Build: nond
+  Configure-Flags: --program-suffix=-nondebug
+
+  Build: d
+  Configure-Flags: --program-suffix=-debug
+
+  Target: nondebug
+  Which-Build: nond
+  Files: /usr/bin/test-nondebug
+  Synopsis: nondebug package cc
+  Description: whatever (cc-nondebug)
+
+  Target: debug
+  Which-Build: d
+  Files: /usr/bin/test-debug
+  Synopsis: debug package cc
+  Description: whatever (cc-debug)
+
+Each Build section corresponds to a complete configure, build, install phase.
+In this package, the C<nond> build just wants configure to be run
+ configure --program-suffix=-nondebug ...
+whereas for the C<d> build,
+ configure --program-suffix=-debug ...
+(Note that the ... will be somewhat different from distribution to
+distribution)
+
+Also, it is often convenient to use the same names for the builds and
+the targets.  We would rename C<nond> as C<nondebug> and C<d> as C<debug>
+if this were a real package -- we did this to discuss it more
+conveniently.
+
+It is perfectly possible to have more than one Target pointing to the same
+Build, just as multi-target single-build packages do.
+But the opposite is not allowed:  a Target must specify exactly one 
+Build.
+
+=head1 HARDCODED VALUES
+
+Many lists and values are hardcoded into pkgwrite.
+You may query these lists through the --query-list flag.
+Here are the lists you may obtain in this manner:
+
+=over 4
+
+=item deb-sections
+
+Known allowed Section: fields for debian packages.
+
+=item rpm-groups
+
+Known allowed Group: fields for redhat packages.
+
+=item deb-priority
+
+Known allowed Priority: fields for debian packages.
+
+=back
+
+For example to get a list of allowed values for the Section:
+field, use C<pkgwrite --query-list=deb-sections>.
+
+=head1 PKGWRITE'S pkgwriteinfo FORMAT
+
+This (long) section describes the file
+that describes the targets to build from a tarball.
+This description file is called a C<pkgwriteinfo> file.
+
+The C<pkgwriteinfo> file consists of one package description part,
+then a number of Build sections,
+then a number of Target sections.
+
+=head2 PER-PACKAGE INFO
+
+The package file should begin with a section that describes
+the overall source code of the package:
+
+   Package: gdam
+   Section: sound
+   Group: Multimedia/Sound
+   Priority: optional
+   Home-Page: http://ffem.org/gdam
+   Source-Url: http://ffem.org/gdam/downloads/gdam-0.0.930.tar.gz
+   Version: 0.0.930
+   Release: 1
+   Author: David Benson <daveb@ffem.org>
+
+Here is a description of each allowed field:
+
+=over 4
+
+=item Package
+
+Name of the source package.
+
+=item Output-Package
+
+Sometimes, all packages from a tarball use a somewhat
+different name than the tarball itself.
+This is used as a bit of a hack to support co-installation
+of multiple versions of a package.  This is like
+gtk, which has gtk1.2 and gtk2.0 packages, which can be installed concurrently.
+
+=item Version
+
+The version number given to this version of the package
+by its maintainer.
+
+=item Release
+
+Increment this each time a new package is released without
+a corresponding upstream version-number change.
+
+=item Section
+
+The debian section this package belongs in.
+
+=item Group
+
+The redhat group this package belongs in.
+
+=item Priority
+
+Priority of this package (debian-style).
+
+=item Home-Page
+
+A URL giving the home page for this package or project.
+
+=item Source-Url
+
+A URL describing how to download this package.
+
+=item Author
+
+An author of this package, with email optional.
+
+=item Synopsis
+
+Under one line summary of this target.
+
+=item Description
+
+Multiple-line description of this target.
+
+=item Packager
+
+Full name of the person who made this packaging.
+
+=item Packager-Email
+
+Email address at which to reach the packager.
+
+=item Changelog
+
+Specify the location of a Debian format changelog to include with
+the package (it will be converted to another standard format, if needed)
+
+=item Upstream-is-Packager
+
+Whether the packager (the person running C<pkgwrite>)
+is the same as the upstream maintainer of a package.
+
+Right now, this only affects the filename used for the changelog,
+it will either be C<changelog.gz> if they are the same person,
+or C<changelog.Debian.gz> if they are not.
+
+=back
+
+=head2 PER-TARGET INFO
+
+For each output binary package there must be a "target" section:
+
+  Target: xmms-plugins
+  Depends: gdam-clients-gtk, gdam-server, xmms
+  Synopsis: GDAM XMMS plugin support
+  Description: use XMMS visualization plugins with GDAM.
+  Files: /usr/bin/gdamxmmsvishelper
+
+=over 4
+
+=item Target
+
+Name of this target.  The name of the package that results will
+be prepended with SOURCE-;  in this example the package's name
+is C<gdam-xmms-plugins>.
+
+=item Platform-Independent
+
+Set this to C<yes> if this package will be installable on
+any architecture (it contains no system-specific or compiled code).
+
+Set this to C<no> for packages containing compiled, 
+architecture-specific binaries.
+
+=item Depends
+
+Debian-formatted dependency lists for this package.
+
+=item Redhat-Requires
+
+Specify the redhat packages that this one depends on.
+(We will try to compute this from the C<Depends:> lines by default;
+this is just in case we cannot guess correctly.)
+
+=item Conflicts
+
+Debian-formatted list of packages that conflict with this one.
+
+=item Redhat-Conflicts
+
+Redhat-formatted list of packages that conflict with this one.
+Computed from C<Conflicts:> by default.
+
+=item Synopsis
+
+Under one line summary of this target.
+
+=item Man-Page
+
+The basename of a man page, for example C<pkgwrite.1>.
+It will automatically be installed into the correct
+section directory based on its extension.
+
+=item Doc
+
+Miscellaneous documentation.
+Each path is assumed to be inside the installed area.
+
+It will be always be copied into the distribution's
+documentation area, and it will be gzip'd if that is needed.
+Also, whole directories will be recursively copied,
+if the entry ends with a /, for example,
+
+   Doc: /usr/share/doc/gdam/example-configs/
+
+=item Source-Doc
+
+Miscellaneous documentation that is not normally
+installed by this package's makefile:
+
+These must be files directly from the distributed tarball.
+They will be always be copied into the distribution's
+documentation area and will be gzip'd if that is needed.
+Whole directories will be recursively copied,
+if the entry ends with a /.
+
+=item Description
+
+Multiple-line description of this target.
+
+=item Which-Build
+
+Name of the build whose files should be used.
+(Defaults to C<{MAIN}>).
+
+=item Files
+
+A wildcard matching ordinary files to be distributed with
+this target.
+
+=back
+
+=head2 PER-BUILD INFO
+
+=over 4
+
+=item Build
+
+The name of this build.  The default build should be named
+C<{MAIN}>.
+
+=item Configure-Flags
+
+Options to be passed to the C<configure> script.
+
+=item Configure-Envars
+
+Space-separated environment variables to add when configuring.
+
+=item Make-Flags
+
+Extra parameters to the C<make> program during both
+the build and the install phase.
+
+=item Build-Flags
+
+Extra parameters to the C<make> program during just
+the build phase.
+
+=item Install-Flags
+
+Extra parameters to the C<make> program during just
+the install phase.
+
+=item Extra-Build-Targets
+
+Another C<make> target that is necessary to build the package,
+that is not run by the default target.  This must not
+require root priviledges.  (You may specify
+any number of C<Extra-Build-Targets:> lines.)
+
+=item Extra-Install-Targets
+
+Another C<make> target that is necessary to install the package,
+that is not run by the default target.  On Debian systems, these commands
+may require root or fakeroot.  (You may specify
+any number of C<Extra-Install-Targets:> lines.)
+
+=back
+
+=head1 DEBUGGING
+
+If you have problems, here are some hints:
+
+=over 4
+
+=item *
+
+If you are familiar with one of the packaging systems (Redhat or Debian)
+that is not working, try building that with either
+the C<--no-cleanup> flag or equivalently have the C<DO_CLEANUP> 
+environment variable set to C<0>.  (You can find the
+directory where work was done by running: C<ls -ltr /tmp/mkpkg-*>)
+
+=item *
+
+Otherwise, redirect the output to a log file and read the whole thing.
+Some packaging systems output a log of messages
+even after a fatal error.
+
+=item *
+
+Then, try and cut out pieces of the C<pkgwriteinfo>
+file until you locate the problem.
+Report a bug if the problem is clear.
+
+=back
+
+=head1 COMMON PROBLEMS
+
+Here are some trivial mistakes made often:
+
+=over 4
+
+=item *
+
+C<pkgwriteinfo> is generated by C<configure> from C<pkgwriteinfo.in>.
+It is easy to forget to rerun C<configure> and very slow.
+
+I don't know of any easy solution to forgetting
+at the moment, but you may just run C<config.status>
+instead, in order save time.
+
+=back
+
+=head1 RELEASING PACKAGES
+
+Of course, you can and should work however you want,
+but for your information, I will write the testing process
+I use for releasing packages.
+
+I always make C<automake> packages that use
+C<pkgwriteinfo> inside the tarball.
+
+It is important to note that my packages always
+support C<make rpm> and C<make deb> using C<pkgwrite>,
+and that these targets only C<make dist> if the tarball
+isn't present!
+
+=over 4
+
+=item 1
+
+Check out the package from CVS.  Then either use whichever
+bootstrap script is provided:  my recent packages use C<bootstrap>
+(as recommended by the C<automake> authors), but many packages
+use C<./autogen.sh>, which traditionally also runs C<./configure>.
+
+If you used C<bootstrap>, you will need to run C<./configure>.
+
+Then make the tarball using C<make distcheck>.
+
+=item 2
+
+On a RedHat machine and a Debian machine,
+untar the tarball and copy that same tarball
+into the PACKAGE-VERSION directory that was created.
+(This way, the exact same tarball will be reused).
+
+=item 3
+
+On each system, run C<./configure>, then
+C<make rpm> and C<make deb>, respectively.
+
+=item 4
+
+Copy all the returned packages, the C<dist> tarball,
+into a directory which you will upload.
+
+=item 5
+
+Test install those packages on machines.
+
+I also inspect them with the following commands:
+
+         System|     RedHat                        Debian
+ Action        |
+ --------------+------------------------------------------------
+ List of files | rpm -qpl *.rpm               dpkg-deb -c *.deb
+ General data  | rpm -qpi *.rpm               dpkg-deb -e *.deb
+
+=back
+
+=head1 EXAMPLE AUTOMAKE FILES
+
+TODO
+
+=head1 AUTHOR
+
+Written by Dave Benson <daveb@ffem.org>.
+
+=cut
