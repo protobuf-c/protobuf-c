@@ -3,3 +3,6 @@
 0.2:
 0.3:  Minor pedantic concerns about generated code.
 0.4:  Update to work with protobuf 2.0.1.
+0.5:  License now included in major files.
+      Use little-endian optimizations; fix a bug therein.
+      Include 'make deb' target.
