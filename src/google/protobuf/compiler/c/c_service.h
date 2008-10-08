@@ -25,7 +25,6 @@
 
 #include <map>
 #include <string>
-#include <google/protobuf/stubs/common.h>
 #include <google/protobuf/descriptor.h>
 
 namespace google {

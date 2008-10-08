@@ -215,22 +215,22 @@ sint64_size (int64_t v)
 
 static size_t
 required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
-                                void *member)
+                                const void *member)
 {
   size_t rv = get_tag_size (field->id);
   switch (field->type)
     {
     case PROTOBUF_C_TYPE_SINT32:
-      return rv + sint32_size (*(int32_t *) member);
+      return rv + sint32_size (*(const int32_t *) member);
     case PROTOBUF_C_TYPE_INT32:
-      return rv + int32_size (*(uint32_t *) member);
+      return rv + int32_size (*(const uint32_t *) member);
     case PROTOBUF_C_TYPE_UINT32:
-      return rv + uint32_size (*(uint32_t *) member);
+      return rv + uint32_size (*(const uint32_t *) member);
     case PROTOBUF_C_TYPE_SINT64:
-      return rv + sint64_size (*(int64_t *) member);
+      return rv + sint64_size (*(const int64_t *) member);
     case PROTOBUF_C_TYPE_INT64:
     case PROTOBUF_C_TYPE_UINT64:
-      return rv + uint64_size (*(uint64_t *) member);
+      return rv + uint64_size (*(const uint64_t *) member);
     case PROTOBUF_C_TYPE_SFIXED32:
     case PROTOBUF_C_TYPE_FIXED32:
       return rv + 4;
@@ -245,21 +245,21 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
       return rv + 8;
     case PROTOBUF_C_TYPE_ENUM:
       // TODO: is this correct for negative-valued enums?
-      return rv + uint32_size (*(uint32_t *) member);
+      return rv + uint32_size (*(const uint32_t *) member);
     case PROTOBUF_C_TYPE_STRING:
       {
-        size_t len = strlen (*(char**) member);
+        size_t len = strlen (*(char * const *) member);
         return rv + uint32_size (len) + len;
       }
     case PROTOBUF_C_TYPE_BYTES:
       {
-        size_t len = ((ProtobufCBinaryData*) member)->len;
+        size_t len = ((const ProtobufCBinaryData*) member)->len;
         return rv + uint32_size (len) + len;
       }
     //case PROTOBUF_C_TYPE_GROUP:
     case PROTOBUF_C_TYPE_MESSAGE:
       {
-        size_t subrv = protobuf_c_message_get_packed_size (*(ProtobufCMessage **) member);
+        size_t subrv = protobuf_c_message_get_packed_size (*(ProtobufCMessage * const *) member);
         return rv + uint32_size (subrv) + subrv;
       }
     }
@@ -269,12 +269,12 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
 static size_t
 optional_field_get_packed_size (const ProtobufCFieldDescriptor *field,
                                 const protobuf_c_boolean *has,
-                                void *member)
+                                const void *member)
 {
   if (field->type == PROTOBUF_C_TYPE_MESSAGE
    || field->type == PROTOBUF_C_TYPE_STRING)
     {
-      if (*(void**)member == NULL)
+      if (*(void * const *)member == NULL)
         return 0;
     }
   else
@@ -288,11 +288,11 @@ optional_field_get_packed_size (const ProtobufCFieldDescriptor *field,
 static size_t
 repeated_field_get_packed_size (const ProtobufCFieldDescriptor *field,
                                 size_t count,
-                                void *member)
+                                const void *member)
 {
   size_t rv = get_tag_size (field->id) * count;
   unsigned i;
-  void *array = * (void **) member;
+  void *array = * (void * const *) member;
   switch (field->type)
     {
     case PROTOBUF_C_TYPE_SINT32:
@@ -371,15 +371,15 @@ size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
-      void *member = ((char *) message) + field->offset;
-      void *qmember = ((char *) message) + field->quantifier_offset;
+      const void *member = ((const char *) message) + field->offset;
+      const void *qmember = ((const char *) message) + field->quantifier_offset;
 
       if (field->label == PROTOBUF_C_LABEL_REQUIRED)
         rv += required_field_get_packed_size (field, member);
       else if (field->label == PROTOBUF_C_LABEL_OPTIONAL)
         rv += optional_field_get_packed_size (field, qmember, member);
       else
-        rv += repeated_field_get_packed_size (field, * (size_t *) qmember, member);
+        rv += repeated_field_get_packed_size (field, * (const size_t *) qmember, member);
     }
   for (i = 0; i < message->n_unknown_fields; i++)
     rv += unknown_field_get_packed_size (&message->unknown_fields[i]);
@@ -533,7 +533,7 @@ static size_t tag_pack (uint32_t id, uint8_t *out)
 }
 static size_t
 required_field_pack (const ProtobufCFieldDescriptor *field,
-                     void *member,
+                     const void *member,
                      uint8_t *out)
 {
   size_t rv = tag_pack (field->id, out);
@@ -541,43 +541,43 @@ required_field_pack (const ProtobufCFieldDescriptor *field,
     {
     case PROTOBUF_C_TYPE_SINT32:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + sint32_pack (*(int32_t *) member, out + rv);
+      return rv + sint32_pack (*(const int32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_INT32:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + int32_pack (*(uint32_t *) member, out + rv);
+      return rv + int32_pack (*(const uint32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_UINT32:
     case PROTOBUF_C_TYPE_ENUM:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + uint32_pack (*(uint32_t *) member, out + rv);
+      return rv + uint32_pack (*(const uint32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_SINT64:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + sint64_pack (*(int64_t *) member, out + rv);
+      return rv + sint64_pack (*(const int64_t *) member, out + rv);
     case PROTOBUF_C_TYPE_INT64:
     case PROTOBUF_C_TYPE_UINT64:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + uint64_pack (*(uint64_t *) member, out + rv);
+      return rv + uint64_pack (*(const uint64_t *) member, out + rv);
     case PROTOBUF_C_TYPE_SFIXED32:
     case PROTOBUF_C_TYPE_FIXED32:
     case PROTOBUF_C_TYPE_FLOAT:
       out[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
-      return rv + fixed32_pack (*(uint64_t *) member, out + rv);
+      return rv + fixed32_pack (*(const uint64_t *) member, out + rv);
     case PROTOBUF_C_TYPE_SFIXED64:
     case PROTOBUF_C_TYPE_FIXED64:
     case PROTOBUF_C_TYPE_DOUBLE:
       out[0] |= PROTOBUF_C_WIRE_TYPE_64BIT;
-      return rv + fixed64_pack (*(uint64_t *) member, out + rv);
+      return rv + fixed64_pack (*(const uint64_t *) member, out + rv);
     case PROTOBUF_C_TYPE_BOOL:
       out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      return rv + boolean_pack (*(protobuf_c_boolean *) member, out + rv);
+      return rv + boolean_pack (*(const protobuf_c_boolean *) member, out + rv);
     case PROTOBUF_C_TYPE_STRING:
       {
         out[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
-        return rv + string_pack (*(char**) member, out + rv);
+        return rv + string_pack (*(char * const *) member, out + rv);
       }
       
     case PROTOBUF_C_TYPE_BYTES:
       {
-        const ProtobufCBinaryData * bd = ((ProtobufCBinaryData*) member);
+        const ProtobufCBinaryData * bd = ((const ProtobufCBinaryData*) member);
         out[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
         return rv + binary_data_pack (bd, out + rv);
       }
@@ -585,7 +585,7 @@ required_field_pack (const ProtobufCFieldDescriptor *field,
     case PROTOBUF_C_TYPE_MESSAGE:
       {
         out[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
-        return rv + prefixed_message_pack (*(ProtobufCMessage **) member,
+        return rv + prefixed_message_pack (*(ProtobufCMessage * const *) member,
                                            out + rv);
       }
     }
@@ -595,13 +595,13 @@ required_field_pack (const ProtobufCFieldDescriptor *field,
 static size_t
 optional_field_pack (const ProtobufCFieldDescriptor *field,
                      const protobuf_c_boolean *has,
-                     void *member,
+                     const void *member,
                      uint8_t *out)
 {
   if (field->type == PROTOBUF_C_TYPE_MESSAGE
    || field->type == PROTOBUF_C_TYPE_STRING)
     {
-      if (*(void**)member == NULL)
+      if (*(void * const *)member == NULL)
         return 0;
     }
   else
@@ -646,10 +646,10 @@ static inline size_t sizeof_elt_in_repeated_array (ProtobufCType type)
 static size_t
 repeated_field_pack (const ProtobufCFieldDescriptor *field,
                      size_t count,
-                     void *member,
+                     const void *member,
                      uint8_t *out)
 {
-  char *array = * (char **) member;
+  char *array = * (char * const *) member;
   size_t siz;
   unsigned i;
   size_t rv = 0;
@@ -680,15 +680,15 @@ size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
-      void *member = ((char *) message) + field->offset;
-      void *qmember = ((char *) message) + field->quantifier_offset;
+      const void *member = ((const char *) message) + field->offset;
+      const void *qmember = ((const char *) message) + field->quantifier_offset;
 
       if (field->label == PROTOBUF_C_LABEL_REQUIRED)
         rv += required_field_pack (field, member, out + rv);
       else if (field->label == PROTOBUF_C_LABEL_OPTIONAL)
         rv += optional_field_pack (field, qmember, member, out + rv);
       else
-        rv += repeated_field_pack (field, * (size_t *) qmember, member, out + rv);
+        rv += repeated_field_pack (field, * (const size_t *) qmember, member, out + rv);
     }
   for (i = 0; i < message->n_unknown_fields; i++)
     rv += unknown_field_pack (&message->unknown_fields[i], out + rv);
@@ -698,7 +698,7 @@ size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
 /* === pack_to_buffer() === */
 static size_t
 required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
-                               void *member,
+                               const void *member,
                                ProtobufCBuffer *buffer)
 {
   size_t rv;
@@ -708,64 +708,64 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
     {
     case PROTOBUF_C_TYPE_SINT32:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += sint32_pack (*(int32_t *) member, scratch + rv);
+      rv += sint32_pack (*(const int32_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_INT32:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += int32_pack (*(uint32_t *) member, scratch + rv);
+      rv += int32_pack (*(const uint32_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_UINT32:
     case PROTOBUF_C_TYPE_ENUM:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += uint32_pack (*(uint32_t *) member, scratch + rv);
+      rv += uint32_pack (*(const uint32_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_SINT64:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += sint64_pack (*(int64_t *) member, scratch + rv);
+      rv += sint64_pack (*(const int64_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_INT64:
     case PROTOBUF_C_TYPE_UINT64:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += uint64_pack (*(uint64_t *) member, scratch + rv);
+      rv += uint64_pack (*(const uint64_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_SFIXED32:
     case PROTOBUF_C_TYPE_FIXED32:
     case PROTOBUF_C_TYPE_FLOAT:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
-      rv += fixed32_pack (*(uint64_t *) member, scratch + rv);
+      rv += fixed32_pack (*(const uint64_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_SFIXED64:
     case PROTOBUF_C_TYPE_FIXED64:
     case PROTOBUF_C_TYPE_DOUBLE:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_64BIT;
-      rv += fixed64_pack (*(uint64_t *) member, scratch + rv);
+      rv += fixed64_pack (*(const uint64_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_BOOL:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-      rv += boolean_pack (*(protobuf_c_boolean *) member, scratch + rv);
+      rv += boolean_pack (*(const protobuf_c_boolean *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_STRING:
       {
-        size_t sublen = strlen (*(char **) member);
+        size_t sublen = strlen (*(char * const *) member);
         scratch[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
         rv += uint32_pack (sublen, scratch + rv);
         buffer->append (buffer, rv, scratch);
-        buffer->append (buffer, sublen, *(uint8_t**)member);
+        buffer->append (buffer, sublen, *(uint8_t * const *)member);
         rv += sublen;
         break;
       }
       
     case PROTOBUF_C_TYPE_BYTES:
       {
-        const ProtobufCBinaryData * bd = ((ProtobufCBinaryData*) member);
+        const ProtobufCBinaryData * bd = ((const ProtobufCBinaryData*) member);
         size_t sublen = bd->len;
         scratch[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
         rv += uint32_pack (sublen, scratch + rv);
@@ -782,7 +782,7 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
         ProtobufCBufferSimple simple_buffer
           = PROTOBUF_C_BUFFER_SIMPLE_INIT (simple_buffer_scratch);
         scratch[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
-        sublen = protobuf_c_message_pack_to_buffer (*(ProtobufCMessage **) member,
+        sublen = protobuf_c_message_pack_to_buffer (*(ProtobufCMessage * const *) member,
                                            &simple_buffer.base);
         rv += uint32_pack (sublen, scratch + rv);
         buffer->append (buffer, rv, scratch);
@@ -799,13 +799,13 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
 static size_t
 optional_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
                                const protobuf_c_boolean *has,
-                               void *member,
+                               const void *member,
                                ProtobufCBuffer *buffer)
 {
   if (field->type == PROTOBUF_C_TYPE_MESSAGE
    || field->type == PROTOBUF_C_TYPE_STRING)
     {
-      if (*(void**)member == NULL)
+      if (*(void * const *)member == NULL)
         return 0;
     }
   else
@@ -819,10 +819,10 @@ optional_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
 static size_t
 repeated_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
                                unsigned count,
-                               void *member,
+                               const void *member,
                                ProtobufCBuffer *buffer)
 {
-  char *array = * (char **) member;
+  char *array = * (char * const *) member;
   size_t siz;
   unsigned i;
   /* CONSIDER: optimize this case a bit (by putting the loop inside the switch) */
@@ -858,15 +858,15 @@ protobuf_c_message_pack_to_buffer (const ProtobufCMessage *message,
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
-      void *member = ((char *) message) + field->offset;
-      void *qmember = ((char *) message) + field->quantifier_offset;
+      const void *member = ((const char *) message) + field->offset;
+      const void *qmember = ((const char *) message) + field->quantifier_offset;
 
       if (field->label == PROTOBUF_C_LABEL_REQUIRED)
         rv += required_field_pack_to_buffer (field, member, buffer);
       else if (field->label == PROTOBUF_C_LABEL_OPTIONAL)
         rv += optional_field_pack_to_buffer (field, qmember, member, buffer);
       else
-        rv += repeated_field_pack_to_buffer (field, * (size_t *) qmember, member, buffer);
+        rv += repeated_field_pack_to_buffer (field, * (const size_t *) qmember, member, buffer);
     }
   for (i = 0; i < message->n_unknown_fields; i++)
     rv += unknown_field_pack_to_buffer (&message->unknown_fields[i], buffer);
@@ -1309,17 +1309,17 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
       if (last_field->id != tag)
         {
           /* lookup field */
-          int rv = int_range_lookup (desc->n_field_ranges,
-                                     desc->field_ranges,
-                                     tag);
-          if (rv < 0)
+          int field_index = int_range_lookup (desc->n_field_ranges,
+                                              desc->field_ranges,
+                                              tag);
+          if (field_index < 0)
             {
               field = NULL;
               n_unknown++;
             }
           else
             {
-              field = desc->fields + rv;
+              field = desc->fields + field_index;
               last_field = field;
             }
         }
