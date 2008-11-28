@@ -185,11 +185,6 @@ std::set<string> MakeKeywordsMap() {
 
 std::set<string> kKeywords = MakeKeywordsMap();
 
-const char kThickSeparator[] =
-  "// ===================================================================\n";
-const char kThinSeparator[] =
-  "// -------------------------------------------------------------------\n";
-
 string ClassName(const Descriptor* descriptor, bool qualified) {
   // Find "outer", the descriptor of the top-level message in which
   // "descriptor" is embedded.

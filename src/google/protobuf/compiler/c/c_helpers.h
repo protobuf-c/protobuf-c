@@ -33,11 +33,6 @@ namespace protobuf {
 namespace compiler {
 namespace c {
 
-// Commonly-used separator comments.  Thick is a line of '=', thin is a line
-// of '-'.
-extern const char kThickSeparator[];
-extern const char kThinSeparator[];
-
 // Returns the non-nested type name for the given type.  If "qualified" is
 // true, prefix the type with the full namespace.  For example, if you had:
 //   package foo.bar;

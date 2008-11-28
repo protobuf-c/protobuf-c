@@ -40,7 +40,6 @@ Document:
 ------------------------------------
 --- EXTREMELY LOW PRIORITY STUFF ---
 ------------------------------------
-- get rid of kThick/ThinSeparator if we decide not to use them
 - stop using qsort in the code generator:  find some c++ish way to do it
 
 ----------------------------------------------
