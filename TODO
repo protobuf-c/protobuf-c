@@ -2,15 +2,17 @@
 --- IMPORTANT TODO ---
 ----------------------
 - provide example rpc
-- at least include extensions in Descriptor
 - proper support for extensions
   - slot for ranges in descriptor
-  - parent in descriptor
-  - "extends" is implemented as c-style derivation
-  - cast macros?
-- implement default values for most primitive types,
-  but not strings, bytes, or messages.
+  - extends is implemented as c-style function
+    whose name is built from the package, the base message type-name
+    and the member.  which takes the base message and returns the
+    value, if it is found in "unknown_values".
+- implement default values for strings, bytes, and messages.
 - ensure enums are int-size
+- message__init(...)
+       initializes all defaults -- points at static default values
+         for strings, bytes and submessages.
 
 --------------------
 --- NEEDED TESTS ---
@@ -26,16 +28,7 @@
 ---------------------
 Document:
   - services
-  - default value handling
-    - note that the plan is to set the value to the default 
-      for optional types, but NOT set has_* to TRUE.
-      That way, code can just ignore the has,
-      but we won't superfluously serialize the default value.
-      (Move this to the docs)
-      Also, for now, we won't init default values that require allocation.
-    - add to CAVEATS: defaults for messages, strings, bytes not initialized
-      by INIT macro.  Rationale:  would interfere with other allocator
-      systems... not clear if that's true.
+  - default value handling [not implemented yet]
   - check over documentation again
 
 --------------------------
@@ -61,13 +54,6 @@ Document:
 -------------------------
 
 - lifetime functions for messages:
-   MESSAGE__INIT macro:
-       for static messages, doesn't handle defaults requiring allocation.
-   message__init_allocated_defaults (...)
-       for static messages, only touches default values that must
-       be allocated.
-   message__init(...)
-       initializes all defaults -- does allocations for strings etc
    message__new()
        return a new message using an allocator with standard allocation policy
    message__unpack_onto(...)
