@@ -36,7 +36,6 @@ Document:
 --------------------------
 - support Group (whatever it is)
 - almost no code generator options are obeyed
-- generate Init functions / handle default values
 
 ------------------------------------
 --- EXTREMELY LOW PRIORITY STUFF ---
