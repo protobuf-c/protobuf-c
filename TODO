@@ -8,6 +8,10 @@
     whose name is built from the package, the base message type-name
     and the member.  which takes the base message and returns the
     value, if it is found in "unknown_values".
+    boolean package__extension_member_name__get(Message *message,
+                                                type     *out);
+    void    package__extension_member_name__set_raw(type      in,
+                                                ProtobufCUnknownValue *to_init);
 - ensure enums are int-size
 
 --------------------
