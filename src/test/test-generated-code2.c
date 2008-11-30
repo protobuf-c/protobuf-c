@@ -1106,6 +1106,77 @@ test_message_lookups (void)
   test_message_descriptor (&foo__test_mess_required_enum__descriptor);
 }
 
+static void
+assert_required_default_values_are_default (Foo__DefaultRequiredValues *mess)
+{
+  assert (mess->v_int32 == -42);
+  assert (mess->v_uint32 == 666);
+  assert (mess->v_int64 == 100000);
+  assert (mess->v_uint64 == 100001);
+  assert (mess->v_float == 2.5);
+  assert (mess->v_double == 4.5);
+  assert (strcmp (mess->v_string, "hi mom\n") == 0);
+  assert (mess->v_bytes.len = /* a */ 1
+                               + /* space */ 1
+                               + /* NUL */ 1
+                               + /* space */ 1
+                               + /* "character" */ 9);
+  assert (memcmp (mess->v_bytes.data, "a \0 character", 13) == 0);
+}
+
+
+static void
+test_required_default_values (void)
+{
+  Foo__DefaultRequiredValues mess = FOO__DEFAULT_REQUIRED_VALUES__INIT;
+  Foo__DefaultRequiredValues *mess2;
+  size_t len; uint8_t *data;
+  assert_required_default_values_are_default (&mess);
+  mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  free (data);
+  assert_required_default_values_are_default (mess2);
+  foo__default_required_values__free_unpacked (mess2, NULL);
+}
+
+static void
+assert_optional_default_values_are_default (Foo__DefaultOptionalValues *mess)
+{
+  assert (!mess->has_v_int32);
+  assert (mess->v_int32 == -42);
+  assert (!mess->has_v_uint32);
+  assert (mess->v_uint32 == 666);
+  assert (!mess->has_v_int64);
+  assert (mess->v_int64 == 100000);
+  assert (!mess->has_v_uint64);
+  assert (mess->v_uint64 == 100001);
+  assert (!mess->has_v_float);
+  assert (mess->v_float == 2.5);
+  assert (!mess->has_v_double);
+  assert (mess->v_double == 4.5);
+  assert (strcmp (mess->v_string, "hi mom\n") == 0);
+  assert (!mess->has_v_bytes);
+  assert (mess->v_bytes.len = /* a */ 1
+                               + /* space */ 1
+                               + /* NUL */ 1
+                               + /* space */ 1
+                               + /* "character" */ 9);
+  assert (memcmp (mess->v_bytes.data, "a \0 character", 13) == 0);
+}
+
+static void
+test_optional_default_values (void)
+{
+  Foo__DefaultOptionalValues mess = FOO__DEFAULT_OPTIONAL_VALUES__INIT;
+  Foo__DefaultOptionalValues *mess2;
+  size_t len; uint8_t *data;
+  assert_optional_default_values_are_default (&mess);
+  mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (len == 0);            /* no non-default values */
+  free (data);
+  assert_optional_default_values_are_default (mess2);
+  foo__default_optional_values__free_unpacked (mess2, NULL);
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -1184,6 +1255,9 @@ static Test tests[] =
 
   { "test enum lookups", test_enum_lookups },
   { "test message lookups", test_message_lookups },
+
+  { "test required default values", test_required_default_values },
+  { "test optional default values", test_optional_default_values },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 

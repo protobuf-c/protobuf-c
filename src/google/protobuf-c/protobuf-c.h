@@ -145,6 +145,7 @@ struct _ProtobufCFieldDescriptor
   unsigned quantifier_offset;
   unsigned offset;
   const void *descriptor;   /* for MESSAGE and ENUM types */
+  const void *default_value;   /* or NULL if no default-value */
 };
 struct _ProtobufCMessageDescriptor
 {
@@ -192,6 +193,10 @@ ProtobufCMessage *
 void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
                                              ProtobufCAllocator  *allocator);
 
+/* WARNING: 'to_init' must be a block of memory 
+   of size description->sizeof_message. */
+size_t    protobuf_c_message_init           (const ProtobufCMessageDescriptor *,
+                                             ProtobufCMessage       *to_init);
 
 /* --- services --- */
 typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;

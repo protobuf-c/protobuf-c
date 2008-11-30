@@ -40,6 +40,9 @@ class BytesFieldGenerator : public FieldGenerator {
   // implements FieldGenerator ---------------------------------------
   void GenerateStructMembers(io::Printer* printer) const;
   void GenerateDescriptorInitializer(io::Printer* printer) const;
+  void GenerateDefaultValueDeclarations(io::Printer* printer) const;
+  void GenerateDefaultValueImplementations(io::Printer* printer) const;
+  string GetDefaultValue(void) const;
   void GenerateStaticInit(io::Printer* printer) const;
 
  private:

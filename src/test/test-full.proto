@@ -154,4 +154,23 @@ message TestMessRequiredMessage {
 }
 message EmptyMess {
 }
-
+message DefaultRequiredValues {
+  required int32 v_int32   = 1 [default = -42];
+  required uint32 v_uint32 = 2 [default = 666];
+  required int32 v_int64   = 3 [default = 100000];
+  required uint32 v_uint64 = 4 [default = 100001];
+  required float v_float   = 5 [default = 2.5];
+  required double v_double = 6 [default = 4.5];
+  required string v_string = 7 [default = "hi mom\n"];
+  required bytes v_bytes   = 8 [default = "a \0 character"];
+}
+message DefaultOptionalValues {
+  optional int32 v_int32   = 1 [default = -42];
+  optional uint32 v_uint32 = 2 [default = 666];
+  optional int32 v_int64   = 3 [default = 100000];
+  optional uint32 v_uint64 = 4 [default = 100001];
+  optional float v_float   = 5 [default = 2.5];
+  optional double v_double = 6 [default = 4.5];
+  optional string v_string = 7 [default = "hi mom\n"];
+  optional bytes v_bytes   = 8 [default = "a \0 character"];
+}

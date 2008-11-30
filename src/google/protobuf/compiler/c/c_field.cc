@@ -53,6 +53,14 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   variables["descriptor_addr"] = descriptor_addr;
   variables["value"] = SimpleItoa(descriptor_->number());
 
+  if (descriptor_->has_default_value()) {
+    variables["default_value"] = string("&")
+                               + FullNameToLower(descriptor_->full_name())
+			       + "__default_value";
+  } else {
+    variables["default_value"] = "NULL";
+  }
+
   printer->Print(variables,
     "{\n"
     "  \"$name$\",\n"
@@ -75,7 +83,8 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
       break;
   }
   printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, $name$),\n");
-  printer->Print(variables, "  $descriptor_addr$\n");
+  printer->Print(variables, "  $descriptor_addr$,\n");
+  printer->Print(variables, "  $default_value$\n");
   printer->Print("},\n");
 }
 

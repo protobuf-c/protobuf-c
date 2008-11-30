@@ -81,6 +81,7 @@ class MessageGenerator {
 
  private:
 
+  string GetDefaultValueC(const FieldDescriptor *fd);
 
   const Descriptor* descriptor_;
   string dllexport_decl_;

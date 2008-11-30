@@ -23,6 +23,7 @@
 #include <vector>
 #include <set>
 #include <stdio.h>		// for snprintf
+#include <float.h>
 
 #include <google/protobuf/compiler/c/c_helpers.h>
 #include <google/protobuf/stubs/common.h>
@@ -45,6 +46,19 @@ string SimpleItoa(int i) {
   snprintf(buf,sizeof(buf),"%d",i);
   return buf;
 }
+string SimpleFtoa(float f) {
+  char buf[100];
+  snprintf(buf,sizeof(buf),"%.*g", FLT_DIG, f);
+  buf[sizeof(buf)-1] = 0;		/* should NOT be necessary */
+  return buf;
+}
+string SimpleDtoa(double d) {
+  char buf[100];
+  snprintf(buf,sizeof(buf),"%.*g", DBL_DIG, d);
+  buf[sizeof(buf)-1] = 0;		/* should NOT be necessary */
+  return buf;
+}
+
 string CamelToUpper(const string &name) {
   bool was_upper = true;		// suppress initial _
   string rv = "";

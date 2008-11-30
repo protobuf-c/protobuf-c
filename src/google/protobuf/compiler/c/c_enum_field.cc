@@ -36,12 +36,15 @@ using internal::WireFormat;
 //   repeat code between this and the other field types.
 void SetEnumVariables(const FieldDescriptor* descriptor,
                       map<string, string>* variables) {
-  const EnumValueDescriptor* default_value = descriptor->default_value_enum();
 
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name());
-  (*variables)["default"] = SimpleItoa(default_value->number());		// TODO: use this!
-
+  if (descriptor->has_default_value()) {
+    const EnumValueDescriptor* default_value = descriptor->default_value_enum();
+    (*variables)["default"] = FullNameToUpper(default_value->type()->full_name())
+			    + "__" + ToUpper(default_value->name());
+  } else
+    (*variables)["default"] = "0";
 }
 
 // ===================================================================
@@ -71,9 +74,13 @@ void EnumFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+
+string EnumFieldGenerator::GetDefaultValue(void) const
+{
+  return variables_.find("default")->second;
+}
 void EnumFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
-  // TODO: use symbolic name
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$default$");

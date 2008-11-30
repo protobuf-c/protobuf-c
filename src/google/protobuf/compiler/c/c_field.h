@@ -48,6 +48,10 @@ class FieldGenerator {
   // Generate a static initializer for this field.
   virtual void GenerateDescriptorInitializer(io::Printer* printer) const = 0;
 
+  virtual void GenerateDefaultValueDeclarations(io::Printer* printer) const { }
+  virtual void GenerateDefaultValueImplementations(io::Printer* printer) const { }
+  virtual string GetDefaultValue() const = 0;
+
   // Generate members to initialize this field from a static initializer
   virtual void GenerateStaticInit(io::Printer* printer) const = 0;
 

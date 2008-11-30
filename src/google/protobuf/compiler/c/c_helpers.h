@@ -46,6 +46,8 @@ string ClassName(const EnumDescriptor* enum_descriptor, bool qualified);
 
 // --- Borrowed from stubs. ---
 string SimpleItoa(int i);
+string SimpleFtoa(float f);
+string SimpleDtoa(double f);
 void SplitStringUsing(const string &str, const char *delim, std::vector<string> *out);
 string CEscape(const string& src);
 string StringReplace(const string& s, const string& oldsub, const string& newsub, bool replace_all);

@@ -122,6 +122,13 @@ GenerateStructDefinition(io::Printer* printer) {
 
   printer->Print(vars, "};\n");
 
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const FieldDescriptor *field = descriptor_->field(i);
+    if (field->has_default_value()) {
+      field_generators_.get(field).GenerateDefaultValueDeclarations(printer);
+    }
+  }
+
   printer->Print(vars, "#define $ucclassname$__INIT \\\n"
 		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor) \\\n    ");
   for (int i = 0; i < descriptor_->field_count(); i++) {
@@ -243,42 +250,166 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		);
 }
 
+#if 0
+string MessageGenerator::
+GetDefaultValueC(const FieldDescriptor *fd) {
+  switch (fd->cpp_type()) {
+    case FieldDescriptor::CPPTYPE_INT32:
+      return SimpleItoa(fd->default_value_int32());
+    case FieldDescriptor::CPPTYPE_INT64:
+      return SimpleItoa(fd->default_value_int64());
+    case FieldDescriptor::CPPTYPE_UINT32:
+      return SimpleItoa(fd->default_value_uint32());
+    case FieldDescriptor::CPPTYPE_UINT64:
+      return SimpleItoa(fd->default_value_uint64());
+    case FieldDescriptor::CPPTYPE_FLOAT:
+      return SimpleFtoa(fd->default_value_float());
+    case FieldDescriptor::CPPTYPE_DOUBLE:
+      return SimpleDtoa(fd->default_value_double());
+    case FieldDescriptor::CPPTYPE_BOOL:
+      return fd->default_value_bool() ? "1" : "0";
+    case FieldDescriptor::CPPTYPE_MESSAGE:
+      // NOTE: not supported by protobuf
+      GOOGLE_LOG(DFATAL) << "Messages can't have default values!";
+      return "";
+    case FieldDescriptor::CPPTYPE_STRING:
+    {
+      string escaped = "\"" + CEscape(fd->default_value_string()) + "\"";
+      if (fd->type() == FieldDescriptor::TYPE_BYTES)
+      {
+	return "{ "
+	      + SimpleItoa(fd->default_value_string().size())
+	      + ", "
+	      + FullNameToLower(descriptor_->full_name())
+	      + "__"
+	      + fd->name()
+	      + "__default_value_data }";
+      }
+      else   /* STRING type */
+      {
+	return escaped;
+      }
+    }
+    case FieldDescriptor::CPPTYPE_ENUM:
+    {
+      const EnumValueDescriptor *vd = fd->default_value_enum();
+      return FullNameToUpper(vd->type()->full_name())
+	  + "__" + ToUpper(vd->name());
+    }
+  }
+  GOOGLE_LOG(DFATAL) << "missing case value";
+  return "";
+}
+#endif
+
 void MessageGenerator::
 GenerateMessageDescriptor(io::Printer* printer) {
-  map<string, string> vars;
-  vars["fullname"] = descriptor_->full_name();
-  vars["classname"] = FullNameToC(descriptor_->full_name());
-  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
-  vars["shortname"] = ToCamel(descriptor_->name());
-  vars["n_fields"] = SimpleItoa(descriptor_->field_count());
-  vars["packagename"] = descriptor_->file()->package();
+    map<string, string> vars;
+    vars["fullname"] = descriptor_->full_name();
+    vars["classname"] = FullNameToC(descriptor_->full_name());
+    vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
+    vars["shortname"] = ToCamel(descriptor_->name());
+    vars["n_fields"] = SimpleItoa(descriptor_->field_count());
+    vars["packagename"] = descriptor_->file()->package();
 
-  for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-    nested_generators_[i]->GenerateMessageDescriptor(printer);
-  }
+    for (int i = 0; i < descriptor_->nested_type_count(); i++) {
+      nested_generators_[i]->GenerateMessageDescriptor(printer);
+    }
 
-  for (int i = 0; i < descriptor_->enum_type_count(); i++) {
-    enum_generators_[i]->GenerateEnumDescriptor(printer);
-  }
+    for (int i = 0; i < descriptor_->enum_type_count(); i++) {
+      enum_generators_[i]->GenerateEnumDescriptor(printer);
+    }
+
+    for (int i = 0; i < descriptor_->field_count(); i++) {
+      const FieldDescriptor *fd = descriptor_->field(i);
+      if (fd->has_default_value()) {
+	field_generators_.get(fd).GenerateDefaultValueImplementations(printer);
+      }
+    }
+
+    for (int i = 0; i < descriptor_->field_count(); i++) {
+      const FieldDescriptor *fd = descriptor_->field(i);
+      if (fd->has_default_value()) {
+
+	bool already_defined = false;
+	vars["name"] = fd->name();
+	vars["maybe_static"] = "static ";
+	vars["field_dv_ctype_suffix"] = "";
+	vars["default_value"] = field_generators_.get(fd).GetDefaultValue();
+	switch (fd->cpp_type()) {
+	case FieldDescriptor::CPPTYPE_INT32:
+	  vars["field_dv_ctype"] = "int32_t";
+	  break;
+	case FieldDescriptor::CPPTYPE_INT64:
+	  vars["field_dv_ctype"] = "int64_t";
+	  break;
+	case FieldDescriptor::CPPTYPE_UINT32:
+	  vars["field_dv_ctype"] = "uint32_t";
+	  break;
+	case FieldDescriptor::CPPTYPE_UINT64:
+	  vars["field_dv_ctype"] = "uint64_t";
+	  break;
+	case FieldDescriptor::CPPTYPE_FLOAT:
+	  vars["field_dv_ctype"] = "float";
+	  break;
+	case FieldDescriptor::CPPTYPE_DOUBLE:
+	  vars["field_dv_ctype"] = "double";
+	  break;
+	case FieldDescriptor::CPPTYPE_BOOL:
+	  vars["field_dv_ctype"] = "protobuf_c_boolean";
+	  break;
+	  
+	case FieldDescriptor::CPPTYPE_MESSAGE:
+	  // NOTE: not supported by protobuf
+	  vars["maybe_static"] = "";
+	  vars["field_dv_ctype"] = "{ ... }";
+	  GOOGLE_LOG(DFATAL) << "Messages can't have default values!";
+	  break;
+	case FieldDescriptor::CPPTYPE_STRING:
+	  if (fd->type() == FieldDescriptor::TYPE_BYTES)
+	  {
+	    vars["field_dv_ctype"] = "ProtobufCBinaryData";
+	  }
+	  else   /* STRING type */
+	  {
+	    already_defined = true;
+	    vars["maybe_static"] = "";
+	    vars["field_dv_ctype"] = "char";
+	    vars["field_dv_ctype_suffix"] = "[]";
+	  }
+	  break;
+	case FieldDescriptor::CPPTYPE_ENUM:
+	  {
+	    const EnumValueDescriptor *vd = fd->default_value_enum();
+	    vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name());
+	    break;
+	  }
+	default:
+	  GOOGLE_LOG(DFATAL) << "Unknown CPPTYPE";
+	  break;
+	}
+	if (!already_defined)
+	  printer->Print(vars, "$maybe_static$const $field_dv_ctype$ $lcclassname$__$name$__default_value$field_dv_ctype_suffix$ = $default_value$;\n");
+      }
+    }
 
   printer->Print(vars,
-    "static const ProtobufCFieldDescriptor $lcclassname$__field_descriptors[$n_fields$] =\n"
-    "{\n");
+	"static const ProtobufCFieldDescriptor $lcclassname$__field_descriptors[$n_fields$] =\n"
+	"{\n");
   printer->Indent();
   const FieldDescriptor **sorted_fields = new const FieldDescriptor *[descriptor_->field_count()];
   for (int i = 0; i < descriptor_->field_count(); i++) {
     sorted_fields[i] = descriptor_->field(i);
   }
   qsort (sorted_fields, descriptor_->field_count(),
-         sizeof (const FieldDescriptor *), 
-	 compare_pfields_by_number);
+       sizeof (const FieldDescriptor *), 
+       compare_pfields_by_number);
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = sorted_fields[i];
     field_generators_.get(field).GenerateDescriptorInitializer(printer);
   }
   printer->Outdent();
-  printer->Print(vars,
-    "};\n");
+  printer->Print(vars, "};\n");
 
   NameIndex *field_indices = new NameIndex [descriptor_->field_count()];
   for (int i = 0; i < descriptor_->field_count(); i++) {
@@ -301,27 +432,27 @@ GenerateMessageDescriptor(io::Printer* printer) {
     values[i] = sorted_fields[i]->number();
   }
   int n_ranges = WriteIntRanges(printer,
-                                descriptor_->field_count(), values,
-                                vars["lcclassname"] + "__number_ranges");
+				descriptor_->field_count(), values,
+				vars["lcclassname"] + "__number_ranges");
   delete [] values;
   delete [] sorted_fields;
 
   vars["n_ranges"] = SimpleItoa(n_ranges);
   printer->Print(vars,
-    "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
-    "{\n"
-    "  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,\n"
-    "  \"$fullname$\",\n"
-    "  \"$shortname$\",\n"
-    "  \"$classname$\",\n"
-    "  \"$packagename$\",\n"
-    "  sizeof($classname$),\n"
-    "  $n_fields$,\n"
-    "  $lcclassname$__field_descriptors,\n"
-    "  $lcclassname$__field_indices_by_name,\n"
-    "  $n_ranges$,"
-    "  $lcclassname$__number_ranges\n"
-    "};\n");
+  "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
+  "{\n"
+  "  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,\n"
+  "  \"$fullname$\",\n"
+  "  \"$shortname$\",\n"
+  "  \"$classname$\",\n"
+  "  \"$packagename$\",\n"
+  "  sizeof($classname$),\n"
+  "  $n_fields$,\n"
+  "  $lcclassname$__field_descriptors,\n"
+  "  $lcclassname$__field_indices_by_name,\n"
+  "  $n_ranges$,"
+  "  $lcclassname$__number_ranges\n"
+  "};\n");
 }
 
 }  // namespace c

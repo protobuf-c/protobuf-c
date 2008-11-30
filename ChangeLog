@@ -8,3 +8,4 @@
       Include 'make deb' target.
 0.6:  NOT YET RELEASED.
       Warning suppression for -Wcast-qual and -Wshadow.
+      Support for default values of all types allowed by core protobuf.

@@ -57,6 +57,13 @@ void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+string MessageFieldGenerator::GetDefaultValue(void) const
+{
+  /* XXX: update when protobuf gets support
+   *   for default-values of message fields.
+   */
+  return "NULL";
+}
 void MessageFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
   switch (descriptor_->label()) {

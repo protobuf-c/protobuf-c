@@ -46,6 +46,9 @@ BytesFieldGenerator::
 BytesFieldGenerator(const FieldDescriptor* descriptor)
   : FieldGenerator(descriptor) {
   SetBytesVariables(descriptor, &variables_);
+  variables_["default_value"] = descriptor->has_default_value()
+                              ? GetDefaultValue() 
+			      : string("{0,NULL}");
 }
 
 BytesFieldGenerator::~BytesFieldGenerator() {}
@@ -66,14 +69,38 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer) const
+{
+  std::map<string, string> vars;
+  vars["default_value_data"] = FullNameToLower(descriptor_->full_name())
+	                     + "__default_value_data";
+  printer->Print(vars, "extern uint8_t $default_value_data$[];\n");
+}
+
+void BytesFieldGenerator::GenerateDefaultValueImplementations(io::Printer* printer) const
+{
+  std::map<string, string> vars;
+  vars["default_value_data"] = FullNameToLower(descriptor_->full_name())
+	                     + "__default_value_data";
+  vars["escaped"] = CEscape(descriptor_->default_value_string());
+  printer->Print(vars, "uint8_t $default_value_data$[] = \"$escaped$\";\n");
+}
+string BytesFieldGenerator::GetDefaultValue(void) const
+{
+  return "{ "
+	+ SimpleItoa(descriptor_->default_value_string().size())
+	+ ", "
+	+ FullNameToLower(descriptor_->full_name())
+	+ "__default_value_data }";
+}
 void BytesFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
-      printer->Print(variables_, "{0,NULL}");
+      printer->Print(variables_, "$default_value$");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(variables_, "0,{0,NULL}");
+      printer->Print(variables_, "0,$default_value$");
       break;
     case FieldDescriptor::LABEL_REPEATED:
       // no support for default?

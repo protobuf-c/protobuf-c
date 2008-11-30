@@ -36,8 +36,8 @@ using internal::WireFormat;
 void SetStringVariables(const FieldDescriptor* descriptor,
                         map<string, string>* variables) {
   (*variables)["name"] = FieldName(descriptor);
-  (*variables)["default"] =
-    "\"" + CEscape(descriptor->default_value_string()) + "\"";
+  (*variables)["default"] = FullNameToLower(descriptor->full_name())
+	+ "__default_value";
 }
 
 // ===================================================================
@@ -63,16 +63,37 @@ void StringFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
+void StringFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer) const
+{
+  printer->Print(variables_, "extern char $default$[];\n");
+}
+void StringFieldGenerator::GenerateDefaultValueImplementations(io::Printer* printer) const
+{
+  std::map<string, string> vars;
+  vars["default"] = variables_.find("default")->second;
+  vars["escaped"] = CEscape(descriptor_->default_value_string());
+  printer->Print(vars, "char $default$[] = \"$escaped$\";\n");
+}
+
+string StringFieldGenerator::GetDefaultValue(void) const
+{
+  return variables_.find("default")->second;
+}
 void StringFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
-  // TODO: no support for defaults?
+  std::map<string, string> vars;
+  if (descriptor_->has_default_value()) {
+    vars["default"] = GetDefaultValue();
+  } else {
+    vars["default"] = "NULL";
+  }
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print("NULL");
+      printer->Print(vars, "$default$");
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print("0,NULL");
+      printer->Print(vars, "0,NULL");
       break;
   }
 }

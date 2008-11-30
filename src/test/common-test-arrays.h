@@ -1,4 +1,7 @@
 
+/* data included from the c++ packed-data generator,
+   and from the c test code. */
+
 #define THOUSAND     1000
 #define MILLION      1000000
 #define BILLION      1000000000
