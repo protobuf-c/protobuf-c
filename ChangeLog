@@ -1,11 +1,18 @@
-0.0:  Initial release.
-0.1:  Lots of test code (and bug fixes).
+0.0:
+      - Initial release.
+0.1:
+      - Lots of test code (and bug fixes).
 0.2:
-0.3:  Minor pedantic concerns about generated code.
-0.4:  Update to work with protobuf 2.0.1.
-0.5:  License now included in major files.
-      Use little-endian optimizations; fix a bug therein.
-      Include 'make deb' target.
+0.3:
+      - Minor pedantic concerns about generated code.
+0.4:
+      - Update to work with protobuf 2.0.1.
+0.5: 
+      - License now included in major files.
+      - Use little-endian optimizations; fix a bug therein.
+      - Include 'make deb' target.
 0.6:  NOT YET RELEASED.
-      Warning suppression for -Wcast-qual and -Wshadow.
-      Support for default values of all types allowed by core protobuf.
+      - Warning suppression for -Wcast-qual and -Wshadow.
+      - Support for default values of all types allowed by core protobuf.
+      - Generate message__init functions, for when the static initializer
+        isn't convenient.

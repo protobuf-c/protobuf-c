@@ -148,6 +148,8 @@ GenerateHelperFunctionDeclarations(io::Printer* printer)
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   printer->Print(vars,
 		 "/* $classname$ methods */\n"
+		 "void   $lcclassname$__init\n"
+		 "                     ($classname$         *message);\n"
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$   *message);\n"
 		 "size_t $lcclassname$__pack\n"
@@ -209,6 +211,14 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
   std::map<string, string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
+  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
+  printer->Print(vars,
+		 "void   $lcclassname$__init\n"
+		 "                     ($classname$         *message)\n"
+		 "{\n"
+		 "  static $classname$ init_value = $ucclassname$__INIT;\n"
+		 "  *message = init_value;\n"
+		 "};\n");
   printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
