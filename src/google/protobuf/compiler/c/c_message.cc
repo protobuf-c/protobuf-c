@@ -260,58 +260,6 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		);
 }
 
-#if 0
-string MessageGenerator::
-GetDefaultValueC(const FieldDescriptor *fd) {
-  switch (fd->cpp_type()) {
-    case FieldDescriptor::CPPTYPE_INT32:
-      return SimpleItoa(fd->default_value_int32());
-    case FieldDescriptor::CPPTYPE_INT64:
-      return SimpleItoa(fd->default_value_int64());
-    case FieldDescriptor::CPPTYPE_UINT32:
-      return SimpleItoa(fd->default_value_uint32());
-    case FieldDescriptor::CPPTYPE_UINT64:
-      return SimpleItoa(fd->default_value_uint64());
-    case FieldDescriptor::CPPTYPE_FLOAT:
-      return SimpleFtoa(fd->default_value_float());
-    case FieldDescriptor::CPPTYPE_DOUBLE:
-      return SimpleDtoa(fd->default_value_double());
-    case FieldDescriptor::CPPTYPE_BOOL:
-      return fd->default_value_bool() ? "1" : "0";
-    case FieldDescriptor::CPPTYPE_MESSAGE:
-      // NOTE: not supported by protobuf
-      GOOGLE_LOG(DFATAL) << "Messages can't have default values!";
-      return "";
-    case FieldDescriptor::CPPTYPE_STRING:
-    {
-      string escaped = "\"" + CEscape(fd->default_value_string()) + "\"";
-      if (fd->type() == FieldDescriptor::TYPE_BYTES)
-      {
-	return "{ "
-	      + SimpleItoa(fd->default_value_string().size())
-	      + ", "
-	      + FullNameToLower(descriptor_->full_name())
-	      + "__"
-	      + fd->name()
-	      + "__default_value_data }";
-      }
-      else   /* STRING type */
-      {
-	return escaped;
-      }
-    }
-    case FieldDescriptor::CPPTYPE_ENUM:
-    {
-      const EnumValueDescriptor *vd = fd->default_value_enum();
-      return FullNameToUpper(vd->type()->full_name())
-	  + "__" + ToUpper(vd->name());
-    }
-  }
-  GOOGLE_LOG(DFATAL) << "missing case value";
-  return "";
-}
-#endif
-
 void MessageGenerator::
 GenerateMessageDescriptor(io::Printer* printer) {
     map<string, string> vars;
@@ -461,7 +409,8 @@ GenerateMessageDescriptor(io::Printer* printer) {
   "  $lcclassname$__field_descriptors,\n"
   "  $lcclassname$__field_indices_by_name,\n"
   "  $n_ranges$,"
-  "  $lcclassname$__number_ranges\n"
+  "  $lcclassname$__number_ranges,\n"
+  "  NULL,NULL,NULL,NULL    /* reserved[1234] */\n"
   "};\n");
 }
 

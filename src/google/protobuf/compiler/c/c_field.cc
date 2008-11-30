@@ -84,7 +84,8 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   }
   printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, $name$),\n");
   printer->Print(variables, "  $descriptor_addr$,\n");
-  printer->Print(variables, "  $default_value$\n");
+  printer->Print(variables, "  $default_value$,\n");
+  printer->Print(variables, "  NULL,NULL    /* reserved1, reserved2 */\n");
   printer->Print("},\n");
 }
 

@@ -131,6 +131,11 @@ struct _ProtobufCEnumDescriptor
   /* value-ranges, for faster lookups by number */
   unsigned n_value_ranges;
   const ProtobufCIntRange *value_ranges;
+
+  void *reserved1;
+  void *reserved2;
+  void *reserved3;
+  void *reserved4;
 };
 
 /* --- messages --- */
@@ -146,6 +151,9 @@ struct _ProtobufCFieldDescriptor
   unsigned offset;
   const void *descriptor;   /* for MESSAGE and ENUM types */
   const void *default_value;   /* or NULL if no default-value */
+
+  void *reserved1;
+  void *reserved2;
 };
 struct _ProtobufCMessageDescriptor
 {
@@ -166,6 +174,11 @@ struct _ProtobufCMessageDescriptor
   /* ranges, optimization for looking up fields */
   unsigned n_field_ranges;
   const ProtobufCIntRange *field_ranges;
+
+  void *reserved1;
+  void *reserved2;
+  void *reserved3;
+  void *reserved4;
 };
 
 

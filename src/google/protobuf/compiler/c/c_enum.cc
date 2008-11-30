@@ -240,7 +240,8 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
     "  $value_count$,\n"
     "  $lcclassname$__enum_values_by_name,\n"
     "  $n_ranges$,\n"
-    "  $lcclassname$__value_ranges\n"
+    "  $lcclassname$__value_ranges,\n"
+    "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
     "};\n");
 }
 
