@@ -8,11 +8,7 @@
     whose name is built from the package, the base message type-name
     and the member.  which takes the base message and returns the
     value, if it is found in "unknown_values".
-- implement default values for strings, bytes, and messages.
 - ensure enums are int-size
-- message__init(...)
-       initializes all defaults -- points at static default values
-         for strings, bytes and submessages.
 
 --------------------
 --- NEEDED TESTS ---
@@ -28,7 +24,6 @@
 ---------------------
 Document:
   - services
-  - default value handling [not implemented yet]
   - check over documentation again
 
 --------------------------
@@ -61,3 +56,8 @@ Document:
    message__free(...)
        free the message.
   [yeah, right: after typing it out, i see it's way too complicated]
+
+- switching to pure C.
+  - Rewrite the code-generator in C, including the parser.
+  - This would have the huge advantage that we could use ".proto" files
+    directly, instead of having to invoke the compilers.
