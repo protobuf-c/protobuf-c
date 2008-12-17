@@ -291,6 +291,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
 
 	bool already_defined = false;
 	vars["name"] = fd->name();
+	vars["lcname"] = CamelToLower(fd->name());
 	vars["maybe_static"] = "static ";
 	vars["field_dv_ctype_suffix"] = "";
 	vars["default_value"] = field_generators_.get(fd).GetDefaultValue();
@@ -347,7 +348,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
 	  break;
 	}
 	if (!already_defined)
-	  printer->Print(vars, "$maybe_static$const $field_dv_ctype$ $lcclassname$__$name$__default_value$field_dv_ctype_suffix$ = $default_value$;\n");
+	  printer->Print(vars, "$maybe_static$const $field_dv_ctype$ $lcclassname$__$lcname$__default_value$field_dv_ctype_suffix$ = $default_value$;\n");
       }
     }
 
