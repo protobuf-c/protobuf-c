@@ -218,7 +218,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "{\n"
 		 "  static $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
-		 "};\n");
+		 "}\n");
   printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
