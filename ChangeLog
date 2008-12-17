@@ -17,3 +17,5 @@
       - Generate message__init functions, for when the static initializer
         isn't convenient.
       - add some reserved fields at the end of the various descriptors
+0.7 (NOT YET RELEASED)
+      - memory leak:  unknown fields were not being freed by free_unpacked()
