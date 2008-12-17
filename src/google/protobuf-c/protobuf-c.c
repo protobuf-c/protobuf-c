@@ -1592,6 +1592,12 @@ protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
             protobuf_c_message_free_unpacked (sm, allocator);
         }
     }
+
+  for (f = 0; f < message->n_unknown_fields; f++)
+    FREE (allocator, message->unknown_fields[f].data);
+  if (message->unknown_fields != NULL)
+    FREE (allocator, message->unknown_fields);
+
   FREE (allocator, message);
 }
 
