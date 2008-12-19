@@ -1,0 +1,12 @@
+#! /bin/sh
+
+nroff -t -ms rfc-protobuf-sctp.ms |
+  perl -e '
+  undef $/;                               # Read whole files in a single gulp.
+  while (<>) {                            # Read the entire input file.
+    s/FORMFEED(\[Page\s+\d+\])\s+/        \1\n\f\n/sg;
+    s/\f\n$//;                         # Want no formfeed at end?
+    print;                             # Print the resultant file.
+  }' > rfc-protobuf-sctp.txt
+
+groff -t -ms rfc-protobuf-sctp.ms > rfc-protobuf-sctp.ps

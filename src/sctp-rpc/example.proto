@@ -1,0 +1,11 @@
+package example;
+
+message Word
+{
+  required string word = 1;
+};
+
+service WordFuncs {
+  rpc Uppercase (Word) returns (Word);
+  rpc Lowercase (Word) returns (Word);
+}
