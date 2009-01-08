@@ -22,3 +22,5 @@
       - lowercase field names consistently when composing
         default_value names. (issue 11)
       - remove spurious semicolon (issue 10)
+0.8: (NOT YET RELEASED)
+      - Destroy function typedef for Services was omitting a "*"

@@ -77,7 +77,7 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
   printer->Print(vars_,
 		 "};\n");
   printer->Print(vars_,
-		 "typedef void (*$cname$_ServiceDestroy)($cname$_Service);\n"
+		 "typedef void (*$cname$_ServiceDestroy)($cname$_Service *);\n"
 		 "void $lcfullname$__init ($cname$_Service *service,\n"
 		 "     $lcfullpadd$        $cname$_ServiceDestroy destroy);\n");
 }
