@@ -155,8 +155,7 @@ int32_size (int32_t v)
 {
   if (v < 0)
     return 10;
-  else
-  if (v < (1<<7))
+  else if (v < (1<<7))
     return 1;
   else if (v < (1<<14))
     return 2;
@@ -1602,13 +1601,6 @@ protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
 }
 
 /* === services === */
-typedef struct _ServiceMachgen ServiceMachgen;
-struct _ServiceMachgen
-{
-  ProtobufCService base;
-  void *service;
-};
-
 typedef void (*DestroyHandler)(void *service);
 typedef void (*GenericHandler)(void *service,
                                const ProtobufCMessage *input,
@@ -1623,11 +1615,10 @@ service_machgen_invoke(ProtobufCService *service,
 {
   GenericHandler *handlers;
   GenericHandler handler;
-  ServiceMachgen *machgen = (ServiceMachgen *) service;
   PROTOBUF_C_ASSERT (method_index < service->descriptor->n_methods);
-  handlers = (GenericHandler *) machgen->service;
+  handlers = (GenericHandler *) (service + 1);
   handler = handlers[method_index];
-  (*handler) (machgen->service, input, closure, closure_data);
+  (*handler) (service, input, closure, closure_data);
 }
 
 void
