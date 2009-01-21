@@ -42,6 +42,7 @@ typedef void (*ProtobufC_NameLookup_Found) (const uint8_t *address,
 typedef void (*ProtobufC_NameLookup_Failed)(const char    *error_message,
                                             void          *callback_data);
 typedef void (*ProtobufC_NameLookup_Func)  (ProtobufCDispatch *dispatch,
+                                            const char        *name,
                                             ProtobufC_NameLookup_Found found_func,
                                             ProtobufC_NameLookup_Failed failed_func,
                                             gpointer callback_data);
