@@ -1,4 +1,5 @@
 #include "protobuf-c-dispatch.h"
+#include "gskrbtreemacros.h"
 
 #define ALLOC_WITH_ALLOCATOR(allocator, size) ((allocator)->alloc ((allocator)->allocator_data, (size)))
 #define FREE_WITH_ALLOCATOR(allocator, ptr)   ((allocator)->free ((allocator)->allocator_data, (ptr)))
@@ -8,7 +9,7 @@
 typedef struct _Callback Callback;
 struct _Callback
 {
-  ProtobufC_DispatchCallback func;
+  ProtobufCDispatchCallback func;
   void *data;
 };
 
@@ -23,16 +24,50 @@ struct _FDMap
 typedef struct _RealDispatch RealDispatch;
 struct _RealDispatch
 {
-  ProtobufC_Dispatch base;
+  ProtobufCDispatch base;
   Callback *callbacks;          /* parallels notifies_desired */
   size_t notifies_desired_alloced;
   size_t changes_alloced;
   FDMap *fd_map;                /* map indexed by fd */
   size_t fd_map_size;           /* number of elements of fd_map */
+
+  ProtobufCDispatchTimer *timer_tree;
 };
 
+struct _ProtobufCDispatchTimer
+{
+  /* the actual timeout time */
+  unsigned long timeout_secs;
+  unsigned timeout_usecs;
+
+  /* red-black tree stuff */
+  ProtobufCDispatchTimer *left, *right, *parent;
+  protobuf_c_boolean is_red;
+
+  /* user callback */
+  ProtobufCDispatchTimerFunc func;
+  void *func_data;
+};
+
+/* Define the tree of timers, as per gskrbtreemacros.h */
+#define TIMER_GET_IS_RED(n)      ((n)->is_red)
+#define TIMER_SET_IS_RED(n,v)    ((n)->is_red = (v))
+#define TIMERS_COMPARE(a,b, rv) \
+  if (a->timeout_secs < b->timeout_secs) rv = -1; \
+  else if (a->timeout_secs > b->timeout_secs) rv = 1; \
+  else if (a->timeout_usecs < b->timeout_usecs) rv = -1; \
+  else if (a->timeout_usecs > b->timeout_usecs) rv = 1; \
+  else if (a < b) rv = -1; \
+  else if (a > b) rv = 1; \
+  else rv = 0;
+#define GET_TIMER_TREE(d) \
+  (d)->timer_tree, ProtobufCDispatchTimer *, \
+  TIMER_GET_IS_RED, TIMER_SET_IS_RED, \
+  parent, left, right, \
+  TIMERS_COMPARE
+
 /* Create or destroy a Dispatch */
-ProtobufC_Dispatch *protobuf_c_dispatch_new (void)
+ProtobufCDispatch *protobuf_c_dispatch_new (void)
 {
   RealDispatch *rv = ALLOC (sizeof (RealDispatch));
   rv->base.n_changes = 0;
@@ -48,7 +83,7 @@ ProtobufC_Dispatch *protobuf_c_dispatch_new (void)
 }
 
 void
-protobuf_c_dispatch_free(ProtobufC_Dispatch *dispatch)
+protobuf_c_dispatch_free(ProtobufCDispatch *dispatch)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   FREE (d->base.notifies_desired);
@@ -152,10 +187,10 @@ deallocate_notify_desired_index (RealDispatch *d,
 
 /* Registering file-descriptors to watch. */
 void
-protobuf_c_dispatch_watch_fd (ProtobufC_Dispatch *dispatch,
+protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
                               int                 fd,
                               unsigned            events,
-                              ProtobufC_DispatchCallback callback,
+                              ProtobufCDispatchCallback callback,
                               void               *callback_data)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
@@ -199,7 +234,7 @@ protobuf_c_dispatch_watch_fd (ProtobufC_Dispatch *dispatch,
 }
 
 void
-protobuf_c_dispatch_close_fd (ProtobufC_Dispatch *dispatch,
+protobuf_c_dispatch_close_fd (ProtobufCDispatch *dispatch,
                               int                 fd)
 {
   protobuf_c_dispatch_fd_closed (dispatch, fd);
@@ -207,7 +242,7 @@ protobuf_c_dispatch_close_fd (ProtobufC_Dispatch *dispatch,
 }
 
 void
-protobuf_c_dispatch_fd_closed(ProtobufC_Dispatch *dispatch,
+protobuf_c_dispatch_fd_closed(ProtobufCDispatch *dispatch,
                               int                 fd)
 {
   unsigned f = fd;
@@ -220,8 +255,16 @@ protobuf_c_dispatch_fd_closed(ProtobufC_Dispatch *dispatch,
     deallocate_notify_desired_index (d, f);
 }
 
+static void
+free_timer (ProtobufCDispatchTimer *timer)
+{
+  RealDispatch *d = timer->dispatch;
+  timer->right = d->recycled_timeouts;
+  d->recycled_timeouts = timer;
+}
+
 void
-protobuf_c_dispatch_dispatch (ProtobufC_Dispatch *dispatch,
+protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
                               size_t              n_notifies,
                               ProtobufC_FDNotify *notifies)
 {
@@ -249,10 +292,42 @@ protobuf_c_dispatch_dispatch (ProtobufC_Dispatch *dispatch,
             d->callbacks[nd_ind].func (fd, events, d->callbacks[nd_ind].data);
         }
     }
+
+
+  /* handle timers */
+  gettimeofday (&tv, NULL);
+  while (d->timer_tree != NULL)
+    {
+      ProtobufCDispatchTimer *min_timer;
+      GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min_timer);
+      if (min_timer.timeout_secs < tv.tv_secs
+       || (min_timer.timeout_secs == tv.tv_secs
+        && min_timer.timeout_usecs <= tv.tv_usecs))
+        {
+          ProtobufCDispatchTimerFunc func = min_timer->func;
+          void *func_data = min_timer->func_data;
+          GSK_RBTREE_REMOVE (GET_TIMER_TREE (d), min_timer);
+          /* Set to NULL as a way to tell protobuf_c_dispatch_remove_timer()
+             that we are in the middle of notifying */
+          min_timer->func = NULL;
+          min_timer->func_data = NULL;
+          func (&d->base, func_data);
+          free_timer (min_timer);
+        }
+      else
+        {
+          d->base.has_timeout = 1;
+          d->base.timeout_secs = min_timer->timeout_secs;
+          d->base.timeout_usecs = min_timer->timeout_usecs;
+          break;
+        }
+    }
+  if (d->timer_tree == NULL)
+    d->base.has_timeout = 0;
 }
 
 void
-protobuf_c_dispatch_clear_changes (ProtobufC_Dispatch *dispatch)
+protobuf_c_dispatch_clear_changes (ProtobufCDispatch *dispatch)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned i;
@@ -264,10 +339,8 @@ protobuf_c_dispatch_clear_changes (ProtobufC_Dispatch *dispatch)
   dispatch->n_changes = 0;
 }
 
-
 void
-protobuf_c_dispatch_run (ProtobufC_Dispatch *dispatch,
-                         int                 timeout)
+protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
 {
   struct pollfd *fds;
   void *to_free = NULL;
@@ -318,4 +391,59 @@ protobuf_c_dispatch_run (ProtobufC_Dispatch *dispatch,
     FREE (to_free);
   if (to_free2)
     FREE (to_free2);
+}
+
+ProtobufCDispatchTimer *
+protobuf_c_dispatch_add_timer(ProtobufCDispatch *dispatch,
+                              unsigned            timeout_secs,
+                              unsigned            timeout_usecs,
+                              ProtobufCDispatchTimerFunc func,
+                              void               *func_data)
+{
+  RealDispatch *d = (RealDispatch *) dispatch;
+  protobuf_c_assert (func != NULL);
+  if (d->recycled_timeouts != NULL)
+    {
+      rv = d->recycled_timeouts;
+      d->recycled_timeouts = rv->right;
+    }
+  else
+    {
+      rv = d->allocator->alloc (d->allocator, sizeof (ProtobufCDispatchTimer));
+    }
+  rv->timeout_secs = timeout_secs;
+  rv->timeout_usecs = timeout_usecs;
+  rv->func = func;
+  rv->func_data = func_data;
+  rv->dispatch = d;
+  GSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
+  return rv;
+}
+
+void  protobuf_c_dispatch_remove_timer (ProtobufCDispatchTimer *timer)
+{
+  protobuf_c_boolean may_be_first;
+  RealDispatch *d = timer->dispatch;
+
+  /* ignore mid-notify removal */
+  if (timer->func == NULL)
+    return;
+
+  may_be_first = d->base.timeout_usecs == timer->timeout_usecs
+              && d->base.timeout_secs == timer->timeout_secs;
+
+  GSK_RBTREE_REMOVE (GET_TIMER_TREE (d), timer);
+
+  if (may_be_first)
+    {
+      if (d->timer_tree == NULL)
+        d->base.has_timeout = 0;
+      else
+        {
+          ProtobufCDispatchTimer *min;
+          GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min);
+          d->timeout_secs = min->timeout_secs;
+          d->timeout_usecs = min->timeout_usecs;
+        }
+    }
 }
