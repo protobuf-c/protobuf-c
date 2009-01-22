@@ -1,10 +1,24 @@
+#include <assert.h>
+#include <alloca.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/poll.h>
+#include <limits.h>
+#include <errno.h>
 #include "protobuf-c-dispatch.h"
 #include "gskrbtreemacros.h"
 
+#define protobuf_c_assert(condition) assert(condition)
+
 #define ALLOC_WITH_ALLOCATOR(allocator, size) ((allocator)->alloc ((allocator)->allocator_data, (size)))
 #define FREE_WITH_ALLOCATOR(allocator, ptr)   ((allocator)->free ((allocator)->allocator_data, (ptr)))
-#define ALLOC(size)   ALLOC_WITH_ALLOCATOR(&protobuf_c_system_allocator, size)
-#define FREE(ptr)     FREE_WITH_ALLOCATOR(&protobuf_c_system_allocator, ptr)
+
+/* macros that assume you have a ProtobufCAllocator* named
+   allocator in scope */
+#define ALLOC(size)   ALLOC_WITH_ALLOCATOR((allocator), size)
+#define FREE(ptr)     FREE_WITH_ALLOCATOR((allocator), ptr)
 
 typedef struct _Callback Callback;
 struct _Callback
@@ -32,10 +46,17 @@ struct _RealDispatch
   size_t fd_map_size;           /* number of elements of fd_map */
 
   ProtobufCDispatchTimer *timer_tree;
+  ProtobufCAllocator *allocator;
+  ProtobufCDispatchTimer *recycled_timeouts;
+
+  ProtobufCDispatchIdle *first_idle, *last_idle;
+  ProtobufCDispatchIdle *recycled_idles;
 };
 
 struct _ProtobufCDispatchTimer
 {
+  RealDispatch *dispatch;
+
   /* the actual timeout time */
   unsigned long timeout_secs;
   unsigned timeout_usecs;
@@ -67,7 +88,7 @@ struct _ProtobufCDispatchTimer
   TIMERS_COMPARE
 
 /* Create or destroy a Dispatch */
-ProtobufCDispatch *protobuf_c_dispatch_new (void)
+ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
 {
   RealDispatch *rv = ALLOC (sizeof (RealDispatch));
   rv->base.n_changes = 0;
@@ -86,6 +107,7 @@ void
 protobuf_c_dispatch_free(ProtobufCDispatch *dispatch)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
+  ProtobufCAllocator *allocator = d->allocator;
   FREE (d->base.notifies_desired);
   FREE (d->callbacks);
   FREE (d->fd_map);
@@ -98,6 +120,7 @@ enlarge_fd_map (RealDispatch *d,
 {
   size_t new_size = d->fd_map_size * 2;
   FDMap *new_map;
+  ProtobufCAllocator *allocator = d->allocator;
   while (fd >= new_size)
     new_size *= 2;
   new_map = ALLOC (sizeof (FDMap) * new_size);
@@ -122,6 +145,7 @@ static unsigned
 allocate_notifies_desired_index (RealDispatch *d)
 {
   unsigned rv = d->base.n_notifies_desired++;
+  ProtobufCAllocator *allocator = d->allocator;
   if (rv == d->notifies_desired_alloced)
     {
       unsigned new_size = d->notifies_desired_alloced * 2;
@@ -139,6 +163,7 @@ allocate_change_index (RealDispatch *d)
   unsigned rv = d->base.n_changes++;
   if (rv == d->changes_alloced)
     {
+      ProtobufCAllocator *allocator = d->allocator;
       unsigned new_size = d->changes_alloced * 2;
       ProtobufC_FDNotify *n = ALLOC (new_size * sizeof (ProtobufC_FDNotify));
       memcpy (n, d->base.changes, d->changes_alloced * sizeof (ProtobufC_FDNotify));
@@ -153,17 +178,17 @@ deallocate_change_index (RealDispatch *d,
                          int fd)
 {
   unsigned ch_ind = d->fd_map[fd].change_index;
-  unsigned from = d->n_changes - 1;
+  unsigned from = d->base.n_changes - 1;
   unsigned from_fd;
   if (ch_ind == from)
     {
-      d->n_changes--;
+      d->base.n_changes--;
       return;
     }
   from_fd = d->base.changes[ch_ind].fd;
   d->fd_map[from_fd].change_index = ch_ind;
-  d->changes[ch_ind] = d->changes[from];
-  d->n_changes--;
+  d->base.changes[ch_ind] = d->base.changes[from];
+  d->base.n_changes--;
 }
 
 static void
@@ -171,17 +196,17 @@ deallocate_notify_desired_index (RealDispatch *d,
                                  int fd)
 {
   unsigned nd_ind = d->fd_map[fd].notify_desired_index;
-  unsigned from = d->n_notifies_desired - 1;
+  unsigned from = d->base.n_notifies_desired - 1;
   unsigned from_fd;
   if (nd_ind == from)
     {
-      d->n_notifies_desired--;
+      d->base.n_notifies_desired--;
       return;
     }
   from_fd = d->base.notifies_desired[nd_ind].fd;
   d->fd_map[from_fd].notify_desired_index = nd_ind;
-  d->notifies_desired[nd_ind] = d->notifies_desired[from];
-  d->n_notifies_desired--;
+  d->base.notifies_desired[nd_ind] = d->base.notifies_desired[from];
+  d->base.n_notifies_desired--;
 }
 
 
@@ -195,7 +220,7 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned f = fd;              /* avoid tiring compiler warnings: "comparison of signed versus unsigned" */
-  guint nd_ind, change_ind;
+  unsigned nd_ind, change_ind;
   if (callback == NULL)
     assert (events == 0);
   else
@@ -225,8 +250,8 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
     d->fd_map[f].change_index = allocate_change_index (d);
   change_ind = d->fd_map[f].change_index;
 
-  d->base.changes[ch_ind].fd = fd;
-  d->base.changes[ch_ind].events = events;
+  d->base.changes[change_ind].fd = fd;
+  d->base.changes[change_ind].events = events;
   d->base.notifies_desired[nd_ind].fd = fd;
   d->base.notifies_desired[nd_ind].events = events;
   d->callbacks[nd_ind].func = callback;
@@ -271,6 +296,8 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned fd_max;
   unsigned i;
+  FDMap *fd_map = d->fd_map;
+  struct timeval tv;
   if (n_notifies == 0)
     return;
   fd_max = 0;
@@ -296,13 +323,15 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
 
   /* handle timers */
   gettimeofday (&tv, NULL);
+  dispatch->last_dispatch_secs = tv.tv_sec;
+  dispatch->last_dispatch_usecs = tv.tv_usec;
   while (d->timer_tree != NULL)
     {
       ProtobufCDispatchTimer *min_timer;
       GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min_timer);
-      if (min_timer.timeout_secs < tv.tv_secs
-       || (min_timer.timeout_secs == tv.tv_secs
-        && min_timer.timeout_usecs <= tv.tv_usecs))
+      if (min_timer->timeout_secs < (unsigned long) tv.tv_sec
+       || (min_timer->timeout_secs == (unsigned long) tv.tv_sec
+        && min_timer->timeout_usecs <= (unsigned) tv.tv_usec))
         {
           ProtobufCDispatchTimerFunc func = min_timer->func;
           void *func_data = min_timer->func_data;
@@ -333,18 +362,38 @@ protobuf_c_dispatch_clear_changes (ProtobufCDispatch *dispatch)
   unsigned i;
   for (i = 0; i < dispatch->n_changes; i++)
     {
-      assert (fd_map[dispatch->changes[i].fd].change_index == (int) i);
-      fd_map[dispatch->changes[i].fd].change_index = -1;
+      assert (d->fd_map[dispatch->changes[i].fd].change_index == (int) i);
+      d->fd_map[dispatch->changes[i].fd].change_index = -1;
     }
   dispatch->n_changes = 0;
+}
+
+static inline unsigned
+events_to_pollfd_events (unsigned ev)
+{
+  return  ((ev & PROTOBUF_C_EVENT_READABLE) ? POLLIN : 0)
+       |  ((ev & PROTOBUF_C_EVENT_WRITABLE) ? POLLOUT : 0)
+       ;
+}
+static inline unsigned
+pollfd_events_to_events (unsigned ev)
+{
+  return  ((ev & POLLIN) ? PROTOBUF_C_EVENT_READABLE : 0)
+       |  ((ev & POLLOUT) ? PROTOBUF_C_EVENT_WRITABLE : 0)
+       ;
 }
 
 void
 protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
 {
   struct pollfd *fds;
-  void *to_free = NULL;
+  void *to_free = NULL, *to_free2 = NULL;
   size_t n_events;
+  RealDispatch *d = (RealDispatch *) dispatch;
+  ProtobufCAllocator *allocator = d->allocator;
+  unsigned i;
+  int timeout;
+  ProtobufC_FDNotify *events;
   if (dispatch->n_notifies_desired < 128)
     fds = alloca (sizeof (struct pollfd) * dispatch->n_notifies_desired);
   else
@@ -356,10 +405,43 @@ protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
       fds[i].revents = 0;
     }
 
+  /* compute timeout */
+  if (d->first_idle != NULL)
+    timeout = 0;
+  else if (d->timer_tree == NULL)
+    timeout = -1;
+  else
+    {
+      ProtobufCDispatchTimer *min_timer;
+      GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min_timer);
+      struct timeval tv;
+      gettimeofday (&tv, NULL);
+      if (min_timer->timeout_secs < (unsigned long) tv.tv_sec
+       || (min_timer->timeout_secs == (unsigned long) tv.tv_sec
+        && min_timer->timeout_usecs <= (unsigned) tv.tv_usec))
+        timeout = 0;
+      else
+        {
+          int du = min_timer->timeout_usecs - tv.tv_usec;
+          int ds = min_timer->timeout_secs - tv.tv_sec;
+          if (du < 0)
+            {
+              du += 1000000;
+              ds -= 1;
+            }
+          if (ds > INT_MAX / 1000)
+            timeout = INT_MAX / 1000 * 1000;
+          else
+            /* Round up, so that we ensure that something can run
+               if they just wait the full duration */
+            timeout = ds * 1000 + (du + 999) / 1000;
+        }
+    }
+
   if (poll (fds, dispatch->n_notifies_desired, timeout) < 0)
     {
       if (errno == EINTR)
-        return;                 /* probably a signal interrupted the poll-- let the user have control */
+        return;   /* probably a signal interrupted the poll-- let the user have control */
 
       /* i don't really know what would plausibly cause this */
       fprintf (stderr, "error polling: %s\n", strerror (errno));
@@ -370,9 +452,9 @@ protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
     if (fds[i].revents)
       n_events++;
   if (n_events < 128)
-    to_free2 = events = alloca (sizeof (ProtobufC_FDNotify) * n_events);
+    events = alloca (sizeof (ProtobufC_FDNotify) * n_events);
   else
-    events = ALLOC (sizeof (ProtobufC_FDNotify) * n_events);
+    to_free2 = events = ALLOC (sizeof (ProtobufC_FDNotify) * n_events);
   n_events = 0;
   for (i = 0; i < dispatch->n_notifies_desired; i++)
     if (fds[i].revents)
@@ -401,6 +483,8 @@ protobuf_c_dispatch_add_timer(ProtobufCDispatch *dispatch,
                               void               *func_data)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
+  ProtobufCDispatchTimer *rv;
+  ProtobufCDispatchTimer *conflict;
   protobuf_c_assert (func != NULL);
   if (d->recycled_timeouts != NULL)
     {
@@ -418,6 +502,25 @@ protobuf_c_dispatch_add_timer(ProtobufCDispatch *dispatch,
   rv->dispatch = d;
   GSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
   return rv;
+}
+
+ProtobufCDispatchTimer *
+protobuf_c_dispatch_add_timer_millis
+                             (ProtobufCDispatch *dispatch,
+                              unsigned            millis,
+                              ProtobufCDispatchTimerFunc func,
+                              void               *func_data)
+{
+  unsigned tsec = dispatch->last_dispatch_secs;
+  unsigned tusec = dispatch->last_dispatch_usecs;
+  tusec += 1000 * (millis % 1000);
+  tsec += millis / 1000;
+  if (tusec >= 1000*1000)
+    {
+      tusec -= 1000*1000;
+      tsec += 1;
+    }
+  return protobuf_c_dispatch_add_timer (dispatch, tsec, tusec, func, func_data);
 }
 
 void  protobuf_c_dispatch_remove_timer (ProtobufCDispatchTimer *timer)
@@ -442,8 +545,8 @@ void  protobuf_c_dispatch_remove_timer (ProtobufCDispatchTimer *timer)
         {
           ProtobufCDispatchTimer *min;
           GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min);
-          d->timeout_secs = min->timeout_secs;
-          d->timeout_usecs = min->timeout_usecs;
+          d->base.timeout_secs = min->timeout_secs;
+          d->base.timeout_usecs = min->timeout_usecs;
         }
     }
 }

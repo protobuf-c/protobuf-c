@@ -1,3 +1,12 @@
+#ifndef __PROTOBUF_C_DISPATCH_H_
+#define __PROTOBUF_C_DISPATCH_H_
+
+typedef struct _ProtobufCDispatch ProtobufCDispatch;
+typedef struct _ProtobufCDispatchTimer ProtobufCDispatchTimer;
+typedef struct _ProtobufCDispatchIdle ProtobufCDispatchIdle;
+
+#include "protobuf-c.h"
+
 typedef enum
 {
   PROTOBUF_C_EVENT_READABLE = (1<<0),
@@ -5,7 +14,7 @@ typedef enum
 } ProtobufC_Events;
 
 /* Create or destroy a Dispatch */
-ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator);
+ProtobufCDispatch  *protobuf_c_dispatch_new (ProtobufCAllocator *allocator);
 void                protobuf_c_dispatch_free(ProtobufCDispatch *dispatch);
 
 ProtobufCAllocator *protobuf_c_dispatch_peek_allocator (ProtobufCDispatch *);
@@ -34,6 +43,12 @@ ProtobufCDispatchTimer *
                                     unsigned           timeout_usecs,
                                     ProtobufCDispatchTimerFunc func,
                                     void               *func_data);
+ProtobufCDispatchTimer *
+      protobuf_c_dispatch_add_timer_millis
+                                   (ProtobufCDispatch *dispatch,
+                                    unsigned           milliseconds,
+                                    ProtobufCDispatchTimerFunc func,
+                                    void               *func_data);
 void  protobuf_c_dispatch_remove_timer (ProtobufCDispatchTimer *);
 
 /* Idle functions */
@@ -56,11 +71,6 @@ void  protobuf_c_dispatch_run      (ProtobufCDispatch *dispatch);
 
 
 /* --- API for those who want to embed a dispatch into their own main-loop --- */
-void  protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
-                                    size_t              n_notifies,
-                                    ProtobufC_FDNotify *notifies);
-void  protobuf_c_dispatch_clear_changes (ProtobufCDispatch *);
-
 #ifdef WIN32
 typedef SOCKET ProtobufC_FD;
 #else
@@ -71,6 +81,11 @@ typedef struct {
   ProtobufC_FD fd;
   ProtobufC_Events events;
 } ProtobufC_FDNotify;
+
+void  protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
+                                    size_t              n_notifies,
+                                    ProtobufC_FDNotify *notifies);
+void  protobuf_c_dispatch_clear_changes (ProtobufCDispatch *);
 
 
 struct _ProtobufCDispatch
@@ -92,6 +107,11 @@ struct _ProtobufCDispatch
      timeout 0 is appropriate */
   protobuf_c_boolean has_idle;
 
+  unsigned long last_dispatch_secs;
+  unsigned last_dispatch_usecs;
+
   /* private data follows */
 };
 
+
+#endif

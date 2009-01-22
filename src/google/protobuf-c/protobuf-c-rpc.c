@@ -13,6 +13,16 @@ typedef enum
   PROTOBUF_C_CLIENT_STATE_FAILED                /* if no autoretry */
 } ProtobufC_ClientState;
 
+struct _Closure
+{
+  /* these will be NULL for unallocated request ids */
+  const ProtobufCMessageDescriptor *response_type;
+  ProtobufCClosure closure;
+
+  /* this is the next request id, or 0 for none */
+  void *closure_data;
+};
+
 struct _ProtobufC_RPC_Client
 {
   ProtobufCService base_service;
@@ -32,9 +42,18 @@ struct _ProtobufC_RPC_Client
       ProtobufCDispatch_Idle *idle;
     } init;
     struct {
-      ProtobufCDispatch_Timer *timer;
+      protobuf_c_boolean pending;
+    } name_lookup;
+    struct {
+      ProtobufCDispatchTimer *timer;
       char *error_message;
     } failed_waiting;
+    struct {
+      unsigned closures_alloced;
+      unsigned first_free_request_id;
+      /* indexed by (request_id-1) */
+      Closure *closures;
+    } connected;
     struct {
       char *error_message;
     } failed;
@@ -54,7 +73,59 @@ client_failed (ProtobufC_RPC_Client *client,
                const char           *format_str,
                ...)
 {
-  ...
+  va_list args;
+  switch (client->state)
+    {
+    case PROTOBUF_C_CLIENT_STATE_NAME_LOOKUP:
+      protobuf_c_assert (!client->info.name_lookup.pending);
+      break;
+    case PROTOBUF_C_CLIENT_STATE_CONNECTING:
+      /* nothing to do */
+      break;
+    case PROTOBUF_C_CLIENT_STATE_CONNECTED:
+      /* nothing to do */
+      break;
+
+      /* should not get here */
+    case PROTOBUF_C_CLIENT_STATE_INIT:
+    case PROTOBUF_C_CLIENT_STATE_FAILED_WAITING:
+    case PROTOBUF_C_CLIENT_STATE_FAILED:
+      protobuf_c_assert (FALSE);
+      break;
+    }
+  if (client->fd >= 0)
+    {
+      protobuf_c_dispatch_close (client->dispatch, client->fd);
+      client->fd = -1;
+    }
+  protobuf_c_data_buffer_reset (&client->incoming);
+  protobuf_c_data_buffer_reset (&client->outgoing);
+
+  /* Compute the message */
+  va_start (args, format_str);
+  vsnprintf (buf, sizeof (buf), format_str, args);
+  va_end (args);
+  buf[sizeof(buf)-1] = 0;
+  msg_len = strlen (buf);
+  msg = client->allocator->alloc (client->allocator, msg_len + 1);
+  strcpy (msg, buf);
+
+  /* go to one of the failed states */
+  if (client->autoretry)
+    {
+      client->state = PROTOBUF_C_CLIENT_STATE_FAILED_WAITING;
+      client->info.failed_waiting.timer
+        = protobuf_c_dispatch_add_timer_millis (client->dispatch,
+                                                client->autoretry_millis,
+                                                handle_autoretry_timeout,
+                                                client);
+      client->info.failed_waiting.error_message = msg;
+    }
+  else
+    {
+      client->state = PROTOBUF_C_CLIENT_STATE_FAILED;
+      client->info.failed.error_message = msg;
+    }
 }
 
 static void
@@ -89,17 +160,15 @@ begin_connecting (ProtobufC_RPC_Client *client,
       client_failed (client, "error connecting to remote host: %s", strerror (errno));
       return;
     }
+
   client->state = PROTOBUF_C_CLIENT_STATE_CONNECTED;
-  if (client->first_outgoing_request != NULL)
-    {
-      /* register interest in writing to fd (there can be no pending requests, of course,
-         since we just connected) */
-      protobuf_c_dispatch_watch_fd (client->dispatch,
-                                    client->fd,
-                                    PROTOBUF_C_EVENT_WRITABLE,
-                                    handle_connected_client_fd_events,
-                                    client);
-    }
+
+  client->info.connected.closures_alloced = 1;
+  client->info.connected.first_free_request_id = 1;
+  client->info.connected.closures = client->allocator->alloc (client->allocator, sizeof (Closure));
+  client->info.connected.closures[0].closure = NULL;
+  client->info.connected.closures[0].response_type = NULL;
+  client->info.connected.closures[0].closure_data = UINT_TO_POINTER (0);
 }
 static void
 handle_name_lookup_success (const uint8_t *address,
@@ -190,13 +259,85 @@ handle_init_idle (ProtobufCDispatch *dispatch,
 }
 
 static void
+grow_closure_array (ProtobufC_RPC_Client *client)
+{
+  /* resize array */
+  unsigned old_size = client->info.connected.closures_alloced;
+  unsigned new_size = old_size * 2;
+  Closure *new_closures = client->allocator->alloc (client->allocator, sizeof (Closure) * new_size);
+  memcpy (new_closures,
+          client->info.connected.closures,
+          sizeof (Closure) * old_size);
+
+  /* build new free list */
+  for (i = old_size; i < new_size - 1; i++)
+    {
+      new_closures[i].response_type = NULL;
+      new_closures[i].closure = NULL;
+      new_closures[i].closure_data = UINT_TO_POINTER (i+2);
+    }
+  new_closures[i].closure_data = client->info.connected.first_free_request_id;
+  new_closures[i].response_type = NULL;
+  new_closures[i].closure = NULL;
+
+  client->allocator->free (client->allocator, client->info.connected.closures);
+  client->info.connected.closures = new_closures;
+  client->info.connected.closures_alloced = new_size;
+}
+
+static void
 enqueue_request (ProtobufC_RPC_Client *client,
                  unsigned          method_index,
                  const ProtobufCMessage *input,
                  ProtobufCClosure  closure,
                  void             *closure_data)
 {
-  ...
+  uint32_t request_id;
+  struct {
+    uint32_t method_index;
+    uint32_t packed_size;
+    uint32_t request_id;
+  } header;
+  size_t packed_size;
+  uint8_t *packed_data;
+  Closure *closure;
+  const ProtobufCServiceDescriptor *desc = client->base_service.descriptor;
+  const ProtobufCMethodDescriptor *method = descriptor->methods + method_index;
+
+  protobuf_c_assert (method_index < desc->n_methods);
+
+  /* Allocate request_id */
+  protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_CONNECTED);
+  if (client->info.connected.first_free_request_id == 0)
+    grow_closure_array (client);
+  request_id = client->info.connected.first_free_request_id;
+  closure = client->info.connected.closures + (request_id - 1);
+  client->info.connected.first_free_request_id = POINTER_TO_UINT (closure->closure_data);
+
+  /* Pack message */
+  packed_size = protobuf_c_message_get_packed_size (input);
+  if (packed_size < client->allocator->max_alloca)
+    packed_data = alloca (packed_size);
+  else
+    packed_data = client->allocator->alloc (client->allocator, packed_size);
+  protobuf_c_message_pack (input, packed_data);
+
+  /* Append to buffer */
+  protobuf_c_assert (sizeof (header) == 16);
+  header.method_index = uint32_to_le (method_index);
+  header.packed_size = uint32_to_le (packed_size);
+  header.request_id = request_id;
+  protobuf_c_data_buffer_append (&client->outgoing, &header, 16);
+  protobuf_c_data_buffer_append (&client->outgoing, packed_data, packed_size);
+
+  /* Clean up if not using alloca() */
+  if (packed_size >= client->allocator->max_alloca)
+    client->allocator->free (client->allocator, packed_data);
+
+  /* Add closure to request-tree */
+  client->info.connected.closures[request_id-1].response_type = client->descriptor->methods[method_index].output;
+  client->info.connected.closures[request_id-1].closure = closure;
+  client->info.connected.closures[request_id-1].closure_data = closure_data;
 }
 
 static void

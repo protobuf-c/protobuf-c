@@ -136,7 +136,7 @@
 G_STMT_START{                                                                 \
   type _gsk_last = NULL;                                                      \
   type _gsk_at = (top);                                                       \
-  gboolean _gsk_last_was_left = FALSE;                                        \
+  protobuf_c_boolean _gsk_last_was_left = 0;                                        \
   collision_node = NULL;                                                      \
   while (_gsk_at != NULL)                                                     \
     {                                                                         \
@@ -145,12 +145,12 @@ G_STMT_START{                                                                 \
       comparator(_gsk_at, (node), _gsk_compare_rv);                           \
       if (_gsk_compare_rv > 0)                                                \
         {                                                                     \
-          _gsk_last_was_left = TRUE;                                          \
+          _gsk_last_was_left = 1;                                          \
           _gsk_at = _gsk_at->left;                                            \
         }                                                                     \
       else if (_gsk_compare_rv < 0)                                           \
         {                                                                     \
-          _gsk_last_was_left = FALSE;                                         \
+          _gsk_last_was_left = 0;                                         \
           _gsk_at = _gsk_at->right;                                           \
         }                                                                     \
       else                                                                    \
@@ -241,7 +241,7 @@ G_STMT_START{                                                                 \
   type _gsk_rb_del_x;                                                         \
   type _gsk_rb_del_y;                                                         \
   type _gsk_rb_del_nullpar = NULL;	/* Used to emulate sentinel nodes */  \
-  gboolean _gsk_rb_del_fixup;                                                 \
+  protobuf_c_boolean _gsk_rb_del_fixup;                                                 \
   if (_gsk_rb_del_z->left == NULL || _gsk_rb_del_z->right == NULL)            \
     _gsk_rb_del_y = _gsk_rb_del_z;                                            \
   else                                                                        \
@@ -502,7 +502,7 @@ G_STMT_START{                                                                 \
 #define GSK_RBTREE_NEXT_(top,type,is_red,set_is_red,parent,left,right,comparator, in, out)  \
 G_STMT_START{                                                                 \
   type _gsk_next_at = (in);                                                   \
-  g_assert (_gsk_next_at != NULL);                                            \
+  protobuf_c_assert (_gsk_next_at != NULL);                                            \
   if (_gsk_next_at->right != NULL)                                            \
     {                                                                         \
       _gsk_next_at = _gsk_next_at->right;                                     \
@@ -585,7 +585,7 @@ G_STMT_START{                                                                 \
 G_STMT_START{                                                                 \
   type _gsk_last = NULL;                                                      \
   type _gsk_at = (top);                                                       \
-  gboolean _gsk_last_was_left = FALSE;                                        \
+  protobuf_c_boolean _gsk_last_was_left = 0;                                        \
   collision_node = NULL;                                                      \
   while (_gsk_at != NULL)                                                     \
     {                                                                         \
@@ -594,12 +594,12 @@ G_STMT_START{                                                                 \
       comparator(_gsk_at, (node), _gsk_compare_rv);                           \
       if (_gsk_compare_rv > 0)                                                \
         {                                                                     \
-          _gsk_last_was_left = TRUE;                                          \
+          _gsk_last_was_left = 1;                                          \
           _gsk_at = _gsk_at->left;                                            \
         }                                                                     \
       else if (_gsk_compare_rv < 0)                                           \
         {                                                                     \
-          _gsk_last_was_left = FALSE;                                         \
+          _gsk_last_was_left = 0;                                         \
           _gsk_at = _gsk_at->right;                                           \
         }                                                                     \
       else                                                                    \
@@ -699,7 +699,7 @@ G_STMT_START{                                                                 \
   type _gsk_rb_del_x;                                                         \
   type _gsk_rb_del_y;                                                         \
   type _gsk_rb_del_nullpar = NULL;	/* Used to emulate sentinel nodes */  \
-  gboolean _gsk_rb_del_fixup;                                                 \
+  protobuf_c_boolean _gsk_rb_del_fixup;                                                 \
   if (_gsk_rb_del_z->left == NULL || _gsk_rb_del_z->right == NULL)            \
     _gsk_rb_del_y = _gsk_rb_del_z;                                            \
   else                                                                        \

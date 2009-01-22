@@ -22,6 +22,8 @@ protoc_c_LDADD = \
 -lprotoc
 
 libprotobuf_c_la_SOURCES = \
+google/protobuf-c/protobuf-c-dispatch.c \
+google/protobuf-c/protobuf-c-rpc.c \
 google/protobuf-c/protobuf-c.c
 
 noinst_HEADERS = \
