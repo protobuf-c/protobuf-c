@@ -23,6 +23,7 @@ protoc_c_LDADD = \
 
 libprotobuf_c_la_SOURCES = \
 google/protobuf-c/protobuf-c-dispatch.c \
+google/protobuf-c/protobuf-c-data-buffer.c \
 google/protobuf-c/protobuf-c-rpc.c \
 google/protobuf-c/protobuf-c.c
 

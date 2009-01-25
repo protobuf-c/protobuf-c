@@ -17,6 +17,8 @@ typedef enum
 ProtobufCDispatch  *protobuf_c_dispatch_new (ProtobufCAllocator *allocator);
 void                protobuf_c_dispatch_free(ProtobufCDispatch *dispatch);
 
+ProtobufCDispatch  *protobuf_c_dispatch_default (void);
+
 ProtobufCAllocator *protobuf_c_dispatch_peek_allocator (ProtobufCDispatch *);
 
 typedef void (*ProtobufCDispatchCallback) (int         fd,

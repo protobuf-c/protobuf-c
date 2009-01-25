@@ -313,6 +313,9 @@ struct _ProtobufCBufferSimple
 /* ====== private ====== */
 #include "protobuf-c-private.h"
 
+/* TODO: crib from glib */
+#define PROTOBUF_C_GNUC_PRINTF(format_argno, ellipsis_argno)
+
 PROTOBUF_C_END_DECLS
 
 #endif /* __PROTOBUF_C_RUNTIME_H_ */

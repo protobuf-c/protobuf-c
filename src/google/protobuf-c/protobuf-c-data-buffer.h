@@ -22,12 +22,13 @@ struct _ProtobufCDataBuffer
 
   ProtobufCDataBufferFragment    *first_frag;
   ProtobufCDataBufferFragment    *last_frag;
+  ProtobufCAllocator *allocator;
 };
 
-#define PROTOBUF_C_DATA_BUFFER_STATIC_INIT		{ 0, NULL, NULL }
-
-
-void     protobuf_c_data_buffer_construct           (ProtobufCDataBuffer       *buffer);
+void     protobuf_c_data_buffer_init                (ProtobufCDataBuffer       *buffer,
+                                                     ProtobufCAllocator    *allocator);
+void     protobuf_c_data_buffer_clear               (ProtobufCDataBuffer       *buffer);
+void     protobuf_c_data_buffer_reset               (ProtobufCDataBuffer       *buffer);
 
 size_t   protobuf_c_data_buffer_read                (ProtobufCDataBuffer    *buffer,
                                                      void*      data,
@@ -101,11 +102,11 @@ int      protobuf_c_data_buffer_read_in_fd          (ProtobufCDataBuffer       *
 /*
  * Scanning the buffer.
  */
-ssize_t  protobuf_c_data_buffer_index_of            (ProtobufCDataBuffer    *buffer,
+int  protobuf_c_data_buffer_index_of            (ProtobufCDataBuffer    *buffer,
                                          char          char_to_find);
-ssize_t  protobuf_c_data_buffer_str_index_of        (ProtobufCDataBuffer    *buffer,
+int  protobuf_c_data_buffer_str_index_of        (ProtobufCDataBuffer    *buffer,
                                          const char   *str_to_find);
-ssize_t  protobuf_c_data_buffer_polystr_index_of    (ProtobufCDataBuffer    *buffer,
+int  protobuf_c_data_buffer_polystr_index_of    (ProtobufCDataBuffer    *buffer,
                                          char        **strings);
 
 /* This deallocates memory used by the buffer-- you are responsible
