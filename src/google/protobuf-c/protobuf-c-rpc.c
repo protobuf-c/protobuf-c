@@ -412,6 +412,7 @@ uint32_to_le (uint32_t le)
        | ((le << 8) & 0xff00);
 #endif
 }
+#define uint32_from_le uint32_to_le             /* make the code more readable, i guess */
 
 static void
 enqueue_request (ProtobufC_RPC_Client *client,
@@ -509,13 +510,26 @@ handle_client_fd_events (int                fd,
       else if (read_rv == 0)
         {
           /* handle eof */
-          ...
+          client_failed (client,
+                         "got end-of-file from server [%u bytes incoming, %u bytes outgoing]",
+                         client->incoming.size, client->outgoing.size);
         }
       else
         {
           /* try processing buffer */
           while (client->incoming.size >= 12)
             {
+              uint32_t header[3];
+              unsigned service_index, message_length, request_id;
+              protobuf_c_data_buffer_peek (&client->incoming, header, sizeof (header));
+              service_index = uint32_from_le (header[0]);
+              message_length = uint32_from_le (header[1]);
+              request_id = header[2];           /* already native-endian */
+
+              if (12 + message_length > client.incoming.size)
+                break;
+
+              /* lookup request by id */
               ...
             }
         }
