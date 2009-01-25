@@ -136,6 +136,15 @@ protobuf_c_dispatch_peek_allocator (ProtobufCDispatch *dispatch)
   return d->allocator;
 }
 
+/* TODO: perhaps thread-private dispatches make more sense? */
+ProtobufCDispatch  *protobuf_c_dispatch_default (void)
+{
+  static ProtobufCDispatch *def = NULL;
+  if (def == NULL)
+    def = protobuf_c_dispatch_new (NULL);
+  return def;
+}
+
 static void
 enlarge_fd_map (RealDispatch *d,
                 unsigned      fd)
