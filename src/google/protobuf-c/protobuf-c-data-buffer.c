@@ -119,17 +119,19 @@ protobuf_c_data_buffer_cleanup_recycling_bin ()
       
 /* --- Public methods --- */
 /**
- * protobuf_c_data_buffer_construct:
+ * protobuf_c_data_buffer_init:
  * @buffer: buffer to initialize (as empty).
  *
  * Construct an empty buffer out of raw memory.
  * (This is equivalent to filling the buffer with 0s)
  */
 void
-protobuf_c_data_buffer_construct(ProtobufCDataBuffer *buffer)
+protobuf_c_data_buffer_init(ProtobufCDataBuffer *buffer,
+                            ProtobufCAllocator *allocator)
 {
   buffer->first_frag = buffer->last_frag = NULL;
   buffer->size = 0;
+  buffer->allocator = allocator;
 }
 
 #if defined(GSK_DEBUG) || GSK_DEBUG_BUFFER_ALLOCATIONS
@@ -708,7 +710,7 @@ protobuf_c_data_buffer_clear(ProtobufCDataBuffer *to_destroy)
  * returns: its index in the buffer, or -1 if the character
  * is not in the buffer.
  */
-ssize_t
+int
 protobuf_c_data_buffer_index_of(ProtobufCDataBuffer *buffer,
                     char       char_to_find)
 {
@@ -1103,242 +1105,3 @@ protobuf_c_data_buffer_polystr_index_of    (ProtobufCDataBuffer    *buffer,
 }
 #endif
 
-/* --- ProtobufCDataBufferIterator --- */
-
-/**
- * protobuf_c_data_buffer_iterator_construct:
- * @iterator: to initialize.
- * @to_iterate: the buffer to walk through.
- *
- * Initialize a new #ProtobufCDataBufferIterator.
- */
-void 
-protobuf_c_data_buffer_iterator_construct (ProtobufCDataBufferIterator *iterator,
-			       ProtobufCDataBuffer         *to_iterate)
-{
-  iterator->fragment = to_iterate->first_frag;
-  if (iterator->fragment != NULL)
-    {
-      iterator->in_cur = 0;
-      iterator->cur_data = (uint8_t*)protobuf_c_data_buffer_fragment_start (iterator->fragment);
-      iterator->cur_length = iterator->fragment->buf_length;
-    }
-  else
-    {
-      iterator->in_cur = 0;
-      iterator->cur_data = NULL;
-      iterator->cur_length = 0;
-    }
-  iterator->offset = 0;
-}
-
-/**
- * protobuf_c_data_buffer_iterator_peek:
- * @iterator: to peek data from.
- * @out: to copy data into.
- * @max_length: maximum number of bytes to write to @out.
- *
- * Peek data from the current position of an iterator.
- * The iterator's position is not changed.
- *
- * returns: number of bytes peeked into @out.
- */
-size_t
-protobuf_c_data_buffer_iterator_peek      (ProtobufCDataBufferIterator *iterator,
-			       void              *out,
-			       size_t              max_length)
-{
-  ProtobufCDataBufferFragment *fragment = iterator->fragment;
-
-  size_t frag_length = iterator->cur_length;
-  const uint8_t *frag_data = iterator->cur_data;
-  size_t in_frag = iterator->in_cur;
-
-  size_t out_remaining = max_length;
-  uint8_t *out_at = out;
-
-  while (fragment != NULL)
-    {
-      size_t frag_remaining = frag_length - in_frag;
-      if (out_remaining <= frag_remaining)
-	{
-	  memcpy (out_at, frag_data + in_frag, out_remaining);
-	  out_remaining = 0;
-	  break;
-	}
-
-      memcpy (out_at, frag_data + in_frag, frag_remaining);
-      out_remaining -= frag_remaining;
-      out_at += frag_remaining;
-
-      fragment = fragment->next;
-      if (fragment != NULL)
-	{
-	  frag_data = (uint8_t *) protobuf_c_data_buffer_fragment_start (fragment);
-	  frag_length = fragment->buf_length;
-	}
-      in_frag = 0;
-    }
-  return max_length - out_remaining;
-}
-
-/**
- * protobuf_c_data_buffer_iterator_read:
- * @iterator: to read data from.
- * @out: to copy data into.
- * @max_length: maximum number of bytes to write to @out.
- *
- * Peek data from the current position of an iterator.
- * The iterator's position is updated to be at the end of
- * the data read.
- *
- * returns: number of bytes read into @out.
- */
-size_t
-protobuf_c_data_buffer_iterator_read      (ProtobufCDataBufferIterator *iterator,
-			       void              *out,
-			       size_t              max_length)
-{
-  ProtobufCDataBufferFragment *fragment = iterator->fragment;
-
-  size_t frag_length = iterator->cur_length;
-  const uint8_t *frag_data = iterator->cur_data;
-  size_t in_frag = iterator->in_cur;
-
-  size_t out_remaining = max_length;
-  uint8_t *out_at = out;
-
-  while (fragment != NULL)
-    {
-      size_t frag_remaining = frag_length - in_frag;
-      if (out_remaining <= frag_remaining)
-	{
-	  memcpy (out_at, frag_data + in_frag, out_remaining);
-	  in_frag += out_remaining;
-	  out_remaining = 0;
-	  break;
-	}
-
-      memcpy (out_at, frag_data + in_frag, frag_remaining);
-      out_remaining -= frag_remaining;
-      out_at += frag_remaining;
-
-      fragment = fragment->next;
-      if (fragment != NULL)
-	{
-	  frag_data = (uint8_t *) protobuf_c_data_buffer_fragment_start (fragment);
-	  frag_length = fragment->buf_length;
-	}
-      in_frag = 0;
-    }
-  iterator->in_cur = in_frag;
-  iterator->fragment = fragment;
-  iterator->cur_length = frag_length;
-  iterator->cur_data = frag_data;
-  iterator->offset += max_length - out_remaining;
-  return max_length - out_remaining;
-}
-
-/**
- * protobuf_c_data_buffer_iterator_find_char:
- * @iterator: to advance.
- * @c: the character to look for.
- *
- * If it exists,
- * skip forward to the next instance of @c and return TRUE.
- * Otherwise, do nothing and return FALSE.
- *
- * returns: whether the character was found.
- */
-
-protobuf_c_boolean
-protobuf_c_data_buffer_iterator_find_char (ProtobufCDataBufferIterator *iterator,
-			       char               c)
-{
-  ProtobufCDataBufferFragment *fragment = iterator->fragment;
-
-  size_t frag_length = iterator->cur_length;
-  const uint8_t *frag_data = iterator->cur_data;
-  size_t in_frag = iterator->in_cur;
-  size_t new_offset = iterator->offset;
-
-  if (fragment == NULL)
-    return -1;
-
-  for (;;)
-    {
-      size_t frag_remaining = frag_length - in_frag;
-      const uint8_t * ptr = memchr (frag_data + in_frag, c, frag_remaining);
-      if (ptr != NULL)
-	{
-	  iterator->offset = (ptr - frag_data) - in_frag + new_offset;
-	  iterator->fragment = fragment;
-	  iterator->in_cur = ptr - frag_data;
-	  iterator->cur_length = frag_length;
-	  iterator->cur_data = frag_data;
-	  return TRUE;
-	}
-      fragment = fragment->next;
-      if (fragment == NULL)
-	return FALSE;
-      new_offset += frag_length - in_frag;
-      in_frag = 0;
-      frag_length = fragment->buf_length;
-      frag_data = protobuf_c_data_buffer_fragment_start (fragment);
-    }
-}
-
-/**
- * protobuf_c_data_buffer_iterator_skip:
- * @iterator: to advance.
- * @max_length: maximum number of bytes to skip forward.
- *
- * Advance an iterator forward in the buffer,
- * returning the number of bytes skipped.
- *
- * returns: number of bytes skipped forward.
- */
-size_t
-protobuf_c_data_buffer_iterator_skip      (ProtobufCDataBufferIterator *iterator,
-			       size_t              max_length)
-{
-  ProtobufCDataBufferFragment *fragment = iterator->fragment;
-
-  size_t frag_length = iterator->cur_length;
-  const uint8_t *frag_data = iterator->cur_data;
-  size_t in_frag = iterator->in_cur;
-
-  size_t out_remaining = max_length;
-
-  while (fragment != NULL)
-    {
-      size_t frag_remaining = frag_length - in_frag;
-      if (out_remaining <= frag_remaining)
-	{
-	  in_frag += out_remaining;
-	  out_remaining = 0;
-	  break;
-	}
-
-      out_remaining -= frag_remaining;
-
-      fragment = fragment->next;
-      if (fragment != NULL)
-	{
-	  frag_data = (uint8_t *) protobuf_c_data_buffer_fragment_start (fragment);
-	  frag_length = fragment->buf_length;
-	}
-      else
-	{
-	  frag_data = NULL;
-	  frag_length = 0;
-	}
-      in_frag = 0;
-    }
-  iterator->in_cur = in_frag;
-  iterator->fragment = fragment;
-  iterator->cur_length = frag_length;
-  iterator->cur_data = frag_data;
-  iterator->offset += max_length - out_remaining;
-  return max_length - out_remaining;
-}

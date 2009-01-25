@@ -45,6 +45,8 @@ char    *protobuf_c_data_buffer_parse_string0       (ProtobufCDataBuffer    *buf
 int      protobuf_c_data_buffer_peek_char           (const ProtobufCDataBuffer *buffer);
 int      protobuf_c_data_buffer_read_char           (ProtobufCDataBuffer    *buffer);
 
+int      protobuf_c_data_buffer_index_of(ProtobufCDataBuffer *buffer,
+                                         char       char_to_find);
 /* 
  * Appending to the buffer.
  */
@@ -72,13 +74,6 @@ void     protobuf_c_data_buffer_append_string0      (ProtobufCDataBuffer    *buf
                                          const char   *string);
 
 
-void     protobuf_c_data_buffer_printf              (ProtobufCDataBuffer    *buffer,
-					 const char   *format,
-					 ...) PROTOBUF_C_GNUC_PRINTF(2,3);
-void     protobuf_c_data_buffer_vprintf             (ProtobufCDataBuffer    *buffer,
-					 const char   *format,
-					 va_list       args);
-
 /* Take all the contents from src and append
  * them to dst, leaving src empty.
  */
@@ -99,49 +94,11 @@ int      protobuf_c_data_buffer_writev_len          (ProtobufCDataBuffer       *
 int      protobuf_c_data_buffer_read_in_fd          (ProtobufCDataBuffer       *write_to,
                                          int              read_from);
 
-/*
- * Scanning the buffer.
- */
-int  protobuf_c_data_buffer_index_of            (ProtobufCDataBuffer    *buffer,
-                                         char          char_to_find);
-int  protobuf_c_data_buffer_str_index_of        (ProtobufCDataBuffer    *buffer,
-                                         const char   *str_to_find);
-int  protobuf_c_data_buffer_polystr_index_of    (ProtobufCDataBuffer    *buffer,
-                                         char        **strings);
-
 /* This deallocates memory used by the buffer-- you are responsible
  * for the allocation and deallocation of the ProtobufCDataBuffer itself. */
 void     protobuf_c_data_buffer_destruct            (ProtobufCDataBuffer    *to_destroy);
 
 /* Free all unused buffer fragments. */
 void     protobuf_c_data_buffer_cleanup_recycling_bin ();
-
-
-/* intended for use on the stack */
-typedef struct _ProtobufCDataBufferIterator ProtobufCDataBufferIterator;
-struct _ProtobufCDataBufferIterator
-{
-  ProtobufCDataBufferFragment *fragment;
-  size_t in_cur;
-  size_t cur_length;
-  const uint8_t *cur_data;
-  size_t offset;
-};
-
-#define protobuf_c_data_buffer_iterator_offset(iterator)	((iterator)->offset)
-void     protobuf_c_data_buffer_iterator_construct (ProtobufCDataBufferIterator *iterator,
-           			        ProtobufCDataBuffer         *to_iterate);
-unsigned protobuf_c_data_buffer_iterator_peek      (ProtobufCDataBufferIterator *iterator,
-           			        void              *out,
-           			        unsigned           max_length);
-unsigned protobuf_c_data_buffer_iterator_read      (ProtobufCDataBufferIterator *iterator,
-           			        void              *out,
-           			        unsigned           max_length);
-unsigned protobuf_c_data_buffer_iterator_skip      (ProtobufCDataBufferIterator *iterator,
-           			        unsigned           max_length);
-protobuf_c_boolean protobuf_c_data_buffer_iterator_find_char (ProtobufCDataBufferIterator *iterator,
-					char               c);
-
-
 
 #endif

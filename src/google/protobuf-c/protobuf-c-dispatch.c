@@ -9,6 +9,7 @@
 #include <errno.h>
 #include "protobuf-c-dispatch.h"
 #include "gskrbtreemacros.h"
+#include "gsklistmacros.h"
 
 #define protobuf_c_assert(condition) assert(condition)
 
@@ -70,6 +71,16 @@ struct _ProtobufCDispatchTimer
   void *func_data;
 };
 
+struct _ProtobufCDispatchIdle
+{
+  RealDispatch *dispatch;
+
+  ProtobufCDispatchIdle *prev, *next;
+
+  /* user callback */
+  ProtobufCDispatchIdleFunc func;
+  void *func_data;
+};
 /* Define the tree of timers, as per gskrbtreemacros.h */
 #define TIMER_GET_IS_RED(n)      ((n)->is_red)
 #define TIMER_SET_IS_RED(n,v)    ((n)->is_red = (v))
@@ -86,6 +97,10 @@ struct _ProtobufCDispatchTimer
   TIMER_GET_IS_RED, TIMER_SET_IS_RED, \
   parent, left, right, \
   TIMERS_COMPARE
+
+/* declare the idle-handler list */
+#define GET_IDLE_LIST(d) \
+  ProtobufCDispatchIdle *, d->first_idle, d->last_idle, prev, next
 
 /* Create or destroy a Dispatch */
 ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
@@ -112,6 +127,13 @@ protobuf_c_dispatch_free(ProtobufCDispatch *dispatch)
   FREE (d->callbacks);
   FREE (d->fd_map);
   FREE (d);
+}
+
+ProtobufCAllocator *
+protobuf_c_dispatch_peek_allocator (ProtobufCDispatch *dispatch)
+{
+  RealDispatch *d = (RealDispatch *) dispatch;
+  return d->allocator;
 }
 
 static void
@@ -549,4 +571,36 @@ void  protobuf_c_dispatch_remove_timer (ProtobufCDispatchTimer *timer)
           d->base.timeout_usecs = min->timeout_usecs;
         }
     }
+}
+ProtobufCDispatchIdle *
+protobuf_c_dispatch_add_idle (ProtobufCDispatch *dispatch,
+                              ProtobufCDispatchIdleFunc func,
+                              void               *func_data)
+{
+  RealDispatch *d = (RealDispatch *) dispatch;
+  ProtobufCDispatchIdle *rv;
+  if (d->recycled_idles != NULL)
+    {
+      rv = d->recycled_idles;
+      d->recycled_idles = rv->next;
+    }
+  else
+    {
+      ProtobufCAllocator *allocator = d->allocator;
+      rv = ALLOC (sizeof (ProtobufCDispatchIdle));
+    }
+  GSK_LIST_APPEND (GET_IDLE_LIST (d), rv);
+  rv->func = func;
+  rv->func_data = func_data;
+  rv->dispatch = d;
+  return rv;
+}
+
+void
+protobuf_c_dispatch_remove_idle (ProtobufCDispatchIdle *idle)
+{
+  RealDispatch *d = idle->dispatch;
+  GSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
+  idle->next = d->recycled_idles;
+  d->recycled_idles = idle;
 }

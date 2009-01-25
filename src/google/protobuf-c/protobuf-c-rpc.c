@@ -34,7 +34,8 @@ typedef enum
   PROTOBUF_C_CLIENT_STATE_CONNECTING,
   PROTOBUF_C_CLIENT_STATE_CONNECTED,
   PROTOBUF_C_CLIENT_STATE_FAILED_WAITING,
-  PROTOBUF_C_CLIENT_STATE_FAILED                /* if no autoretry */
+  PROTOBUF_C_CLIENT_STATE_FAILED,               /* if no autoretry */
+  PROTOBUF_C_CLIENT_STATE_DESTROYED
 } ProtobufC_RPC_ClientState;
 
 typedef struct _Closure Closure;
@@ -68,12 +69,9 @@ struct _ProtobufC_RPC_Client
     } init;
     struct {
       protobuf_c_boolean pending;
+      protobuf_c_boolean destroyed_while_pending;
       uint16_t port;
     } name_lookup;
-    struct {
-      ProtobufCDispatchTimer *timer;
-      char *error_message;
-    } failed_waiting;
     struct {
       unsigned closures_alloced;
       unsigned first_free_request_id;
@@ -81,12 +79,17 @@ struct _ProtobufC_RPC_Client
       Closure *closures;
     } connected;
     struct {
+      ProtobufCDispatchTimer *timer;
+      char *error_message;
+    } failed_waiting;
+    struct {
       char *error_message;
     } failed;
   } info;
 };
 
 static void begin_name_lookup (ProtobufC_RPC_Client *client);
+static void destroy_client_rpc (ProtobufCService *service);
 
 
 static void
@@ -132,6 +135,7 @@ client_failed (ProtobufC_RPC_Client *client,
     case PROTOBUF_C_CLIENT_STATE_INIT:
     case PROTOBUF_C_CLIENT_STATE_FAILED_WAITING:
     case PROTOBUF_C_CLIENT_STATE_FAILED:
+    case PROTOBUF_C_CLIENT_STATE_DESTROYED:
       protobuf_c_assert (FALSE);
       break;
     }
@@ -292,6 +296,11 @@ handle_name_lookup_success (const uint8_t *address,
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_NAME_LOOKUP);
   protobuf_c_assert (client->info.name_lookup.pending);
   client->info.name_lookup.pending = 0;
+  if (client->info.name_lookup.destroyed_while_pending)
+    {
+      destroy_client_rpc (&client->base_service);
+      return;
+    }
   addr.sin_family = PF_INET;
   memcpy (&addr.sin_addr, address, 4);
   addr.sin_port = htons (client->info.name_lookup.port);
@@ -306,6 +315,11 @@ handle_name_lookup_failure (const char    *error_message,
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_NAME_LOOKUP);
   protobuf_c_assert (client->info.name_lookup.pending);
   client->info.name_lookup.pending = 0;
+  if (client->info.name_lookup.destroyed_while_pending)
+    {
+      destroy_client_rpc (&client->base_service);
+      return;
+    }
   client_failed (client, "name lookup failed (for name from %s): %s", client->name, error_message);
 }
 
@@ -348,6 +362,7 @@ begin_name_lookup (ProtobufC_RPC_Client *client)
         port = atoi (colon + 1);
 
         client->info.name_lookup.pending = 1;
+        client->info.name_lookup.destroyed_while_pending = 0;
         client->info.name_lookup.port = port;
         client->resolver (client->dispatch,
                           host,
@@ -521,16 +536,50 @@ handle_client_fd_events (int                fd,
             {
               uint32_t header[3];
               unsigned service_index, message_length, request_id;
+              Closure *closure;
+              uint8_t *packed_data;
+              ProtobufCMessage *msg;
               protobuf_c_data_buffer_peek (&client->incoming, header, sizeof (header));
               service_index = uint32_from_le (header[0]);
               message_length = uint32_from_le (header[1]);
               request_id = header[2];           /* already native-endian */
 
-              if (12 + message_length > client.incoming.size)
+              if (12 + message_length > client->incoming.size)
                 break;
 
               /* lookup request by id */
-              ...
+              if (request_id >= client->info.connected.closures_alloced
+               || request_id == 0
+               || client->info.connected.closures[request_id-1].response_type == NULL)
+                {
+                  client_failed (client, "bad request-id in response from server");
+                  return;
+                }
+              closure = client->info.connected.closures + (request_id - 1);
+
+              /* read message and unpack */
+              protobuf_c_data_buffer_discard (&client->incoming, 12);
+              packed_data = client->allocator->alloc (client->allocator, message_length);
+              protobuf_c_data_buffer_read (&client->incoming, packed_data, message_length);
+
+              /* TODO: use fast temporary allocator */
+              msg = protobuf_c_message_unpack (closure->response_type,
+                                               client->allocator,
+                                               message_length,
+                                               packed_data);
+              if (msg == NULL)
+                {
+                  client_failed (client, "failed to unpack message");
+                  client->allocator->free (client->allocator, packed_data);
+                  return;
+                }
+
+              /* invoke closure */
+              closure->closure (msg, closure->closure_data);
+
+              /* clean up */
+              protobuf_c_message_free_unpacked (msg, client->allocator);
+              client->allocator->free (client->allocator, packed_data);
             }
         }
     }
@@ -577,7 +626,8 @@ invoke_client_rpc (ProtobufCService *service,
       break;
 
     case PROTOBUF_C_CLIENT_STATE_FAILED_WAITING:
-    case PROTOBUF_C_CLIENT_STATE_FAILED:               /* if no autoretry */
+    case PROTOBUF_C_CLIENT_STATE_FAILED:
+    case PROTOBUF_C_CLIENT_STATE_DESTROYED:
       closure (NULL, closure_data);
       break;
     }
@@ -587,7 +637,55 @@ static void
 destroy_client_rpc (ProtobufCService *service)
 {
   ProtobufC_RPC_Client *client = (ProtobufC_RPC_Client *) service;
-  ...
+  ProtobufC_RPC_ClientState state = client->state;
+  unsigned i;
+  unsigned n_closures = 0;
+  Closure *closures = NULL;
+  switch (state)
+    {
+    case PROTOBUF_C_CLIENT_STATE_INIT:
+      protobuf_c_dispatch_remove_idle (client->info.init.idle);
+      break;
+    case PROTOBUF_C_CLIENT_STATE_NAME_LOOKUP:
+      if (client->info.name_lookup.pending)
+        {
+          client->info.name_lookup.destroyed_while_pending = 1;
+          return;
+        }
+      break;
+    case PROTOBUF_C_CLIENT_STATE_CONNECTING:
+      break;
+    case PROTOBUF_C_CLIENT_STATE_CONNECTED:
+      n_closures = client->info.connected.closures_alloced;
+      closures = client->info.connected.closures;
+      break;
+    case PROTOBUF_C_CLIENT_STATE_FAILED_WAITING:
+      protobuf_c_dispatch_remove_timer (client->info.failed_waiting.timer);
+      client->allocator->free (client->allocator, client->info.failed_waiting.error_message);
+      break;
+    case PROTOBUF_C_CLIENT_STATE_FAILED:
+      client->allocator->free (client->allocator, client->info.failed.error_message);
+      break;
+    case PROTOBUF_C_CLIENT_STATE_DESTROYED:
+      protobuf_c_assert (0);
+      break;
+    }
+  if (client->fd >= 0)
+    {
+      protobuf_c_dispatch_close_fd (client->dispatch, client->fd);
+      client->fd = -1;
+    }
+  protobuf_c_data_buffer_clear (&client->incoming);
+  protobuf_c_data_buffer_clear (&client->outgoing);
+  client->state = PROTOBUF_C_CLIENT_STATE_DESTROYED;
+
+  /* free closures only once we are in the destroyed state */
+  for (i = 0; i < n_closures; i++)
+    closures[i].closure (NULL, closures[i].closure_data);
+  if (closures)
+    client->allocator->free (client->allocator, closures);
+
+  client->allocator->free (client->allocator, client);
 }
 
 ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
