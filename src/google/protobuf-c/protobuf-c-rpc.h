@@ -3,11 +3,12 @@
 
 /* Protocol is:
  *    client issues request with header:
- *         service_index             32-bit little-endian
+ *         method_index              32-bit little-endian
  *         message_length            32-bit little-endian
  *         request_id                32-bit any-endian
  *    server responds with header:
- *         service_index             32-bit little-endian
+ *         status_code               32-bit little-endian
+ *         method_index              32-bit little-endian
  *         message_length            32-bit little-endian
  *         request_id                32-bit any-endian
  */
@@ -22,8 +23,16 @@ typedef enum
 typedef enum
 {
   PROTOBUF_C_ERROR_CODE_HOST_NOT_FOUND,
-  PROTOBUF_C_ERROR_CODE_CONNECTION_REFUSED
+  PROTOBUF_C_ERROR_CODE_CONNECTION_REFUSED,
+  PROTOBUF_C_ERROR_CODE_CLIENT_TERMINATED,
+  PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
 } ProtobufC_RPC_Error_Code;
+
+typedef enum
+{
+  PROTOBUF_C_STATUS_CODE_SUCCESS,
+  PROTOBUF_C_STATUS_CODE_TOO_MANY_PENDING
+} ProtobufC_RPC_Status_Code;
 
 typedef void (*ProtobufC_RPC_Error_Func)   (ProtobufC_RPC_Error_Code code,
                                             const char              *message,
