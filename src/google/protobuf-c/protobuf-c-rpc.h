@@ -5,11 +5,11 @@
  *    client issues request with header:
  *         service_index             32-bit little-endian
  *         message_length            32-bit little-endian
- *         request_id                64-bit any-endian
+ *         request_id                32-bit any-endian
  *    server responds with header:
  *         service_index             32-bit little-endian
  *         message_length            32-bit little-endian
- *         request_id                64-bit any-endian
+ *         request_id                32-bit any-endian
  */
 #include "protobuf-c-dispatch.h"
 

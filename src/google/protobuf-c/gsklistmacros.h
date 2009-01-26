@@ -59,6 +59,9 @@
 #define GSK_STACK_SORT(stack, comparator) GSK_STACK_SORT_(stack, comparator)
 #define GSK_STACK_GET_BOTTOM(stack, rv_node) GSK_STACK_GET_BOTTOM_(stack, rv_node)
 
+#define G_STMT_START do
+#define G_STMT_END   while(0)
+
 #define GSK_STACK_PUSH_(type, top, next, node) 				\
   G_STMT_START{								\
     type _gsk_tmp = (node);                                             \

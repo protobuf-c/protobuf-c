@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "protobuf-c-rpc.h"
 #include "protobuf-c-data-buffer.h"
+#include "gsklistmacros.h"
 
 #define protobuf_c_assert(x) assert(x)
 
@@ -709,4 +710,281 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
   rv->fd = -1;
   rv->info.init.idle = protobuf_c_dispatch_add_idle (dispatch, handle_init_idle, rv);
   return &rv->base_service;
+}
+
+/* === Server === */
+typedef struct _ServerRequest ServerRequest;
+typedef struct _ServerConnection ServerConnection;
+struct _ServerRequest
+{
+  uint32_t request_id;
+  ServerConnection *conn;
+  ServerRequest *prev, *next;
+};
+struct _ServerConnection
+{
+  int fd;
+  ProtobufCDataBuffer incoming, outgoing;
+
+  ProtobufC_RPC_Server *server;
+  ServerConnection *prev, *next;
+
+  ServerRequest *first_pending_request, *last_pending_request;
+};
+
+struct _ProtobufC_RPC_Server
+{
+  ProtobufCDispatch *dispatch;
+  ProtobufCAllocator *allocator;
+  ProtobufCService *underlying;
+  char *bind_name;
+  ServerConnection *first_connection, *last_connection;
+
+  /* configuration */
+  unsigned max_pending_requests_per_connection;
+};
+
+#define GET_PENDING_REQUEST_LIST(conn) \
+  ServerRequest *, conn->first_pending_request, server->last_pending_request, prev, next
+#define GET_CONNECTION_LIST(server) \
+  ServerConnection *, server->first_connection, server->last_connection, prev, next
+
+static void
+server_connection_close (ServerConnection *conn)
+{
+  ServerRequest *req;
+
+  /* general cleanup */
+  protobuf_c_dispatch_close_fd (conn->server->dispatch, conn->fd);
+  conn->fd = -1;
+  protobuf_c_data_buffer_clear (&conn->incoming);
+  protobuf_c_data_buffer_clear (&conn->outgoing);
+
+  /* remove this connection from the server's list */
+  GSK_LIST_REMOVE (GET_CONNECTION_LIST (conn->server), conn);
+
+  /* disassocate all the requests from the connection */
+  for (req = conn->first_pending_request; req; req = req->next)
+    req->conn = NULL;
+
+  /* free the connection itself */
+  conn->server->allocator->free (conn->server->allocator, conn);
+}
+
+static void
+server_failed (ProtobufC_RPC_Server *server,
+               const char           *format,
+               ...)
+{
+  ...
+}
+
+static void
+server_connection_failed (ServerConnection *conn,
+                          const char       *format,
+                          ...)
+{
+  /* do vsnprintf() */
+  ...
+
+  /* if we can, find the remote name of this connection */
+  ...
+
+  /* invoke server error hook */
+  if (remote_addr_name == NULL)
+    server_failed (conn->server,
+                   "connection to %s: %s",
+                   conn->server->bind_name, err_msg);
+  else
+    server_failed (conn->server,
+                   "connection to %s from %s: %s",
+                   conn->server->bind_name, remote_addr_name, err_msg);
+
+  server_connection_close (conn);
+}
+
+static void
+handle_server_connection_events (int fd,
+                                 unsigned events,
+                                 void *data)
+{
+  ServerConnection *conn = data;
+  if (events & PROTOBUF_C_EVENT_READABLE)
+    {
+      int read_rv = protobuf_c_data_buffer_read_in_fd (&conn->incoming, fd);
+      if (read_rv < 0)
+        {
+          if (!errno_is_ignorable (errno))
+            {
+              server_connection_failed (conn, "reading from file-descriptor: %s",
+                                        strerror (errno));
+              return;
+            }
+        }
+      else if (read_rv == 0)
+        {
+          if (conn->first_pending_request != NULL)
+            server_connection_failed (conn, "closed while calls pending");
+          else
+            server_connection_close (conn);
+          return;
+        }
+      else
+        while (conn->incoming.size >= 12)
+          {
+            uint32_t header[3];
+            uint32_t service_index, message_length, request_id;
+            protobuf_c_data_buffer_peek (&conn->incoming, header, 12);
+            service_index = uint32_from_le (header[0]);
+            message_length = uint32_from_le (header[1]);
+            request_id = header[2];             /* store in whatever endianness it comes in */
+
+            if (conn->incoming.size < 12 + message_length)
+              break;
+
+            if (service_index >= conn->server->service->descriptor->n_methods)
+              {
+                server_connection_failed (conn, "bad service_index %u", service_index);
+                return;
+              }
+
+            /* Read message */
+            protobuf_c_data_buffer_discard (&conn->incoming, 12);
+            ...
+
+            /* Unpack message */
+            ...
+
+            /* Invoke service (note that it may call back immediately) */
+            server_request = ...;
+            ...
+          }
+    }
+  if ((events & PROTOBUF_C_EVENT_WRITABLE) != 0
+    && conn->outgoing.size > 0)
+    {
+      int write_rv = protobuf_c_data_buffer_writev (&conn->outgoing, fd);
+      if (write_rv < 0)
+        {
+          if (!errno_is_ignorable (errno))
+            {
+              ...
+            }
+        }
+      if (conn->outgoing.size == 0)
+        protobuf_c_dispatch_watch_fd (client->dispatch, conn->fd, PROTOBUF_C_EVENT_READABLE,
+                                      handle_server_connection_events, conn);
+    }
+}
+
+static void
+handle_server_listener_readable (int fd,
+                                 unsigned events,
+                                 void *data)
+{
+  ProtobufC_RPC_Server *server = data;
+  struct sockaddr addr;
+  socklen_t addr_len = sizeof (addr);
+  int new_fd = accept (fd, &addr, &addr_len);
+  ServerConnection *conn;
+  ProtobufCAllocator *allocator = server->allocator;
+  if (new_fd < 0)
+    {
+      if (errno_is_ignorable (errno))
+        return;
+      fprintf (stderr, "error accept()ing file descriptor: %s\n",
+               strerror (errno));
+      return;
+    }
+  conn = allocator->alloc (allocator, sizeof (ServerConnection));
+  conn->fd = new_fd;
+  conn->defunct = 0;
+  protobuf_c_data_buffer_init (&conn->incoming, server->allocator);
+  protobuf_c_data_buffer_init (&conn->outgoing, server->allocator);
+  conn->n_pending_requests = 0;
+  conn->server = server;
+  GSK_LIST_APPEND (GET_CONNECTION_LIST (server), conn);
+  protobuf_c_dispatch_watch_fd (server->dispatch, conn->fd, PROTOBUF_C_EVENT_READABLE,
+                                handle_server_connection_events, conn);
+}
+
+static ProtobufC_RPC_Server *
+server_new_from_fd (ProtobufC_FD              listening_fd,
+                    const char               *bind_name,
+                    ProtobufCService         *service,
+                    ProtobufCDispatch       *orig_dispatch)
+{
+  ProtobufCDispatch *dispatch = orig_dispatch ? orig_dispatch : protobuf_c_dispatch_default ();
+  ProtobufCAllocator *allocator = protobuf_c_dispatch_peek_allocator (dispatch);
+  ProtobufC_RPC_Server *server = allocator->alloc (allocator, sizeof (ProtobufC_RPC_Server));
+  server->dispatch = dispatch;
+  server->allocator = allocator;
+  server->underlying = service;
+  server->first_connection = server->last_connection = NULL;
+  server->max_pending_requests_per_connection = 32;
+  server->bind_name = allocator->alloc (allocator, strlen (bind_name) + 1);
+  strcpy (server->bind_name, bind_name);
+  set_fd_nonblocking (listening_fd);
+  protobuf_c_dispatch_watch_fd (dispatch, listening_fd, PROTOBUF_C_EVENT_READABLE, 
+                                handle_server_listener_readable, server);
+  return server;
+}
+
+ProtobufC_RPC_Server *
+protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
+                                 const char               *name,
+                                 ProtobufCService         *service,
+                                 ProtobufCDispatch       *dispatch)
+{
+  int fd = -1;
+  int protocol_family;
+  struct sockaddr *address;
+  socklen_t address_len;
+  struct sockaddr_un addr_un;
+  struct sockaddr_in addr_in;
+  switch (type)
+    {
+    case PROTOBUF_C_RPC_ADDRESS_LOCAL:
+      protocol_family = PF_UNIX;
+      memset (&addr_un, 0, sizeof (addr_un));
+      addr_un.sun_family = AF_LOCAL;
+      strncpy (addr_un.sun_path, name, sizeof (addr_un.sun_path));
+      address_len = sizeof (addr_un);
+      address = (struct sockaddr *) (&addr_un);
+      break;
+    case PROTOBUF_C_RPC_ADDRESS_TCP:
+      protocol_family = PF_UNIX;
+      memset (&addr_in, 0, sizeof (addr_in));
+      addr_in.sin_family = AF_INET;
+      {
+        unsigned port = atoi (name);
+        addr_in.sin_port = htons (port);
+      }
+      address_len = sizeof (addr_in);
+      address = (struct sockaddr *) (&addr_in);
+      break;
+    default:
+    protobuf_c_assert (0);
+    }
+
+  fd = socket (protocol_family, SOCK_STREAM, 0);
+  if (fd < 0)
+    {
+      fprintf (stderr, "protobuf_c_rpc_server_new: socket() failed: %s\n",
+               strerror (errno));
+      return NULL;
+    }
+  if (bind (fd, address, address_len) < 0)
+    {
+      fprintf (stderr, "protobuf_c_rpc_server_new: error binding to port: %s\n",
+               strerror (errno));
+      return NULL;
+    }
+  if (listen (fd, 255) < 0)
+    {
+      fprintf (stderr, "protobuf_c_rpc_server_new: listen() failed: %s\n",
+               strerror (errno));
+      return NULL;
+    }
+  return server_new_from_fd (fd, name, service, dispatch);
 }
