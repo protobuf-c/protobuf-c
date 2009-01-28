@@ -115,5 +115,6 @@ struct _ProtobufCDispatch
   /* private data follows */
 };
 
+void protobuf_c_dispatch_destroy_default (void);
 
 #endif

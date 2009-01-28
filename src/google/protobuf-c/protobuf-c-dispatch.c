@@ -1,3 +1,6 @@
+/* NOTE: this may not work very well on windows, where i'm
+   not sure that "SOCKETs" are allocated nicely like
+   file-descriptors are */
 #include <assert.h>
 #include <alloca.h>
 #include <sys/time.h>
@@ -7,9 +10,13 @@
 #include <sys/poll.h>
 #include <limits.h>
 #include <errno.h>
+#include <signal.h>
 #include "protobuf-c-dispatch.h"
 #include "gskrbtreemacros.h"
 #include "gsklistmacros.h"
+
+#define DEBUG_DISPATCH_INTERNALS  0
+#define DEBUG_DISPATCH            0
 
 #define protobuf_c_assert(condition) assert(condition)
 
@@ -106,16 +113,30 @@ struct _ProtobufCDispatchIdle
 ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
 {
   RealDispatch *rv = ALLOC (sizeof (RealDispatch));
+  struct timeval tv;
   rv->base.n_changes = 0;
   rv->notifies_desired_alloced = 8;
   rv->base.notifies_desired = ALLOC (sizeof (ProtobufC_FDNotify) * rv->notifies_desired_alloced);
+  rv->base.n_notifies_desired = 0;
   rv->callbacks = ALLOC (sizeof (Callback) * rv->notifies_desired_alloced);
   rv->changes_alloced = 8;
   rv->base.changes = ALLOC (sizeof (ProtobufC_FDNotify) * rv->changes_alloced);
   rv->fd_map_size = 16;
   rv->fd_map = ALLOC (sizeof (FDMap) * rv->fd_map_size);
   rv->allocator = allocator;
+  rv->timer_tree = NULL;
+  rv->first_idle = rv->last_idle = NULL;
   memset (rv->fd_map, 255, sizeof (FDMap) * rv->fd_map_size);
+  rv->recycled_idles = NULL;
+  rv->recycled_timeouts = NULL;
+
+  /* need to handle SIGPIPE more gracefully than default */
+  signal (SIGPIPE, SIG_IGN);
+
+  gettimeofday (&tv, NULL);
+  rv->base.last_dispatch_secs = tv.tv_sec;
+  rv->base.last_dispatch_usecs = tv.tv_usec;
+
   return &rv->base;
 }
 
@@ -124,7 +145,20 @@ protobuf_c_dispatch_free(ProtobufCDispatch *dispatch)
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   ProtobufCAllocator *allocator = d->allocator;
+  while (d->recycled_timeouts != NULL)
+    {
+      ProtobufCDispatchTimer *t = d->recycled_timeouts;
+      d->recycled_timeouts = t->right;
+      FREE (t);
+    }
+  while (d->recycled_idles != NULL)
+    {
+      ProtobufCDispatchIdle *i = d->recycled_idles;
+      d->recycled_idles = i->next;
+      FREE (i);
+    }
   FREE (d->base.notifies_desired);
+  FREE (d->base.changes);
   FREE (d->callbacks);
   FREE (d->fd_map);
   FREE (d);
@@ -138,9 +172,9 @@ protobuf_c_dispatch_peek_allocator (ProtobufCDispatch *dispatch)
 }
 
 /* TODO: perhaps thread-private dispatches make more sense? */
+static ProtobufCDispatch *def = NULL;
 ProtobufCDispatch  *protobuf_c_dispatch_default (void)
 {
-  static ProtobufCDispatch *def = NULL;
   if (def == NULL)
     def = protobuf_c_dispatch_new (&protobuf_c_default_allocator);
   return def;
@@ -187,6 +221,9 @@ allocate_notifies_desired_index (RealDispatch *d)
       d->base.notifies_desired = n;
       d->notifies_desired_alloced = new_size;
     }
+#if DEBUG_DISPATCH_INTERNALS
+  fprintf (stderr, "allocate_notifies_desired_index: returning %u\n", rv);
+#endif
   return rv;
 }
 static unsigned
@@ -230,12 +267,16 @@ deallocate_notify_desired_index (RealDispatch *d,
   unsigned nd_ind = d->fd_map[fd].notify_desired_index;
   unsigned from = d->base.n_notifies_desired - 1;
   unsigned from_fd;
+#if DEBUG_DISPATCH_INTERNALS
+  fprintf (stderr, "deallocate_notify_desired_index: fd=%d, nd_ind=%u\n",fd,nd_ind);
+#endif
+  d->fd_map[fd].notify_desired_index = -1;
   if (nd_ind == from)
     {
       d->base.n_notifies_desired--;
       return;
     }
-  from_fd = d->base.notifies_desired[nd_ind].fd;
+  from_fd = d->base.notifies_desired[from].fd;
   d->fd_map[from_fd].notify_desired_index = nd_ind;
   d->base.notifies_desired[nd_ind] = d->base.notifies_desired[from];
   d->base.n_notifies_desired--;
@@ -253,6 +294,12 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned f = fd;              /* avoid tiring compiler warnings: "comparison of signed versus unsigned" */
   unsigned nd_ind, change_ind;
+#if DEBUG_DISPATCH
+  fprintf (stderr, "dispatch: watch_fd: %d, %s%s\n",
+           fd,
+           (events&PROTOBUF_C_EVENT_READABLE)?"r":"",
+           (events&PROTOBUF_C_EVENT_WRITABLE)?"w":"");
+#endif
   if (callback == NULL)
     assert (events == 0);
   else
@@ -260,13 +307,15 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
   ensure_fd_map_big_enough (d, f);
   if (d->fd_map[f].notify_desired_index == -1)
     {
-      d->fd_map[f].notify_desired_index = allocate_notifies_desired_index (d);
+      if (callback != NULL)
+        nd_ind = d->fd_map[f].notify_desired_index = allocate_notifies_desired_index (d);
     }
   else
     {
       if (callback == NULL)
         deallocate_notify_desired_index (d, f);
-      nd_ind = d->fd_map[f].notify_desired_index;
+      else
+        nd_ind = d->fd_map[f].notify_desired_index;
     }
   if (callback == NULL)
     {
@@ -304,6 +353,9 @@ protobuf_c_dispatch_fd_closed(ProtobufCDispatch *dispatch,
 {
   unsigned f = fd;
   RealDispatch *d = (RealDispatch *) dispatch;
+#if DEBUG_DISPATCH
+  fprintf (stderr, "dispatch: fd %d closed\n", fd);
+#endif
   ensure_fd_map_big_enough (d, f);
   d->fd_map[fd].closed_since_notify_started = 1;
   if (d->fd_map[f].change_index != -1)
@@ -330,8 +382,6 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
   unsigned i;
   FDMap *fd_map = d->fd_map;
   struct timeval tv;
-  if (n_notifies == 0)
-    return;
   fd_max = 0;
   for (i = 0; i < n_notifies; i++)
     if (fd_max < (unsigned) notifies[i].fd)
@@ -352,6 +402,20 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
         }
     }
 
+  /* handle idle functions */
+  while (d->first_idle != NULL)
+    {
+      ProtobufCDispatchIdle *idle = d->first_idle;
+      ProtobufCDispatchIdleFunc func = idle->func;
+      void *data = idle->func_data;
+      GSK_LIST_REMOVE_FIRST (GET_IDLE_LIST (d));
+
+      idle->func = NULL;                /* set to NULL to render remove_idle a no-op */
+      func (dispatch, data);
+
+      idle->next = d->recycled_idles;
+      d->recycled_idles = idle;
+    }
 
   /* handle timers */
   gettimeofday (&tv, NULL);
@@ -439,7 +503,9 @@ protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
 
   /* compute timeout */
   if (d->first_idle != NULL)
-    timeout = 0;
+    {
+      timeout = 0;
+    }
   else if (d->timer_tree == NULL)
     timeout = -1;
   else
@@ -516,6 +582,7 @@ protobuf_c_dispatch_add_timer(ProtobufCDispatch *dispatch,
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   ProtobufCDispatchTimer *rv;
+  ProtobufCDispatchTimer *at;
   ProtobufCDispatchTimer *conflict;
   protobuf_c_assert (func != NULL);
   if (d->recycled_timeouts != NULL)
@@ -533,6 +600,17 @@ protobuf_c_dispatch_add_timer(ProtobufCDispatch *dispatch,
   rv->func_data = func_data;
   rv->dispatch = d;
   GSK_RBTREE_INSERT (GET_TIMER_TREE (d), rv, conflict);
+  
+  /* is this the first element in the tree */
+  for (at = rv; at != NULL; at = at->parent)
+    if (at->parent && at->parent->right == at)
+      break;
+  if (at == NULL)               /* yes, so set the public members */
+    {
+      dispatch->has_timeout = 1;
+      dispatch->timeout_secs = rv->timeout_secs;
+      dispatch->timeout_usecs = rv->timeout_usecs;
+    }
   return rv;
 }
 
@@ -609,8 +687,20 @@ protobuf_c_dispatch_add_idle (ProtobufCDispatch *dispatch,
 void
 protobuf_c_dispatch_remove_idle (ProtobufCDispatchIdle *idle)
 {
-  RealDispatch *d = idle->dispatch;
-  GSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
-  idle->next = d->recycled_idles;
-  d->recycled_idles = idle;
+  if (idle->func != NULL)
+    {
+      RealDispatch *d = idle->dispatch;
+      GSK_LIST_REMOVE (GET_IDLE_LIST (d), idle);
+      idle->next = d->recycled_idles;
+      d->recycled_idles = idle;
+    }
+}
+void protobuf_c_dispatch_destroy_default (void)
+{
+  if (def)
+    {
+      ProtobufCDispatch *kill = def;
+      def = NULL;
+      protobuf_c_dispatch_free (kill);
+    }
 }

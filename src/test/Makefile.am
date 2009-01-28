@@ -37,5 +37,5 @@ BUILT_SOURCES = generated-code/test.pb-c.c generated-code/test.pb-c.h \
                 generated-code/test-full.pb.cc generated-code/test-full.pb.h \
                 generated-code/test-full-cxx-output.inc
 DISTCLEANFILES = $(BUILT_SOURCES)
-TESTS = test-generated-code test-generated-code2
+TESTS = test-generated-code test-generated-code2 test-rpc
 EXTRA_DIST = test.proto test-full.proto common-test-arrays.h

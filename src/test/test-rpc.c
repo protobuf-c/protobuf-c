@@ -1,7 +1,19 @@
 #include <assert.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include "generated-code/test.pb-c.h"
 #include <google/protobuf-c/protobuf-c-rpc.h>
+
+static void
+message (const char *format, ...)
+{
+  va_list args;
+  va_start (args, format);
+  vfprintf (stderr, format, args);
+  va_end (args);
+  fputc ('\n', stderr);
+}
 
 /* --- A local service --- */
 static void
@@ -35,6 +47,7 @@ test__by_name (Foo__DirLookup_Service *service,
   if (number != NULL)
     {
       pn.number = number;
+      pn.has_type = 1;
       pn.type = type;
       person.n_phone = 1;
       person.phone = pns;
@@ -158,8 +171,10 @@ int main()
   ProtobufC_RPC_Client *client;
   ProtobufC_RPC_Server *server;
 
+  message ("testing local service");
   test_service (local_service);
 
+  message ("creating client");
   /* Create a client with no server.  Verify that
      the client returns a failure immediately */
   remote_service = protobuf_c_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_LOCAL,
@@ -172,18 +187,23 @@ int main()
   is_done = 0;
   protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
                                         250, set_boolean_true, &is_done);
+  message ("verify client cannot connect");
   while (!is_done)
     {
       protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
       assert (!protobuf_c_rpc_client_is_connected (client));
     }
+  message ("testing unconnected client");
+  test_defunct_client (remote_service);
 
+  message ("creating server");
   /* Create a server and wait for the client to connect. */
   server = protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_LOCAL,
                                       "test.socket",
                                       local_service,
                                       NULL);
   assert (server != NULL);
+  message ("waiting to connect");
   is_done = 0;
   protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
                                         250, set_boolean_true, &is_done);
@@ -201,23 +221,25 @@ int main()
     protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 
   /* Test the client */
+  message ("testing client");
   test_service (remote_service);
 
   /* Destroy the server and ensure that a request is failed in
      a timely fashion. */
+  message ("destroying server");
   protobuf_c_rpc_server_destroy (server, 0);
   server = NULL;
+  message ("test client has no data");
   test_defunct_client (remote_service);
 
   /* Create a server again and wait for the client to reconnect. */
+  message ("creating server again");
   server = protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_LOCAL,
                                       "test.socket",
                                       local_service,
                                       NULL);
   assert (server != NULL);
   is_done = 0;
-  while (!is_done)
-    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
   protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
                                         250, set_boolean_true, &is_done);
   while (!is_done)
@@ -225,13 +247,20 @@ int main()
   assert (protobuf_c_rpc_client_is_connected (client));
 
   /* Test the client again, for kicks. */
+  message ("testing client again");
   test_service (remote_service);
 
   /* Destroy the client */
+  message ("destroying client");
   protobuf_c_service_destroy (remote_service);
 
   /* Destroy the server */
+  message ("destroying server");
   protobuf_c_rpc_server_destroy (server, 0);
+
+  protobuf_c_dispatch_destroy_default ();
+
+  unlink ("test.socket");
 
   return 0;
 }

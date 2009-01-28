@@ -1,5 +1,6 @@
 /* KNOWN DEFECTS:
     - server does not obey max_pending_requests_per_connection
+    - no ipv6 support
  */
 #include <string.h>
 #include <assert.h>
@@ -26,6 +27,9 @@
 #define TRUE 1
 #undef FALSE
 #define FALSE 0
+
+/* enabled for efficiency, can be useful to disable for debugging */
+#define RECYCLE_REQUESTS                1
 
 #define UINT_TO_POINTER(ui)     ((void*)(ui))
 #define POINTER_TO_UINT(ptr)     ((unsigned)(ptr))
@@ -54,6 +58,15 @@ struct _Closure
   void *closure_data;
 };
 
+static void
+error_handler (ProtobufC_RPC_Error_Code code,
+               const char              *message,
+               void                    *error_func_data)
+{
+  fprintf (stderr, "*** error: %s: %s\n",
+           (char*) error_func_data, message);
+}
+
 struct _ProtobufC_RPC_Client
 {
   ProtobufCService base_service;
@@ -67,6 +80,8 @@ struct _ProtobufC_RPC_Client
   protobuf_c_boolean autoretry;
   unsigned autoretry_millis;
   ProtobufC_NameLookup_Func resolver;
+  ProtobufC_RPC_Error_Func error_handler;
+  void *error_handler_data;
   ProtobufC_RPC_ClientState state;
   union {
     struct {
@@ -109,7 +124,11 @@ static void
 handle_autoretry_timeout (ProtobufCDispatch *dispatch,
                           void              *func_data)
 {
-  begin_name_lookup (func_data);
+  ProtobufC_RPC_Client *client = func_data;
+  protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_FAILED_WAITING);
+  client->allocator->free (client->allocator,
+                           client->info.failed_waiting.error_message);
+  begin_name_lookup (client);
 }
 
 static void
@@ -416,6 +435,7 @@ grow_closure_array (ProtobufC_RPC_Client *client)
   new_closures[i].closure_data = UINT_TO_POINTER (client->info.connected.first_free_request_id);
   new_closures[i].response_type = NULL;
   new_closures[i].closure = NULL;
+  client->info.connected.first_free_request_id = old_size + 1;
 
   client->allocator->free (client->allocator, client->info.connected.closures);
   client->info.connected.closures = new_closures;
@@ -472,11 +492,11 @@ enqueue_request (ProtobufC_RPC_Client *client,
   protobuf_c_message_pack (input, packed_data);
 
   /* Append to buffer */
-  protobuf_c_assert (sizeof (header) == 16);
+  protobuf_c_assert (sizeof (header) == 12);
   header.method_index = uint32_to_le (method_index);
   header.packed_size = uint32_to_le (packed_size);
   header.request_id = request_id;
-  protobuf_c_data_buffer_append (&client->outgoing, &header, 16);
+  protobuf_c_data_buffer_append (&client->outgoing, &header, 12);
   protobuf_c_data_buffer_append (&client->outgoing, packed_data, packed_size);
 
   /* Clean up if not using alloca() */
@@ -554,7 +574,7 @@ handle_client_fd_events (int                fd,
                 break;
 
               /* lookup request by id */
-              if (request_id >= client->info.connected.closures_alloced
+              if (request_id > client->info.connected.closures_alloced
                || request_id == 0
                || client->info.connected.closures[request_id-1].response_type == NULL)
                 {
@@ -575,6 +595,7 @@ handle_client_fd_events (int                fd,
                                                packed_data);
               if (msg == NULL)
                 {
+                  fprintf(stderr, "unable to unpack msg of length %u", message_length);
                   client_failed (client, "failed to unpack message");
                   client->allocator->free (client->allocator, packed_data);
                   return;
@@ -582,6 +603,10 @@ handle_client_fd_events (int                fd,
 
               /* invoke closure */
               closure->closure (msg, closure->closure_data);
+              closure->response_type = NULL;
+              closure->closure = NULL;
+              closure->closure_data = UINT_TO_POINTER (client->info.connected.first_free_request_id);
+              client->info.connected.first_free_request_id = request_id;
 
               /* clean up */
               protobuf_c_message_free_unpacked (msg, client->allocator);
@@ -684,10 +709,12 @@ destroy_client_rpc (ProtobufCService *service)
   protobuf_c_data_buffer_clear (&client->incoming);
   protobuf_c_data_buffer_clear (&client->outgoing);
   client->state = PROTOBUF_C_CLIENT_STATE_DESTROYED;
+  client->allocator->free (client->allocator, client->name);
 
   /* free closures only once we are in the destroyed state */
   for (i = 0; i < n_closures; i++)
-    closures[i].closure (NULL, closures[i].closure_data);
+    if (closures[i].response_type != NULL)
+      closures[i].closure (NULL, closures[i].closure_data);
   if (closures)
     client->allocator->free (client->allocator, closures);
 
@@ -731,6 +758,8 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
   rv->autoretry = 1;
   rv->autoretry_millis = 2*1000;
   rv->resolver = trivial_sync_libc_resolver;
+  rv->error_handler = error_handler;
+  rv->error_handler_data = "protobuf-c rpc client";
   rv->info.init.idle = protobuf_c_dispatch_add_idle (dispatch, handle_init_idle, rv);
   return &rv->base_service;
 }
@@ -792,6 +821,7 @@ struct _ProtobufC_RPC_Server
   ProtobufCService *underlying;
   char *bind_name;
   ServerConnection *first_connection, *last_connection;
+  ProtobufC_FD listening_fd;
 
   ServerRequest *recycled_requests;
 
@@ -810,7 +840,6 @@ struct _ProtobufC_RPC_Server
 static void
 server_connection_close (ServerConnection *conn)
 {
-  ServerRequest *req;
   ProtobufCAllocator *allocator = conn->server->allocator;
 
   /* general cleanup */
@@ -825,6 +854,7 @@ server_connection_close (ServerConnection *conn)
   /* disassocate all the requests from the connection */
   while (conn->first_pending_request != NULL)
     {
+      ServerRequest *req = conn->first_pending_request;
       conn->first_pending_request = req->info.alive.next;
       req->conn = NULL;
       req->info.defunct.allocator = allocator;
@@ -934,6 +964,8 @@ create_server_request (ServerConnection *conn,
     }
   rv->conn = conn;
   rv->request_id = request_id;
+  rv->method_index = method_index;
+  conn->n_pending_requests++;
   GSK_LIST_APPEND (GET_PENDING_REQUEST_LIST (conn), rv);
   return rv;
 }
@@ -953,8 +985,10 @@ server_connection_response_closure (const ProtobufCMessage *message,
       /* defunct request */
       ProtobufCAllocator *allocator = request->info.defunct.allocator;
       allocator->free (allocator, request);
+      return;
     }
-  else if (message == NULL)
+
+  if (message == NULL)
     {
       /* send failed status */
       uint32_t header[4];
@@ -987,6 +1021,18 @@ server_connection_response_closure (const ProtobufCMessage *message,
                                   PROTOBUF_C_EVENT_READABLE|PROTOBUF_C_EVENT_WRITABLE,
                                   handle_server_connection_events,
                                   conn);
+
+  GSK_LIST_REMOVE (GET_PENDING_REQUEST_LIST (conn), request);
+  conn->n_pending_requests--;
+
+#if RECYCLE_REQUESTS
+  /* recycle request */
+  request->info.recycled.next = conn->server->recycled_requests;
+  conn->server->recycled_requests = request;
+#else
+  /* free the request immediately */
+  conn->server->allocator->free (conn->server->allocator, request);
+#endif
 
 }
 
@@ -1115,6 +1161,7 @@ handle_server_listener_readable (int fd,
   protobuf_c_data_buffer_init (&conn->incoming, server->allocator);
   protobuf_c_data_buffer_init (&conn->outgoing, server->allocator);
   conn->n_pending_requests = 0;
+  conn->first_pending_request = conn->last_pending_request = NULL;
   conn->server = server;
   GSK_LIST_APPEND (GET_CONNECTION_LIST (server), conn);
   protobuf_c_dispatch_watch_fd (server->dispatch, conn->fd, PROTOBUF_C_EVENT_READABLE,
@@ -1136,6 +1183,10 @@ server_new_from_fd (ProtobufC_FD              listening_fd,
   server->first_connection = server->last_connection = NULL;
   server->max_pending_requests_per_connection = 32;
   server->bind_name = allocator->alloc (allocator, strlen (bind_name) + 1);
+  server->error_handler = error_handler;
+  server->error_handler_data = "protobuf-c rpc server";
+  server->listening_fd = listening_fd;
+  server->recycled_requests = NULL;
   strcpy (server->bind_name, bind_name);
   set_fd_nonblocking (listening_fd);
   protobuf_c_dispatch_watch_fd (dispatch, listening_fd, PROTOBUF_C_EVENT_READABLE, 
@@ -1143,6 +1194,60 @@ server_new_from_fd (ProtobufC_FD              listening_fd,
   return server;
 }
 
+/* this function is for handling the common problem 
+   that we bind over-and-over again to the same
+   unix path.
+
+   ideally, you'd think the OS's SO_REUSEADDR flag would
+   cause this to happen, but it doesn't,
+   at least on my linux 2.6 box.
+
+   in fact, we really need a way to test without
+   actually connecting to the remote server,
+   which might annoy it.
+
+   XXX: we should survey what others do here... like x-windows...
+ */
+/* NOTE: stolen from gsk, obviously */
+void
+_gsk_socket_address_local_maybe_delete_stale_socket (const char *path,
+                                                     struct sockaddr *addr,
+                                                     unsigned addr_len)
+{
+  int fd;
+  struct stat statbuf;
+  if (stat (path, &statbuf) < 0)
+    return;
+  if (!S_ISSOCK (statbuf.st_mode))
+    {
+      fprintf (stderr, "%s existed but was not a socket\n", path);
+      return;
+    }
+
+  fd = socket (PF_UNIX, SOCK_STREAM, 0);
+  if (fd < 0)
+    return;
+  set_fd_nonblocking (fd);
+  if (connect (fd, addr, addr_len) < 0)
+    {
+      if (errno == EINPROGRESS)
+        {
+          close (fd);
+          return;
+        }
+    }
+  else
+    {
+      close (fd);
+      return;
+    }
+
+  /* ok, we should delete the stale socket */
+  close (fd);
+  if (unlink (path) < 0)
+    fprintf (stderr, "unable to delete %s: %s\n",
+             path, strerror(errno));
+}
 ProtobufC_RPC_Server *
 protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
                                  const char               *name,
@@ -1164,6 +1269,9 @@ protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
       strncpy (addr_un.sun_path, name, sizeof (addr_un.sun_path));
       address_len = sizeof (addr_un);
       address = (struct sockaddr *) (&addr_un);
+      _gsk_socket_address_local_maybe_delete_stale_socket (name,
+                                                           address,
+                                                           address_len);
       break;
     case PROTOBUF_C_RPC_ADDRESS_TCP:
       protocol_family = PF_UNIX;
@@ -1216,6 +1324,7 @@ protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server *server,
       server->recycled_requests = req->info.recycled.next;
       server->allocator->free (server->allocator, req);
     }
+  protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
   if (destroy_underlying)
     protobuf_c_service_destroy (server->underlying);
   server->allocator->free (server->allocator, server);
