@@ -1,4 +1,4 @@
-check_PROGRAMS = test-generated-code test-generated-code2
+check_PROGRAMS = test-generated-code test-generated-code2 test-rpc
 noinst_PROGRAMS = cxx-generate-packed-data
 INCLUDES = -I$(srcdir)/..
 test_generated_code_SOURCES = \
@@ -10,6 +10,11 @@ test_generated_code2_SOURCES = \
 test-generated-code2.c \
 generated-code/test-full.pb-c.c
 test_generated_code2_LDADD = \
+../libprotobuf-c.la
+test_rpc_SOURCES = \
+test-rpc.c \
+generated-code/test.pb-c.c
+test_rpc_LDADD = \
 ../libprotobuf-c.la
 cxx_generate_packed_data_SOURCES = \
 cxx-generate-packed-data.cc generated-code/test-full.pb.cc

@@ -19,10 +19,15 @@ message Person {
   repeated PhoneNumber phone = 4;
 }
 
+message LookupResult
+{
+  optional Person person = 1;
+}
+
 message Name {
   optional string name = 1;
 };
 
 service DirLookup {
-  rpc ByName (Name) returns (Person);
+  rpc ByName (Name) returns (LookupResult);
 }

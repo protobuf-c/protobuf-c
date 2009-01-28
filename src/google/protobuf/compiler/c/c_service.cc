@@ -36,6 +36,7 @@ ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
   vars_["fullname"] = descriptor_->full_name();
   vars_["cname"] = FullNameToC(descriptor_->full_name());
   vars_["lcfullname"] = FullNameToLower(descriptor_->full_name());
+  vars_["ucfullname"] = FullNameToUpper(descriptor_->full_name());
   vars_["lcfullpadd"] = ConvertToSpaces(vars_["lcfullname"]);
   vars_["package"] = descriptor_->file()->package();
   if (dllexport_decl.empty()) {
@@ -51,6 +52,7 @@ ServiceGenerator::~ServiceGenerator() {}
 void ServiceGenerator::GenerateMainHFile(io::Printer* printer)
 {
   GenerateVfuncs(printer);
+  GenerateInitMacros(printer);
   GenerateCreateServiceDeclaration(printer);
   GenerateCallersDeclarations(printer);
 }
@@ -80,6 +82,24 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
 		 "typedef void (*$cname$_ServiceDestroy)($cname$_Service *);\n"
 		 "void $lcfullname$__init ($cname$_Service *service,\n"
 		 "     $lcfullpadd$        $cname$_ServiceDestroy destroy);\n");
+}
+void ServiceGenerator::GenerateInitMacros(io::Printer* printer)
+{
+  printer->Print(vars_,
+		 "#define $ucfullname$__BASE_INIT \\\n"
+		 "    { &$lcfullname$__descriptor, protobuf_c_service_invoke_internal, NULL }\n"
+		 "#define $ucfullname$__INIT(function_prefix__) \\\n"
+		 "    { $ucfullname$__BASE_INIT");
+  for (int i = 0; i < descriptor_->method_count(); i++) {
+    const MethodDescriptor *method = descriptor_->method(i);
+    string lcname = CamelToLower(method->name());
+    vars_["method"] = lcname;
+    vars_["metpad"] = ConvertToSpaces(lcname);
+    printer->Print(vars_,
+                   ",\\\n      function_prefix__ ## $method$");
+  }
+  printer->Print(vars_,
+		 "  }\n");
 }
 void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
 {

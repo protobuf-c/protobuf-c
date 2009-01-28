@@ -1606,12 +1606,12 @@ typedef void (*GenericHandler)(void *service,
                                const ProtobufCMessage *input,
                                ProtobufCClosure  closure,
                                void             *closure_data);
-static void 
-service_machgen_invoke(ProtobufCService *service,
-                       unsigned          method_index,
-                       const ProtobufCMessage *input,
-                       ProtobufCClosure  closure,
-                       void             *closure_data)
+void 
+protobuf_c_service_invoke_internal(ProtobufCService *service,
+                                  unsigned          method_index,
+                                  const ProtobufCMessage *input,
+                                  ProtobufCClosure  closure,
+                                  void             *closure_data)
 {
   GenericHandler *handlers;
   GenericHandler handler;
@@ -1629,7 +1629,7 @@ protobuf_c_service_generated_init (ProtobufCService *service,
   ASSERT_IS_SERVICE_DESCRIPTOR(descriptor);
   service->descriptor = descriptor;
   service->destroy = destroy;
-  service->invoke = service_machgen_invoke;
+  service->invoke = protobuf_c_service_invoke_internal;
   memset (service + 1, 0, descriptor->n_methods * sizeof (GenericHandler));
 }
 
