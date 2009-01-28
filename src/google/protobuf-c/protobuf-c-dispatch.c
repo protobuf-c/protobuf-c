@@ -114,6 +114,7 @@ ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
   rv->base.changes = ALLOC (sizeof (ProtobufC_FDNotify) * rv->changes_alloced);
   rv->fd_map_size = 16;
   rv->fd_map = ALLOC (sizeof (FDMap) * rv->fd_map_size);
+  rv->allocator = allocator;
   memset (rv->fd_map, 255, sizeof (FDMap) * rv->fd_map_size);
   return &rv->base;
 }
@@ -141,7 +142,7 @@ ProtobufCDispatch  *protobuf_c_dispatch_default (void)
 {
   static ProtobufCDispatch *def = NULL;
   if (def == NULL)
-    def = protobuf_c_dispatch_new (NULL);
+    def = protobuf_c_dispatch_new (&protobuf_c_default_allocator);
   return def;
 }
 

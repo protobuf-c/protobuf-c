@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -693,6 +694,21 @@ destroy_client_rpc (ProtobufCService *service)
   client->allocator->free (client->allocator, client);
 }
 
+static void
+trivial_sync_libc_resolver (ProtobufCDispatch *dispatch,
+                            const char        *name,
+                            ProtobufC_NameLookup_Found found_func,
+                            ProtobufC_NameLookup_Failed failed_func,
+                            void *callback_data)
+{
+  struct hostent *ent;
+  ent = gethostbyname (name);
+  if (ent == NULL)
+    failed_func (hstrerror (h_errno), callback_data);
+  else
+    found_func ((const uint8_t *) ent->h_addr_list[0], callback_data);
+}
+
 ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
                                              const char               *name,
                                              const ProtobufCServiceDescriptor *descriptor,
@@ -712,8 +728,30 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
   rv->name = strcpy (allocator->alloc (allocator, strlen (name) + 1), name);
   rv->state = PROTOBUF_C_CLIENT_STATE_INIT;
   rv->fd = -1;
+  rv->autoretry = 1;
+  rv->autoretry_millis = 2*1000;
+  rv->resolver = trivial_sync_libc_resolver;
   rv->info.init.idle = protobuf_c_dispatch_add_idle (dispatch, handle_init_idle, rv);
   return &rv->base_service;
+}
+
+protobuf_c_boolean
+protobuf_c_rpc_client_is_connected (ProtobufC_RPC_Client *client)
+{
+  return client->state == PROTOBUF_C_CLIENT_STATE_CONNECTED;
+}
+
+void
+protobuf_c_rpc_client_set_autoretry_period (ProtobufC_RPC_Client *client,
+                                            unsigned millis)
+{
+  client->autoretry = 1;
+  client->autoretry_millis = millis;
+}
+void
+protobuf_c_rpc_client_disable_autoretry (ProtobufC_RPC_Client *client)
+{
+  client->autoretry = 0;
 }
 
 /* === Server === */
@@ -1162,4 +1200,24 @@ protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
       return NULL;
     }
   return server_new_from_fd (fd, name, service, dispatch);
+}
+
+ProtobufCService *
+protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server *server,
+                               protobuf_c_boolean    destroy_underlying)
+{
+  ProtobufCService *rv = destroy_underlying ? NULL : server->underlying;
+  while (server->first_connection != NULL)
+    server_connection_close (server->first_connection);
+  server->allocator->free (server->allocator, server->bind_name);
+  while (server->recycled_requests != NULL)
+    {
+      ServerRequest *req = server->recycled_requests;
+      server->recycled_requests = req->info.recycled.next;
+      server->allocator->free (server->allocator, req);
+    }
+  if (destroy_underlying)
+    protobuf_c_service_destroy (server->underlying);
+  server->allocator->free (server->allocator, server);
+  return rv;
 }

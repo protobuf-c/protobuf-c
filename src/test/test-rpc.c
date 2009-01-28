@@ -39,6 +39,7 @@ test__by_name (Foo__DirLookup_Service *service,
       person.n_phone = 1;
       person.phone = pns;
       person.email = email;
+      person.name = name->name;
       result.person = &person;
     }
   closure (&result, closure_data);
@@ -82,6 +83,14 @@ test_not_found_closure (const Foo__LookupResult *result,
   * (protobuf_c_boolean *) closure_data = 1;
 }
 
+static void
+test_defunct_closure (const Foo__LookupResult *result,
+                        void *closure_data)
+{
+  assert (result == NULL);
+  * (protobuf_c_boolean *) closure_data = 1;
+}
+
 
 static void
 test_service (ProtobufCService *service)
@@ -93,28 +102,61 @@ test_service (ProtobufCService *service)
   is_done = 0;
   foo__dir_lookup__by_name (service, &name, test_dave_closure, &is_done);
   while (!is_done)
-    protobuf_c_dispatch_run_once (protobuf_c_dispatch_default ());
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 
   name.name = "joe the plumber";
   is_done = 0;
   foo__dir_lookup__by_name (service, &name, test_joe_the_plumber_closure, &is_done);
   while (!is_done)
-    protobuf_c_dispatch_run_once (protobuf_c_dispatch_default ());
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 
   name.name = "asdfvcvzxsa";
   is_done = 0;
   foo__dir_lookup__by_name (service, &name, test_not_found_closure, &is_done);
   while (!is_done)
-    protobuf_c_dispatch_run_once (protobuf_c_dispatch_default ());
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
+}
+static void
+test_defunct_client (ProtobufCService *service)
+{
+  Foo__Name name = FOO__NAME__INIT;
+  protobuf_c_boolean is_done;
+
+  name.name = "dave";
+  is_done = 0;
+  foo__dir_lookup__by_name (service, &name, test_defunct_closure, &is_done);
+  while (!is_done)
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
+
+  name.name = "joe the plumber";
+  is_done = 0;
+  foo__dir_lookup__by_name (service, &name, test_defunct_closure, &is_done);
+  while (!is_done)
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
+
+  name.name = "asdfvcvzxsa";
+  is_done = 0;
+  foo__dir_lookup__by_name (service, &name, test_defunct_closure, &is_done);
+  while (!is_done)
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 }
 
 /* --- main() --- */
+static void
+set_boolean_true (ProtobufCDispatch *dispatch,
+                  void              *func_data)
+{
+  (void) dispatch;
+  * (protobuf_c_boolean *) func_data = 1;
+}
+
 int main()
 {
   protobuf_c_boolean is_done;
   ProtobufCService *local_service = (ProtobufCService *) &the_dir_lookup_service;
   ProtobufCService *remote_service;
   ProtobufC_RPC_Client *client;
+  ProtobufC_RPC_Server *server;
 
   test_service (local_service);
 
@@ -132,7 +174,7 @@ int main()
                                         250, set_boolean_true, &is_done);
   while (!is_done)
     {
-      protobuf_c_dispatch_run_once (protobuf_c_dispatch_default ());
+      protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
       assert (!protobuf_c_rpc_client_is_connected (client));
     }
 
@@ -146,7 +188,7 @@ int main()
   protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
                                         250, set_boolean_true, &is_done);
   while (!is_done && !protobuf_c_rpc_client_is_connected (client))
-    protobuf_c_dispatch_run_once (protobuf_c_dispatch_default ());
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 
   /* technically, there's no way to know how long it'll take to connect
      if the machine is heavily loaded, so the following
@@ -156,17 +198,31 @@ int main()
 
   /* wait for the timer to elapse, since that's laziest way to handle it. */
   while (!is_done)
-    protobuf_c_dispatch_run_once (protobuf_c_dispatch_default ());
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 
   /* Test the client */
   test_service (remote_service);
 
   /* Destroy the server and ensure that a request is failed in
      a timely fashion. */
-  ...
+  protobuf_c_rpc_server_destroy (server, 0);
+  server = NULL;
+  test_defunct_client (remote_service);
 
   /* Create a server again and wait for the client to reconnect. */
-  ...
+  server = protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_LOCAL,
+                                      "test.socket",
+                                      local_service,
+                                      NULL);
+  assert (server != NULL);
+  is_done = 0;
+  while (!is_done)
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
+  protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
+                                        250, set_boolean_true, &is_done);
+  while (!is_done)
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
+  assert (protobuf_c_rpc_client_is_connected (client));
 
   /* Test the client again, for kicks. */
   test_service (remote_service);
@@ -175,7 +231,7 @@ int main()
   protobuf_c_service_destroy (remote_service);
 
   /* Destroy the server */
-  protobuf_c_rpc_server_destroy (server);
+  protobuf_c_rpc_server_destroy (server, 0);
 
   return 0;
 }
