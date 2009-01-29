@@ -13,6 +13,12 @@ typedef enum
   PROTOBUF_C_EVENT_WRITABLE = (1<<1)
 } ProtobufC_Events;
 
+#ifdef WIN32
+typedef SOCKET ProtobufC_FD;
+#else
+typedef int ProtobufC_FD;
+#endif
+
 /* Create or destroy a Dispatch */
 ProtobufCDispatch  *protobuf_c_dispatch_new (ProtobufCAllocator *allocator);
 void                protobuf_c_dispatch_free(ProtobufCDispatch *dispatch);
@@ -21,20 +27,20 @@ ProtobufCDispatch  *protobuf_c_dispatch_default (void);
 
 ProtobufCAllocator *protobuf_c_dispatch_peek_allocator (ProtobufCDispatch *);
 
-typedef void (*ProtobufCDispatchCallback) (int         fd,
-                                            unsigned    events,
-                                            void       *callback_data);
+typedef void (*ProtobufCDispatchCallback)  (ProtobufC_FD   fd,
+                                            unsigned       events,
+                                            void          *callback_data);
 
 /* Registering file-descriptors to watch. */
 void  protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
-                                    int                 fd,
+                                    ProtobufC_FD        fd,
                                     unsigned            events,
                                     ProtobufCDispatchCallback callback,
                                     void               *callback_data);
 void  protobuf_c_dispatch_close_fd (ProtobufCDispatch *dispatch,
-                                    int                 fd);
+                                    ProtobufC_FD        fd);
 void  protobuf_c_dispatch_fd_closed(ProtobufCDispatch *dispatch,
-                                    int                 fd);
+                                    ProtobufC_FD        fd);
 
 /* Timers */
 typedef void (*ProtobufCDispatchTimerFunc) (ProtobufCDispatch *dispatch,
@@ -73,16 +79,16 @@ void  protobuf_c_dispatch_run      (ProtobufCDispatch *dispatch);
 
 
 /* --- API for those who want to embed a dispatch into their own main-loop --- */
-#ifdef WIN32
-typedef SOCKET ProtobufC_FD;
-#else
-typedef int ProtobufC_FD;
-#endif
-
 typedef struct {
   ProtobufC_FD fd;
   ProtobufC_Events events;
 } ProtobufC_FDNotify;
+
+typedef struct {
+  ProtobufC_FD fd;
+  ProtobufC_Events old_events;
+  ProtobufC_Events events;
+} ProtobufC_FDNotifyChange;
 
 void  protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
                                     size_t              n_notifies,
@@ -93,8 +99,10 @@ void  protobuf_c_dispatch_clear_changes (ProtobufCDispatch *);
 struct _ProtobufCDispatch
 {
   /* changes to the events you are interested in. */
+  /* (this handles closed file-descriptors 
+     in a manner agreeable to epoll(2) and kqueue(2)) */
   size_t n_changes;
-  ProtobufC_FDNotify *changes;
+  ProtobufC_FDNotifyChange *changes;
 
   /* the complete set of events you are interested in. */
   size_t n_notifies_desired;
@@ -112,7 +120,7 @@ struct _ProtobufCDispatch
   unsigned long last_dispatch_secs;
   unsigned last_dispatch_usecs;
 
-  /* private data follows */
+  /* private data follows (see RealDispatch structure in .c file) */
 };
 
 void protobuf_c_dispatch_destroy_default (void);

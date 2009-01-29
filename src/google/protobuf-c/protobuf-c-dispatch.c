@@ -1,6 +1,11 @@
 /* NOTE: this may not work very well on windows, where i'm
    not sure that "SOCKETs" are allocated nicely like
    file-descriptors are */
+/* TODO:
+ *  * epoll() implementation
+ *  * kqueue() implementation
+ *  * windows port (yeah, right, volunteers are DEFINITELY needed for this one...)
+ */
 #include <assert.h>
 #include <alloca.h>
 #include <sys/time.h>

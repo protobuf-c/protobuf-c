@@ -47,6 +47,17 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
                                              const ProtobufCServiceDescriptor *descriptor,
                                              ProtobufCDispatch       *dispatch);
 
+/* forcing the client to connect */
+typedef enum
+{
+  PROTOBUF_C_RPC_CLIENT_CONNECT_SUCCESS,/* also returned if already connected */
+  PROTOBUF_C_RPC_CLIENT_CONNECT_ERROR_NAME_LOOKUP,
+  PROTOBUF_C_RPC_CLIENT_CONNECT_ERROR_CONNECT
+} ProtobufC_RPC_Client_ConnectStatus;
+
+ProtobufC_RPC_Client_ConnectStatus
+protobuf_c_rpc_client_connect (ProtobufC_RPC_Client *client);
+
 /* --- configuring the client */
 typedef struct _ProtobufC_RPC_Client ProtobufC_RPC_Client;
 
