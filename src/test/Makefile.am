@@ -1,5 +1,5 @@
 check_PROGRAMS = test-generated-code test-generated-code2 test-rpc
-noinst_PROGRAMS = cxx-generate-packed-data
+noinst_PROGRAMS = cxx-generate-packed-data example-server example-client
 INCLUDES = -I$(srcdir)/..
 test_generated_code_SOURCES = \
 test-generated-code.c \
@@ -19,6 +19,12 @@ test_rpc_LDADD = \
 cxx_generate_packed_data_SOURCES = \
 cxx-generate-packed-data.cc generated-code/test-full.pb.cc
 cxx_generate_packed_data_LDADD = -lprotobuf
+example_server_SOURCES = \
+example-server.c generated-code/test.pb-c.c
+example_server_LDADD = ../libprotobuf-c.la
+example_client_SOURCES = \
+example-client.c generated-code/test.pb-c.c
+example_client_LDADD = ../libprotobuf-c.la
 
 generated-code/test.pb-c.c generated-code/test.pb-c.h: ../protoc-c $(srcdir)/test.proto
 	mkdir -p generated-code
