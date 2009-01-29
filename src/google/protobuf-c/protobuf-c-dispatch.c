@@ -239,8 +239,8 @@ allocate_change_index (RealDispatch *d)
     {
       ProtobufCAllocator *allocator = d->allocator;
       unsigned new_size = d->changes_alloced * 2;
-      ProtobufC_FDNotify *n = ALLOC (new_size * sizeof (ProtobufC_FDNotify));
-      memcpy (n, d->base.changes, d->changes_alloced * sizeof (ProtobufC_FDNotify));
+      ProtobufC_FDNotifyChange *n = ALLOC (new_size * sizeof (ProtobufC_FDNotifyChange));
+      memcpy (n, d->base.changes, d->changes_alloced * sizeof (ProtobufC_FDNotifyChange));
       FREE (d->base.changes);
       d->base.changes = n;
       d->changes_alloced = new_size;
@@ -299,6 +299,7 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
   RealDispatch *d = (RealDispatch *) dispatch;
   unsigned f = fd;              /* avoid tiring compiler warnings: "comparison of signed versus unsigned" */
   unsigned nd_ind, change_ind;
+  unsigned old_events;
 #if DEBUG_DISPATCH
   fprintf (stderr, "dispatch: watch_fd: %d, %s%s\n",
            fd,
@@ -314,9 +315,11 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
     {
       if (callback != NULL)
         nd_ind = d->fd_map[f].notify_desired_index = allocate_notifies_desired_index (d);
+      old_events = 0;
     }
   else
     {
+      old_events = dispatch->notifies_desired[d->fd_map[f].notify_desired_index].events;
       if (callback == NULL)
         deallocate_notify_desired_index (d, f);
       else
@@ -325,16 +328,24 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
   if (callback == NULL)
     {
       if (d->fd_map[f].change_index == -1)
-        d->fd_map[f].change_index = allocate_change_index (d);
-      change_ind = d->fd_map[f].change_index;
+        {
+          change_ind = d->fd_map[f].change_index = allocate_change_index (d);
+          dispatch->changes[change_ind].old_events = old_events;
+        }
+      else
+        change_ind = d->fd_map[f].change_index;
       d->base.changes[change_ind].fd = f;
       d->base.changes[change_ind].events = 0;
       return;
     }
   assert (callback != NULL && events != 0);
   if (d->fd_map[f].change_index == -1)
-    d->fd_map[f].change_index = allocate_change_index (d);
-  change_ind = d->fd_map[f].change_index;
+    {
+      change_ind = d->fd_map[f].change_index = allocate_change_index (d);
+      dispatch->changes[change_ind].old_events = old_events;
+    }
+  else
+    change_ind = d->fd_map[f].change_index;
 
   d->base.changes[change_ind].fd = fd;
   d->base.changes[change_ind].events = events;
@@ -406,6 +417,11 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
             d->callbacks[nd_ind].func (fd, events, d->callbacks[nd_ind].data);
         }
     }
+
+  /* clear changes */
+  for (i = 0; i < dispatch->n_changes; i++)
+    d->fd_map[dispatch->changes[i].fd].change_index = -1;
+  dispatch->n_changes = 0;
 
   /* handle idle functions */
   while (d->first_idle != NULL)
@@ -704,8 +720,8 @@ void protobuf_c_dispatch_destroy_default (void)
 {
   if (def)
     {
-      ProtobufCDispatch *kill = def;
+      ProtobufCDispatch *to_kill = def;
       def = NULL;
-      protobuf_c_dispatch_free (kill);
+      protobuf_c_dispatch_free (to_kill);
     }
 }

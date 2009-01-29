@@ -40,8 +40,13 @@ google/protobuf/compiler/c/c_file.h \
 google/protobuf/compiler/c/c_field.h \
 google/protobuf/compiler/c/c_message.h \
 google/protobuf/compiler/c/c_generator.h \
-google/protobuf/compiler/c/c_bytes_field.h
+google/protobuf/compiler/c/c_bytes_field.h \
+google/protobuf-c/protobuf-c-data-buffer.h \
+google/protobuf-c/gskrbtreemacros.h \
+google/protobuf-c/gsklistmacros.h
 
 protobufcinclude_HEADERS = \
 google/protobuf-c/protobuf-c.h \
-google/protobuf-c/protobuf-c-private.h
+google/protobuf-c/protobuf-c-private.h \
+google/protobuf-c/protobuf-c-dispatch.h \
+google/protobuf-c/protobuf-c-rpc.h

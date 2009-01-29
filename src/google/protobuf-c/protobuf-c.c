@@ -247,7 +247,8 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
       return rv + uint32_size (*(const uint32_t *) member);
     case PROTOBUF_C_TYPE_STRING:
       {
-        size_t len = strlen (*(char * const *) member);
+        const char *str = *(char * const *) member;
+        size_t len = str ? strlen (str) : 0;
         return rv + uint32_size (len) + len;
       }
     case PROTOBUF_C_TYPE_BYTES:
@@ -258,7 +259,8 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
     //case PROTOBUF_C_TYPE_GROUP:
     case PROTOBUF_C_TYPE_MESSAGE:
       {
-        size_t subrv = protobuf_c_message_get_packed_size (*(ProtobufCMessage * const *) member);
+        const ProtobufCMessage *msg = * (ProtobufCMessage * const *) member;
+        size_t subrv = msg ? protobuf_c_message_get_packed_size (msg) : 0;
         return rv + uint32_size (subrv) + subrv;
       }
     }
@@ -501,10 +503,18 @@ static inline size_t boolean_pack (protobuf_c_boolean value, uint8_t *out)
 }
 static inline size_t string_pack (const char * str, uint8_t *out)
 {
-  size_t len = strlen (str);
-  size_t rv = uint32_pack (len, out);
-  memcpy (out + rv, str, len);
-  return rv + len;
+  if (str == NULL)
+    {
+      out[0] = 0;
+      return 1;
+    }
+  else
+    {
+      size_t len = strlen (str);
+      size_t rv = uint32_pack (len, out);
+      memcpy (out + rv, str, len);
+      return rv + len;
+    }
 }
 static inline size_t binary_data_pack (const ProtobufCBinaryData *bd, uint8_t *out)
 {
@@ -517,11 +527,19 @@ static inline size_t binary_data_pack (const ProtobufCBinaryData *bd, uint8_t *o
 static inline size_t
 prefixed_message_pack (const ProtobufCMessage *message, uint8_t *out)
 {
-  size_t rv = protobuf_c_message_pack (message, out + 1);
-  uint32_t rv_packed_size = uint32_size (rv);
-  if (rv_packed_size != 1)
-    memmove (out + rv_packed_size, out + 1, rv);
-  return uint32_pack (rv, out) + rv;
+  if (message == NULL)
+    {
+      out[0] = 0;
+      return 1;
+    }
+  else
+    {
+      size_t rv = protobuf_c_message_pack (message, out + 1);
+      uint32_t rv_packed_size = uint32_size (rv);
+      if (rv_packed_size != 1)
+        memmove (out + rv_packed_size, out + 1, rv);
+      return uint32_pack (rv, out) + rv;
+    }
 }
 
 /* wire-type will be added in required_field_pack() */
@@ -757,11 +775,12 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
       break;
     case PROTOBUF_C_TYPE_STRING:
       {
-        size_t sublen = strlen (*(char * const *) member);
+        const char *str = *(char * const *) member;
+        size_t sublen = str ? strlen (str) : 0;
         scratch[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
         rv += uint32_pack (sublen, scratch + rv);
         buffer->append (buffer, rv, scratch);
-        buffer->append (buffer, sublen, *(uint8_t * const *)member);
+        buffer->append (buffer, sublen, (const uint8_t *) str);
         rv += sublen;
         break;
       }
@@ -784,9 +803,12 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
         size_t sublen;
         ProtobufCBufferSimple simple_buffer
           = PROTOBUF_C_BUFFER_SIMPLE_INIT (simple_buffer_scratch);
+        const ProtobufCMessage *msg = *(ProtobufCMessage * const *) member;
         scratch[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
-        sublen = protobuf_c_message_pack_to_buffer (*(ProtobufCMessage * const *) member,
-                                           &simple_buffer.base);
+        if (msg == NULL)
+          sublen = 0;
+        else
+          sublen = protobuf_c_message_pack_to_buffer (msg, &simple_buffer.base);
         rv += uint32_pack (sublen, scratch + rv);
         buffer->append (buffer, rv, scratch);
         buffer->append (buffer, sublen, simple_buffer.data);
