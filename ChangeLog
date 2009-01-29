@@ -22,6 +22,8 @@
       - lowercase field names consistently when composing
         default_value names. (issue 11)
       - remove spurious semicolon (issue 10)
-0.8: (NOT YET RELEASED)
+0.8:
       - Destroy function typedef for Services was omitting a "*"
       - service_machgen_invoke was broken. (issue 12)
+      - add RPC system (BETA)
+      - don't segfault when packing NULL strings and messages.
