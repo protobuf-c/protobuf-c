@@ -819,6 +819,7 @@ struct _ProtobufC_RPC_Server
   ProtobufCDispatch *dispatch;
   ProtobufCAllocator *allocator;
   ProtobufCService *underlying;
+  ProtobufC_RPC_AddressType address_type;
   char *bind_name;
   ServerConnection *first_connection, *last_connection;
   ProtobufC_FD listening_fd;
@@ -873,6 +874,7 @@ server_failed_literal (ProtobufC_RPC_Server *server,
     server->error_handler (code, msg, server->error_handler_data);
 }
 
+#if 0
 static void
 server_failed (ProtobufC_RPC_Server *server,
                ProtobufC_RPC_Error_Code code,
@@ -888,6 +890,7 @@ server_failed (ProtobufC_RPC_Server *server,
 
   server_failed_literal (server, code, buf);
 }
+#endif
 
 static protobuf_c_boolean
 address_to_name (const struct sockaddr *addr,
@@ -1170,6 +1173,7 @@ handle_server_listener_readable (int fd,
 
 static ProtobufC_RPC_Server *
 server_new_from_fd (ProtobufC_FD              listening_fd,
+                    ProtobufC_RPC_AddressType address_type,
                     const char               *bind_name,
                     ProtobufCService         *service,
                     ProtobufCDispatch       *orig_dispatch)
@@ -1182,6 +1186,7 @@ server_new_from_fd (ProtobufC_FD              listening_fd,
   server->underlying = service;
   server->first_connection = server->last_connection = NULL;
   server->max_pending_requests_per_connection = 32;
+  server->address_type = address_type;
   server->bind_name = allocator->alloc (allocator, strlen (bind_name) + 1);
   server->error_handler = error_handler;
   server->error_handler_data = "protobuf-c rpc server";
@@ -1307,7 +1312,7 @@ protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
                strerror (errno));
       return NULL;
     }
-  return server_new_from_fd (fd, name, service, dispatch);
+  return server_new_from_fd (fd, type, name, service, dispatch);
 }
 
 ProtobufCService *
@@ -1317,16 +1322,24 @@ protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server *server,
   ProtobufCService *rv = destroy_underlying ? NULL : server->underlying;
   while (server->first_connection != NULL)
     server_connection_close (server->first_connection);
+
+  if (server->address_type == PROTOBUF_C_RPC_ADDRESS_LOCAL)
+    unlink (server->bind_name);
   server->allocator->free (server->allocator, server->bind_name);
+
   while (server->recycled_requests != NULL)
     {
       ServerRequest *req = server->recycled_requests;
       server->recycled_requests = req->info.recycled.next;
       server->allocator->free (server->allocator, req);
     }
+
   protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
+
   if (destroy_underlying)
     protobuf_c_service_destroy (server->underlying);
+
   server->allocator->free (server->allocator, server);
+
   return rv;
 }

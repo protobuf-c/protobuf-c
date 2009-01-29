@@ -260,8 +260,6 @@ int main()
 
   protobuf_c_dispatch_destroy_default ();
 
-  unlink ("test.socket");
-
   return 0;
 }
 

@@ -40,6 +40,7 @@ typedef void (*ProtobufC_RPC_Error_Func)   (ProtobufC_RPC_Error_Code code,
                                             void                    *error_func_data);
 
 /* --- Client API --- */
+typedef struct _ProtobufC_RPC_Client ProtobufC_RPC_Client;
 
 /* The return value (the service) may be cast to ProtobufC_RPC_Client* */
 ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
@@ -59,7 +60,6 @@ ProtobufC_RPC_Client_ConnectStatus
 protobuf_c_rpc_client_connect (ProtobufC_RPC_Client *client);
 
 /* --- configuring the client */
-typedef struct _ProtobufC_RPC_Client ProtobufC_RPC_Client;
 
 
 /* Pluginable async dns hooks */
