@@ -29,3 +29,12 @@
       - don't segfault when packing NULL strings and messages. (issue 13)
 0.9 [NOT YET RELEASED]
       - build issue: needed $(EXEEXT) in dependency lists for cygwin
+      - bug fix:  protobuf_c_service_get_method_by_name() was not correct b/c
+        the service's methods were not sorted by name (the header file
+	used to incorrectly state that they were).
+	Now we correctly implement protobuf_c_service_get_method_by_name()
+	(using a bsearch indexed by separate array).
+      - generated source incompatibility:  we added a new
+        member to ProtobufCServiceDescriptor (method_indices_by_name).
+	You will have to run the latest protobuf
+	to generate those structures.

@@ -1751,9 +1751,9 @@ protobuf_c_service_descriptor_get_method_by_name
   while (count > 1)
     {
       unsigned mid = start + count / 2;
-      int rv = strcmp (desc->methods[mid].name, name);
+      int rv = strcmp (desc->methods[desc->method_indices_by_name[mid]].name, name);
       if (rv == 0)
-        return desc->methods + mid;
+        return desc->methods + desc->method_indices_by_name[mid];
       if (rv < 0)
         {
           count = start + count - (mid - 1);
@@ -1766,7 +1766,7 @@ protobuf_c_service_descriptor_get_method_by_name
     }
   if (count == 0)
     return NULL;
-  if (strcmp (desc->methods[start].name, name) == 0)
-    return desc->methods + start;
+  if (strcmp (desc->methods[desc->method_indices_by_name[start]].name, name) == 0)
+    return desc->methods + desc->method_indices_by_name[start];
   return NULL;
 }

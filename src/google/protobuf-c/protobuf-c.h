@@ -230,7 +230,8 @@ struct _ProtobufCServiceDescriptor
   const char *c_name;
   const char *package;
   unsigned n_methods;
-  const ProtobufCMethodDescriptor *methods;		// sorted by name
+  const ProtobufCMethodDescriptor *methods;	/* in order from .proto file */
+  unsigned *method_indices_by_name;
 };
 
 typedef struct _ProtobufCService ProtobufCService;
