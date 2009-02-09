@@ -26,7 +26,7 @@ example_client_SOURCES = \
 example-client.c generated-code/test.pb-c.c
 example_client_LDADD = ../libprotobuf-c.la
 
-generated-code/test.pb-c.c generated-code/test.pb-c.h: ../protoc-c $(srcdir)/test.proto
+generated-code/test.pb-c.c generated-code/test.pb-c.h: ../protoc-c$(EXEEXT) $(srcdir)/test.proto
 	mkdir -p generated-code
 	../protoc-c -I$(srcdir) --c_out=generated-code $(srcdir)/test.proto
 generated-code/test-full.pb-c.c generated-code/test-full.pb-c.h: ../protoc-c $(srcdir)/test-full.proto
@@ -35,7 +35,7 @@ generated-code/test-full.pb-c.c generated-code/test-full.pb-c.h: ../protoc-c $(s
 generated-code/test-full.pb.cc generated-code/test-full.pb.h: $(srcdir)/test-full.proto @PROTOC@
 	mkdir -p generated-code
 	@PROTOC@ -I$(srcdir) --cpp_out=generated-code $(srcdir)/test-full.proto
-generated-code/test-full-cxx-output.inc: cxx-generate-packed-data
+generated-code/test-full-cxx-output.inc: cxx-generate-packed-data$(EXEEXT)
 	./cxx-generate-packed-data > generated-code/test-full-cxx-output.inc
 
 BUILT_SOURCES = generated-code/test.pb-c.c generated-code/test.pb-c.h \

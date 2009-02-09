@@ -27,4 +27,5 @@
       - service_machgen_invoke was broken. (issue 12)
       - add RPC system (BETA)
       - don't segfault when packing NULL strings and messages. (issue 13)
-
+0.9 [NOT YET RELEASED]
+      - build issue: needed $(EXEEXT) in dependency lists for cygwin
