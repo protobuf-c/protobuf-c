@@ -1,7 +1,6 @@
 ----------------------
 --- IMPORTANT TODO ---
 ----------------------
-- provide example rpc
 - proper support for extensions
   - slot for ranges in descriptor
   - extends is implemented as c-style function
