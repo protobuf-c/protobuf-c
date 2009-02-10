@@ -47,7 +47,8 @@ called libprotobuf-c rather than generated code.</para>
      would generate a C type <type>Foo__Bar__BazBah</type>.</para>
    </listitem><listitem>
     <para>Functions and globals are all lowercase, with camel-case
-    words separated by single underscores.
+    words separated by single underscores; namespaces are separated with
+    double-underscores.
     For example:
      <programlisting><![CDATA[
      Foo__Bar__BazBah *foo__bar__baz_bah__unpack
@@ -78,8 +79,8 @@ called libprotobuf-c rather than generated code.</para>
   </section>
   <section><title>Message Methods</title>
   <para>
-   The message structures all begin with <type>ProtobufCMessageDescriptor*</type>
-   which is sufficient to allow them to be cast to <type>ProtobufCMessage</type>.
+   The message structures all begin with <type>ProtobufCMessage</type>,
+   so they may be cast to that type.
   </para>
   <para>
    We generate some functions for each message:
@@ -174,6 +175,7 @@ called libprotobuf-c rather than generated code.</para>
   We will get generated code:
   <programlisting><![CDATA[
     struct _Convert_Service {
+      ProtobufCService base;
       void (*itoa) (Convert_Service *service,
                     const A *input,
 		    B__Closure closure,
@@ -184,10 +186,7 @@ called libprotobuf-c rather than generated code.</para>
 		    void *closure_data);
       void (*destroy) (Convert_Service *service);
     };
-    ProtobufCService *convert__create_service (Foo__DirLookup_Service *service);
   ]]></programlisting>
-  Note that <function>create_service</function> takes ownership of <parameter>service</parameter>.
-  For example, here's how to implement a convert service that takes the default radix to use:
   <programlisting><![CDATA[
       /* structure derived from Convert_Service. */
       typedef struct {
@@ -228,15 +227,16 @@ called libprotobuf-c rather than generated code.</para>
       create_convert_service_from_radix (unsigned radix)
       {
         Convert_WithRadix *wr = malloc (sizeof (Convert_WithRadix));
+	convert__init (wr, (Convert__ServiceDestroy) free);
 	wr->base.itoa = radix_itoa;
 	wr->base.atoi = radix_atoi;
-	wr->base.destroy = (void(*)(Convert_Service *)) free;
 	wr->radix = radix;
-	return convert__create_service (&wr->base);
+	return (ProtobufCService *) wr;
       }
 ]]></programlisting>
-   Note that, unlike with messages, you must NOT cast
-   from <type>Convert_Service</type> to <type>ProtobufCService</type>.
+   Just like with messages, you may cast
+   from <type>Convert_Service</type> to <type>ProtobufCService</type>,
+   at least as long as you have run the __init function.
    </para>
    <para>
      Conversely, we generate functions to help you invoke service
