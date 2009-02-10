@@ -183,7 +183,7 @@ int main()
                                        NULL);
   assert (remote_service != NULL);
   client = (ProtobufC_RPC_Client *) remote_service;
-  protobuf_c_rpc_client_set_autoretry_period (client, 10);
+  protobuf_c_rpc_client_set_autoreconnect_period (client, 10);
   is_done = 0;
   protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
                                         250, set_boolean_true, &is_done);
