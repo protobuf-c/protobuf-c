@@ -81,12 +81,12 @@ void protobuf_c_rpc_client_set_error_handler (ProtobufC_RPC_Client *client,
                                               ProtobufC_RPC_Error_Func func,
                                               void                 *error_func_data);
 
-/* Configuring the autoretry behavior.
+/* Configuring the autoreconnect behavior.
    If the client is disconnected, all pending requests get an error.
-   If autoretry is set, and it is by default, try connecting again
+   If autoreconnect is set, and it is by default, try connecting again
    after a certain amount of time has elapsed. */
-void protobuf_c_rpc_client_disable_autoretry (ProtobufC_RPC_Client *client);
-void protobuf_c_rpc_client_set_autoretry_period (ProtobufC_RPC_Client *client,
+void protobuf_c_rpc_client_disable_autoreconnect (ProtobufC_RPC_Client *client);
+void protobuf_c_rpc_client_set_autoreconnect_period (ProtobufC_RPC_Client *client,
                                                  unsigned              millis);
 
 /* checking the state of the client */

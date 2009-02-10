@@ -43,7 +43,7 @@ typedef enum
   PROTOBUF_C_CLIENT_STATE_CONNECTING,
   PROTOBUF_C_CLIENT_STATE_CONNECTED,
   PROTOBUF_C_CLIENT_STATE_FAILED_WAITING,
-  PROTOBUF_C_CLIENT_STATE_FAILED,               /* if no autoretry */
+  PROTOBUF_C_CLIENT_STATE_FAILED,               /* if no autoreconnect */
   PROTOBUF_C_CLIENT_STATE_DESTROYED
 } ProtobufC_RPC_ClientState;
 
@@ -77,8 +77,8 @@ struct _ProtobufC_RPC_Client
   ProtobufC_RPC_AddressType address_type;
   char *name;
   ProtobufC_FD fd;
-  protobuf_c_boolean autoretry;
-  unsigned autoretry_millis;
+  protobuf_c_boolean autoreconnect;
+  unsigned autoreconnect_millis;
   ProtobufC_NameLookup_Func resolver;
   ProtobufC_RPC_Error_Func error_handler;
   void *error_handler_data;
@@ -121,7 +121,7 @@ set_fd_nonblocking(int fd)
 }
 
 static void
-handle_autoretry_timeout (ProtobufCDispatch *dispatch,
+handle_autoreconnect_timeout (ProtobufCDispatch *dispatch,
                           void              *func_data)
 {
   ProtobufC_RPC_Client *client = func_data;
@@ -181,13 +181,13 @@ client_failed (ProtobufC_RPC_Client *client,
   strcpy (msg, buf);
 
   /* go to one of the failed states */
-  if (client->autoretry)
+  if (client->autoreconnect)
     {
       client->state = PROTOBUF_C_CLIENT_STATE_FAILED_WAITING;
       client->info.failed_waiting.timer
         = protobuf_c_dispatch_add_timer_millis (client->dispatch,
-                                                client->autoretry_millis,
-                                                handle_autoretry_timeout,
+                                                client->autoreconnect_millis,
+                                                handle_autoreconnect_timeout,
                                                 client);
       client->info.failed_waiting.error_message = msg;
     }
@@ -755,8 +755,8 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
   rv->name = strcpy (allocator->alloc (allocator, strlen (name) + 1), name);
   rv->state = PROTOBUF_C_CLIENT_STATE_INIT;
   rv->fd = -1;
-  rv->autoretry = 1;
-  rv->autoretry_millis = 2*1000;
+  rv->autoreconnect = 1;
+  rv->autoreconnect_millis = 2*1000;
   rv->resolver = trivial_sync_libc_resolver;
   rv->error_handler = error_handler;
   rv->error_handler_data = "protobuf-c rpc client";
@@ -771,16 +771,16 @@ protobuf_c_rpc_client_is_connected (ProtobufC_RPC_Client *client)
 }
 
 void
-protobuf_c_rpc_client_set_autoretry_period (ProtobufC_RPC_Client *client,
+protobuf_c_rpc_client_set_autoreconnect_period (ProtobufC_RPC_Client *client,
                                             unsigned millis)
 {
-  client->autoretry = 1;
-  client->autoretry_millis = millis;
+  client->autoreconnect = 1;
+  client->autoreconnect_millis = millis;
 }
 void
-protobuf_c_rpc_client_disable_autoretry (ProtobufC_RPC_Client *client)
+protobuf_c_rpc_client_disable_autoreconnect (ProtobufC_RPC_Client *client)
 {
-  client->autoretry = 0;
+  client->autoreconnect = 0;
 }
 
 /* === Server === */
