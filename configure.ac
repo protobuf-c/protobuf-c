@@ -9,6 +9,30 @@ AC_PROG_LIBTOOL
 AC_PATH_PROG(PROTOC, protoc)
 AC_CHECK_HEADERS(inttypes.h)
 
+# Check for the protobuf library.
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADER(google/protobuf/stubs/common.h,,
+                [AC_MSG_ERROR([
+ERROR: protobuf headers are required.
+
+You must either install protobuf from google,
+or if you have it installed in a custom location
+you must add '-Iincludedir' to CXXFLAGS
+and '-Llibdir' to LDFLAGS.
+])])
+pbc_savelibs="$LIBS"
+LIBS="$LIBS -lprotoc"
+AC_TRY_LINK([#include <google/protobuf/compiler/command_line_interface.h>],
+            [google::protobuf::compiler::CommandLineInterface cli;],
+	    [],
+	    [AC_MSG_ERROR([
+ERROR:
+protobuf test program failed to link:
+perhaps you need to add -Llibdir to your LDFLAGS.])])
+LIBS="$pbc_savelibs"
+AC_LANG_POP()
+
+
 dnl  ------ define IS_LITTLE_ENDIAN ------
 knows_endianness=0
 AC_CHECK_HEADERS([endian.h], [has_endian_h=1; knows_endianness=1], [has_endian_h=0])
