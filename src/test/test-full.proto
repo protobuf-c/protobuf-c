@@ -174,3 +174,10 @@ message DefaultOptionalValues {
   optional string v_string = 7 [default = "hi mom\n"];
   optional bytes v_bytes   = 8 [default = "a \0 character"];
 }
+message AllocValues {
+  optional bytes o_bytes = 1;
+  repeated string r_string = 2;
+  required string a_string = 3;
+  required bytes a_bytes = 4;
+  required DefaultRequiredValues a_mess = 5;
+}

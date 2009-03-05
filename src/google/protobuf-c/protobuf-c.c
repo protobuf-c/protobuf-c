@@ -27,8 +27,8 @@
 
 /* convenience macros */
 #define TMPALLOC(allocator, size) ((allocator)->tmp_alloc ((allocator)->allocator_data, (size)))
-#define ALLOC(allocator, size) ((allocator)->alloc ((allocator)->allocator_data, (size)))
-#define FREE(allocator, ptr)   ((allocator)->free ((allocator)->allocator_data, (ptr)))
+#define FREE(allocator, ptr)   \
+   do { if ((ptr) != NULL) ((allocator)->free ((allocator)->allocator_data, (ptr))); } while(0)
 #define UNALIGNED_ALLOC(allocator, size) ALLOC (allocator, size) /* placeholder */
 #define STRUCT_MEMBER_P(struct_p, struct_offset)   \
     ((void *) ((uint8_t*) (struct_p) + (struct_offset)))
@@ -38,6 +38,30 @@
     ((member_type*) STRUCT_MEMBER_P ((struct_p), (struct_offset)))
 #define TRUE 1
 #define FALSE 0
+
+static void
+alloc_failed_warning (unsigned size, const char *filename, unsigned line)
+{
+  fprintf (stderr,
+           "WARNING: out-of-memory allocating a block of size %u (%s:%u)\n",
+           size, filename, line);
+}
+
+/* Try to allocate memory, running some special code if it fails. */
+#define DO_ALLOC(dst, allocator, size, fail_code)                           \
+{ size_t da__allocation_size = (size);                                      \
+  if (da__allocation_size == 0)                                             \
+    dst = NULL;                                                             \
+  else if ((dst=((allocator)->alloc ((allocator)->allocator_data,           \
+                                     da__allocation_size))) == NULL)        \
+    {                                                                       \
+      alloc_failed_warning (da__allocation_size, __FILE__, __LINE__);       \
+      fail_code;                                                            \
+    }                                                                       \
+}
+#define DO_UNALIGNED_ALLOC  DO_ALLOC            /* placeholder */
+
+
 
 #define ASSERT_IS_ENUM_DESCRIPTOR(desc) \
   assert((desc)->magic == PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC)
@@ -108,7 +132,7 @@ protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,
       uint8_t *new_data;
       while (new_alloced < new_len)
         new_alloced += new_alloced;
-      new_data = ALLOC (&protobuf_c_default_allocator, new_alloced);
+      DO_ALLOC (new_data, &protobuf_c_default_allocator, new_alloced, return);
       memcpy (new_data, simp->data, simp->len);
       if (simp->must_free_data)
         FREE (&protobuf_c_default_allocator, simp->data);
@@ -1189,7 +1213,7 @@ parse_required_member (ScannedMember *scanned_member,
             if (*pstr != NULL && *pstr != def)
               FREE (allocator, *pstr);
           }
-        *pstr = ALLOC (allocator, len - pref_len + 1);
+        DO_ALLOC (*pstr, allocator, len - pref_len + 1, return 0);
         memcpy (*pstr, data + pref_len, len - pref_len);
         (*pstr)[len-pref_len] = 0;
         return 1;
@@ -1204,7 +1228,7 @@ parse_required_member (ScannedMember *scanned_member,
         def_bd = scanned_member->field->default_value;
         if (maybe_clear && bd->data != NULL && bd->data != def_bd->data)
           FREE (allocator, bd->data);
-        bd->data = ALLOC (allocator, len - pref_len);
+        DO_ALLOC (bd->data, allocator, len - pref_len, return 0);
         memcpy (bd->data, data + pref_len, len - pref_len);
         bd->len = len - pref_len;
         return 1;
@@ -1280,7 +1304,7 @@ parse_member (ScannedMember *scanned_member,
       ufield->tag = scanned_member->tag;
       ufield->wire_type = scanned_member->wire_type;
       ufield->len = scanned_member->len;
-      ufield->data = UNALIGNED_ALLOC (allocator, scanned_member->len);
+      DO_UNALIGNED_ALLOC (ufield->data, allocator, scanned_member->len, return 0);
       memcpy (ufield->data, scanned_member->data, ufield->len);
       return 1;
     }
@@ -1370,7 +1394,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
 
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
-  rv = ALLOC (allocator, desc->sizeof_message);
+  DO_ALLOC (rv, allocator, desc->sizeof_message, return NULL);
   scanned_member_slabs[0] = first_member_slab;
 
   memset (rv, 0, desc->sizeof_message);
@@ -1480,7 +1504,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           if (allocator->tmp_alloc != NULL)
             scanned_member_slabs[which_slab] = TMPALLOC(allocator, size);
           else
-            scanned_member_slabs[which_slab] = ALLOC(allocator, size);
+            DO_ALLOC (scanned_member_slabs[which_slab], allocator, size, goto error_cleanup);
         }
       scanned_member_slabs[which_slab][in_slab_index++] = tmp;
 
@@ -1503,15 +1527,20 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         size_t *n_ptr = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
         if (*n_ptr != 0)
           {
-            STRUCT_MEMBER (void *, rv, field->offset) = ALLOC (allocator, siz * (*n_ptr));
+            unsigned n = *n_ptr;
             *n_ptr = 0;
+            DO_ALLOC (STRUCT_MEMBER (void *, rv, field->offset),
+                      allocator, siz * n,
+                      goto error_cleanup);
           }
       }
 
   /* allocate space for unknown fields */
   if (n_unknown)
     {
-      rv->unknown_fields = ALLOC (allocator, n_unknown * sizeof (ProtobufCMessageUnknownField));
+      DO_ALLOC (rv->unknown_fields,
+                allocator, n_unknown * sizeof (ProtobufCMessageUnknownField),
+                goto error_cleanup);
     }
 
   /* do real parsing */

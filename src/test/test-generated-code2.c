@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -1177,6 +1178,86 @@ test_optional_default_values (void)
   foo__default_optional_values__free_unpacked (mess2, NULL);
 }
 
+static struct alloc_data {
+  uint32_t alloc_count;
+  int32_t allocs_left;
+} test_allocator_data;
+
+static void *test_alloc(void *allocator_data, size_t size)
+{
+  struct alloc_data *ad = allocator_data;
+  void *rv = NULL;
+  if (ad->allocs_left-- > 0)
+      rv = malloc (size);
+  /* fprintf (stderr, "alloc %d = %p\n", size, rv); */
+  if (rv)
+    ad->alloc_count++;
+  return rv;
+}
+
+static void test_free (void *allocator_data, void *data)
+{
+  struct alloc_data *ad = allocator_data;
+  /* fprintf (stderr, "free %p\n", data); */
+  free (data);
+  if (data)
+    ad->alloc_count--;
+}
+
+static ProtobufCAllocator test_allocator = {
+  .alloc = test_alloc,
+  .free = test_free,
+  .allocator_data = &test_allocator_data,
+};
+
+#define SETUP_TEST_ALLOC_BUFFER(pbuf, len)					\
+  Foo__DefaultRequiredValues _req = FOO__DEFAULT_REQUIRED_VALUES__INIT;		\
+  Foo__AllocValues _mess = FOO__ALLOC_VALUES__INIT;				\
+  _mess.a_string = "some string";						\
+  _mess.r_string = repeated_strings_2;						\
+  _mess.n_r_string = sizeof(repeated_strings_2) / sizeof(*repeated_strings_2);	\
+  uint8_t bytes[] = "some bytes";						\
+  _mess.a_bytes.len = sizeof(bytes);						\
+  _mess.a_bytes.data = bytes;							\
+  _mess.a_mess = &_req;								\
+  size_t len = foo__alloc_values__get_packed_size (&_mess);			\
+  uint8_t *pbuf = malloc (len);							\
+  assert (pbuf);								\
+  size_t _len2 = foo__alloc_values__pack (&_mess, pbuf);			\
+  assert (len == _len2);
+
+static void
+test_alloc_graceful_cleanup (uint8_t *packed, size_t len, int good_allocs)
+{
+  test_allocator_data.alloc_count = 0;
+  test_allocator_data.allocs_left = good_allocs;
+  Foo__AllocValues *mess;
+  mess = foo__alloc_values__unpack (&test_allocator, len, packed);
+  assert (test_allocator_data.allocs_left < 0 ? !mess : !!mess);
+  if (mess)
+    foo__alloc_values__free_unpacked (mess, &test_allocator);
+  assert (0 == test_allocator_data.alloc_count);
+}
+
+static void
+test_alloc_free_all (void)
+{
+  SETUP_TEST_ALLOC_BUFFER (packed, len);
+  test_alloc_graceful_cleanup (packed, len, INT32_MAX);
+  free (packed);
+}
+
+/* TODO: test alloc failure for slab, unknown fields */
+static void
+test_alloc_fail (void)
+{
+  int i = 0;
+  SETUP_TEST_ALLOC_BUFFER (packed, len);
+  do test_alloc_graceful_cleanup (packed, len, i++);
+  while (test_allocator_data.allocs_left < 0);
+  free (packed);
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -1258,6 +1339,9 @@ static Test tests[] =
 
   { "test required default values", test_required_default_values },
   { "test optional default values", test_optional_default_values },
+
+  { "test free unpacked", test_alloc_free_all },
+  { "test alloc failure", test_alloc_fail },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
