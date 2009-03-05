@@ -284,7 +284,7 @@ begin_connecting (ProtobufC_RPC_Client *client,
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_NAME_LOOKUP);
 
   client->state = PROTOBUF_C_CLIENT_STATE_CONNECTING;
-  client->fd = socket (PF_UNIX, SOCK_STREAM, 0);
+  client->fd = socket (address->sa_family, SOCK_STREAM, 0);
   if (client->fd < 0)
     {
       client_failed (client, "error creating socket: %s", strerror (errno));
@@ -325,7 +325,8 @@ handle_name_lookup_success (const uint8_t *address,
       destroy_client_rpc (&client->base_service);
       return;
     }
-  addr.sin_family = PF_INET;
+  memset (&addr, 0, sizeof (addr));
+  addr.sin_family = AF_INET;
   memcpy (&addr.sin_addr, address, 4);
   addr.sin_port = htons (client->info.name_lookup.port);
   begin_connecting (client, (struct sockaddr *) &addr, sizeof (addr));
@@ -1279,7 +1280,7 @@ protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
                                                            address_len);
       break;
     case PROTOBUF_C_RPC_ADDRESS_TCP:
-      protocol_family = PF_UNIX;
+      protocol_family = PF_INET;
       memset (&addr_in, 0, sizeof (addr_in));
       addr_in.sin_family = AF_INET;
       {
