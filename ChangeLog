@@ -38,3 +38,5 @@
         member to ProtobufCServiceDescriptor (method_indices_by_name).
 	You will have to run the latest protobuf
 	to generate those structures.
+      - rename rpc-client's "autoretry" mechanism to "autoreconnect".
+      - bug fixes using TCP clients with the RPC system.
