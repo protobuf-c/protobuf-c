@@ -9,7 +9,7 @@ AC_PROG_LIBTOOL
 AC_PATH_PROG(PROTOC, protoc)
 AC_CHECK_HEADERS(inttypes.h)
 
-# Check for the protobuf library.
+# --- Check for the protobuf library. ---
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADER(google/protobuf/stubs/common.h,,
                 [AC_MSG_ERROR([
@@ -34,6 +34,15 @@ AC_LANG_POP()
 
 
 dnl  ------ define IS_LITTLE_ENDIAN ------
+# We try to use, where possible the headers <endian.h>, <mach/endian.h>,
+# and <machine/endian.h>, in that order.  They must define the macros
+# __LITTLE_ENDIAN and __BYTE_ORDER.  We structure the test so that if they 
+# do NOT define __LITTLE_ENDIAN or __BYTE_ORDER then we will disable
+# the little-endian optimizations, so the resulting code should be correct,
+# but not as fast, if there's a broken endian.h somewhere.
+#
+# If none of those headers exist, we fallback on a runtime test.
+# TODO: support --with-endianness=[little|big]
 knows_endianness=0
 AC_CHECK_HEADERS([endian.h], [has_endian_h=1; knows_endianness=1], [has_endian_h=0])
 if test $knows_endianness = 1 ; then
@@ -42,12 +51,27 @@ if test $knows_endianness = 1 ; then
 		case __BYTE_ORDER: break; } ],
     [is_little_endian=0], [is_little_endian=1])
 else
+
+  # ------------------ try <mach/endian.h>  ------------------
   AC_CHECK_HEADERS([mach/endian.h], [has_mach_endian_h=1; knows_endianness=1], [has_mach_endian_h=0])
-  AC_TRY_COMPILE([#include <mach/endian.h>],[
-    switch (1) { case __LITTLE_ENDIAN: break;
-		 case __BYTE_ORDER: break; }
-			    ],
-    [is_little_endian=0], [is_little_endian=1])
+  if test $knows_endianness = 1 ; then
+    AC_TRY_COMPILE([#include <mach/endian.h>],[
+      switch (1) { case __LITTLE_ENDIAN: break;
+		   case __BYTE_ORDER: break; }
+			      ],
+      [is_little_endian=0], [is_little_endian=1])
+  fi
+  # ------------------ try <machine/endian.h>  ------------------
+  if test $knows_endianness = 0; then
+    AC_CHECK_HEADERS([machine/endian.h], [has_machine_endian_h=1; knows_endianness=1], [has_machine_endian_h=0])
+    if test $knows_endianness = 1 ; then
+      AC_TRY_COMPILE([#include <machine/endian.h>],[
+	switch (1) { case __LITTLE_ENDIAN: break;
+		     case __BYTE_ORDER: break; }
+				],
+	[is_little_endian=0], [is_little_endian=1])
+    fi
+  fi
   if test $knows_endianness = 0; then
     AC_MSG_CHECKING([for little-endianness via runtime check])
     AC_RUN_IFELSE([#include <inttypes.h>
