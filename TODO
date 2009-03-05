@@ -21,6 +21,8 @@
   - out-of-order fields in messages (ie if the number isn't ascending)
   - gaps in numbers: check that the number of ranges is correct
   - default values
+  - message unpack alloc failures when allocating new slab
+  - message unpack alloc failures when allocating unknown field buffers
 
 ---------------------
 --- DOCUMENTATION ---

@@ -40,3 +40,4 @@
 	to generate those structures.
       - rename rpc-client's "autoretry" mechanism to "autoreconnect".
       - bug fixes using TCP clients with the RPC system.
+      - handle allocation failures more gracefully (Jason Lunz) (issue 15)
