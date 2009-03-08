@@ -1,32 +1,6 @@
-0.0:
-      - Initial release.
-0.1:
-      - Lots of test code (and bug fixes).
-0.2:
-0.3:
-      - Minor pedantic concerns about generated code.
-0.4:
-      - Update to work with protobuf 2.0.1.
-0.5: 
-      - License now included in major files.
-      - Use little-endian optimizations; fix a bug therein.
-      - Include 'make deb' target.
-0.6:
-      - Warning suppression for -Wcast-qual and -Wshadow.
-      - Support for default values of all types allowed by core protobuf.
-      - Generate message__init functions, for when the static initializer
-        isn't convenient.
-      - add some reserved fields at the end of the various descriptors
-0.7:
-      - memory leak:  unknown fields were not being freed by free_unpacked()
-      - lowercase field names consistently when composing
-        default_value names. (issue 11)
-      - remove spurious semicolon (issue 10)
-0.8:
-      - Destroy function typedef for Services was omitting a "*"
-      - service_machgen_invoke was broken. (issue 12)
-      - add RPC system (BETA)
-      - don't segfault when packing NULL strings and messages. (issue 13)
+0.10: (NOT YET RELEASED)
+      - build issue on platforms which don't compute library dependencies
+        automatically.
 0.9:
       - build issue: needed $(EXEEXT) in dependency lists for cygwin
       - bug fix:  protobuf_c_service_get_method_by_name() was not correct b/c
@@ -41,6 +15,32 @@
       - rename rpc-client's "autoretry" mechanism to "autoreconnect".
       - bug fixes using TCP clients with the RPC system.
       - handle allocation failures more gracefully (Jason Lunz) (issue 15)
-0.10: (NOT YET RELEASED)
-      - build issue on platforms which don't compute library dependencies
-        automatically.
+0.8:
+      - Destroy function typedef for Services was omitting a "*"
+      - service_machgen_invoke was broken. (issue 12)
+      - add RPC system (BETA)
+      - don't segfault when packing NULL strings and messages. (issue 13)
+0.7:
+      - memory leak:  unknown fields were not being freed by free_unpacked()
+      - lowercase field names consistently when composing
+        default_value names. (issue 11)
+      - remove spurious semicolon (issue 10)
+0.6:
+      - Warning suppression for -Wcast-qual and -Wshadow.
+      - Support for default values of all types allowed by core protobuf.
+      - Generate message__init functions, for when the static initializer
+        isn't convenient.
+      - add some reserved fields at the end of the various descriptors
+0.5: 
+      - License now included in major files.
+      - Use little-endian optimizations; fix a bug therein.
+      - Include 'make deb' target.
+0.4:
+      - Update to work with protobuf 2.0.1.
+0.2:
+0.3:
+      - Minor pedantic concerns about generated code.
+0.1:
+      - Lots of test code (and bug fixes).
+0.0:
+      - Initial release.
