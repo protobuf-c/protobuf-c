@@ -1,5 +1,5 @@
 AC_INIT(src/google/protobuf-c/protobuf-c.h)
-PROTOBUF_C_VERSION=0.9
+PROTOBUF_C_VERSION=0.10-beta0
 
 AM_INIT_AUTOMAKE(protobuf-c, $PROTOBUF_C_VERSION)
 PACKAGE=protobuf-c
@@ -21,7 +21,7 @@ you must add '-Iincludedir' to CXXFLAGS
 and '-Llibdir' to LDFLAGS.
 ])])
 pbc_savelibs="$LIBS"
-LIBS="$LIBS -lprotoc"
+LIBS="$LIBS -lprotoc -lprotobuf"
 AC_TRY_LINK([#include <google/protobuf/compiler/command_line_interface.h>],
             [google::protobuf::compiler::CommandLineInterface cli;],
 	    [],

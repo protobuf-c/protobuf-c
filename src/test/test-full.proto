@@ -8,6 +8,10 @@ enum TestEnumSmall {
   VALUE = 0;
   OTHER_VALUE = 1;
 }
+
+// these number are specifically chosen to test the
+// boundaries of when an enum requires a certain number of bytes.
+// e.g. 16383 requires 3 bytes; 16383 requires 4.
 enum TestEnum {
   VALUE0 = 0;
   VALUE1 = 1;

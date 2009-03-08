@@ -255,8 +255,9 @@ struct _ProtobufCMessageDescriptor
  * In particular, ProtobufCMessage doesn't have
  * any allocation policy associated with it.
  * That's because it is common to create ProtobufCMessage's
- * on the stack.  In fact, we recommend that if you are
- * sending messages.
+ * on the stack.  In fact, we that's what we recommend
+ * for sending messages (because if you just allocate from the
+ * stack, then you can't really have a memory leak).
  *
  * This means that functions like protobuf_c_message_unpack()
  * which return a ProtobufCMessage must be paired
@@ -276,6 +277,14 @@ struct _ProtobufCMessage
 };
 #define PROTOBUF_C_MESSAGE_INIT(descriptor) { descriptor, 0, NULL }
 
+/* To pack a message: you have two options:
+   (1) you can compute the size of the message
+       using protobuf_c_message_get_packed_size() 
+       then pass protobuf_c_message_pack() a buffer of
+       that length.
+   (2) Provide a virtual buffer (a ProtobufCBuffer) to
+       accept data as we scan through it.
+ */
 size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message);
 size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
                                              uint8_t                *out);
@@ -398,8 +407,6 @@ struct _ProtobufCBufferSimple
 /* ====== private ====== */
 #include "protobuf-c-private.h"
 
-/* TODO: crib from glib */
-#define PROTOBUF_C_GNUC_PRINTF(format_argno, ellipsis_argno)
 
 PROTOBUF_C_END_DECLS
 
