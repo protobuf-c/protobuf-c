@@ -27,7 +27,7 @@
       - service_machgen_invoke was broken. (issue 12)
       - add RPC system (BETA)
       - don't segfault when packing NULL strings and messages. (issue 13)
-0.9 [NOT YET RELEASED]
+0.9:
       - build issue: needed $(EXEEXT) in dependency lists for cygwin
       - bug fix:  protobuf_c_service_get_method_by_name() was not correct b/c
         the service's methods were not sorted by name (the header file
@@ -41,3 +41,6 @@
       - rename rpc-client's "autoretry" mechanism to "autoreconnect".
       - bug fixes using TCP clients with the RPC system.
       - handle allocation failures more gracefully (Jason Lunz) (issue 15)
+0.10: (NOT YET RELEASED)
+      - build issue on platforms which don't compute library dependencies
+        automatically.
