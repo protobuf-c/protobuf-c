@@ -1,6 +1,8 @@
 0.10: (NOT YET RELEASED)
       - build issue on platforms which don't compute library dependencies
         automatically.
+      - fix for certain types of corrupt messages (Landon Fuller)
+
 0.9:
       - build issue: needed $(EXEEXT) in dependency lists for cygwin
       - bug fix:  protobuf_c_service_get_method_by_name() was not correct b/c

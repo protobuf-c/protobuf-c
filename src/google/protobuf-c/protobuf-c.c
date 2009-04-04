@@ -1248,9 +1248,9 @@ parse_required_member (ScannedMember *scanned_member,
         subm = protobuf_c_message_unpack (scanned_member->field->descriptor,
                                           allocator,
                                           len - pref_len, data + pref_len);
+        *pmessage = subm;       /* since we freed the message we must clear the field, even if NULL */
         if (subm == NULL)
           return 0;
-        *pmessage = subm;
         return 1;
       }
     }
@@ -1413,7 +1413,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         {
           UNPACK_ERROR (("error parsing tag/wiretype at offset %u",
                          (unsigned)(at-data)));
-          goto error_cleanup;
+          goto error_cleanup_during_scan;
         }
       /* XXX: consider optimizing for field[1].id == tag, if field[1] exists! */
       if (last_field->id != tag)
@@ -1455,7 +1455,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
               {
                 UNPACK_ERROR (("unterminated varint at offset %u",
                                (unsigned)(at-data)));
-                goto error_cleanup;
+                goto error_cleanup_during_scan;
               }
             tmp.len = i + 1;
           }
@@ -1465,7 +1465,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             {
               UNPACK_ERROR (("too short after 64bit wiretype at offset %u",
                              (unsigned)(at-data)));
-              goto error_cleanup;
+              goto error_cleanup_during_scan;
             }
           tmp.len = 8;
           break;
@@ -1476,7 +1476,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             if (tmp.len == 0)
               {
                 /* NOTE: scan_length_prefixed_data calls UNPACK_ERROR */
-                goto error_cleanup;
+                goto error_cleanup_during_scan;
               }
             tmp.length_prefix_len = pref_len;
             break;
@@ -1484,13 +1484,13 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         case PROTOBUF_C_WIRE_TYPE_START_GROUP:
         case PROTOBUF_C_WIRE_TYPE_END_GROUP:
           UNPACK_ERROR (("unsupported group tag at offset %u", (unsigned)(at-data))); 
-          goto error_cleanup;
+          goto error_cleanup_during_scan;
         case PROTOBUF_C_WIRE_TYPE_32BIT:
           if (rem < 4)
             {
               UNPACK_ERROR (("too short after 32bit wiretype at offset %u",
                              (unsigned)(at-data)));
-              goto error_cleanup;
+              goto error_cleanup_during_scan;
             }
           tmp.len = 4;
           break;
@@ -1505,7 +1505,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           if (allocator->tmp_alloc != NULL)
             scanned_member_slabs[which_slab] = TMPALLOC(allocator, size);
           else
-            DO_ALLOC (scanned_member_slabs[which_slab], allocator, size, goto error_cleanup);
+            DO_ALLOC (scanned_member_slabs[which_slab], allocator, size, goto error_cleanup_during_scan);
         }
       scanned_member_slabs[which_slab][in_slab_index++] = tmp;
 
@@ -1530,8 +1530,17 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           {
             unsigned n = *n_ptr;
             *n_ptr = 0;
+            assert(rv->descriptor != NULL);
             DO_ALLOC (STRUCT_MEMBER (void *, rv, field->offset),
                       allocator, siz * n,
+                      for(f++;f < desc->n_fields; f++) {
+                         field = desc->fields + f;
+                         if (field->label == PROTOBUF_C_LABEL_REPEATED)
+                           {
+                             n_ptr = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
+                             *n_ptr = 0;
+                           }
+                       }
                       goto error_cleanup);
           }
       }
@@ -1555,7 +1564,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           if (!parse_member (slab + j, rv, allocator))
             {
               UNPACK_ERROR (("error parsing member %s of %s",
-                             slab->field->name, desc->name));
+                             slab->field ? slab->field->name : "*unknown-field*", desc->name));
               goto error_cleanup;
             }
         }
@@ -1573,6 +1582,16 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
 
 error_cleanup:
   protobuf_c_message_free_unpacked (rv, allocator);
+  if (allocator->tmp_alloc == NULL)
+    {
+      unsigned j;
+      for (j = 1; j <= which_slab; j++)
+        FREE (allocator, scanned_member_slabs[j]);
+    }
+  return NULL;
+
+error_cleanup_during_scan:
+  FREE (allocator, rv);
   if (allocator->tmp_alloc == NULL)
     {
       unsigned j;
