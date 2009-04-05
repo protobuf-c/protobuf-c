@@ -1,4 +1,4 @@
-0.10: (NOT YET RELEASED)
+0.10:
       - build issue on platforms which don't compute library dependencies
         automatically.
       - fix for certain types of corrupt messages (Landon Fuller) (issue 16)
