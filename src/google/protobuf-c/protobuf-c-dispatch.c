@@ -7,12 +7,29 @@
  *  * windows port (yeah, right, volunteers are DEFINITELY needed for this one...)
  */
 #include <assert.h>
-#include <alloca.h>
+#if HAVE_ALLOCA_H
+# include <alloca.h>
+#elif HAVE_MALLOC_H
+# include <malloc.h>
+#endif
 #include <sys/time.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/poll.h>
+#if HAVE_SYS_POLL_H
+# include <sys/poll.h>
+# define USE_POLL              1
+#elif HAVE_SYS_SELECT_H
+# include <sys/select.h>
+# define USE_POLL              0
+#endif
+
+/* windows annoyances:  use select, use a full-fledges map for fds */
+#ifdef WIN32
+# include <winsock.h>
+# define USE_POLL              0
+# define HAVE_SMALL_FDS            0
+#endif
 #include <limits.h>
 #include <errno.h>
 #include <signal.h>
@@ -22,6 +39,10 @@
 
 #define DEBUG_DISPATCH_INTERNALS  0
 #define DEBUG_DISPATCH            0
+
+#ifndef HAVE_SMALL_FDS
+# define HAVE_SMALL_FDS           1
+#endif
 
 #define protobuf_c_assert(condition) assert(condition)
 
@@ -48,6 +69,18 @@ struct _FDMap
   int closed_since_notify_started;
 };
 
+#if !HAVE_SMALL_FDS
+typedef struct _FDMapNode FDMapNode;
+struct _FDMapNode
+{
+  ProtobufC_FD fd;
+  FDMapNode *left, *right, *parent;
+  protobuf_c_boolean is_red;
+  FDMap map;
+};
+#endif
+
+
 typedef struct _RealDispatch RealDispatch;
 struct _RealDispatch
 {
@@ -55,8 +88,13 @@ struct _RealDispatch
   Callback *callbacks;          /* parallels notifies_desired */
   size_t notifies_desired_alloced;
   size_t changes_alloced;
+#if HAVE_SMALL_FDS
   FDMap *fd_map;                /* map indexed by fd */
   size_t fd_map_size;           /* number of elements of fd_map */
+#else
+  FDMapNode *fd_map_tree;       /* map indexed by fd */
+#endif
+
 
   ProtobufCDispatchTimer *timer_tree;
   ProtobufCAllocator *allocator;
@@ -110,6 +148,22 @@ struct _ProtobufCDispatchIdle
   parent, left, right, \
   TIMERS_COMPARE
 
+#if !HAVE_SMALL_FDS
+#define FD_MAP_NODES_COMPARE(a,b, rv) \
+  if (a->fd < b->fd) rv = -1; \
+  else if (a->fd > b->fd) rv = 1; \
+  else rv = 0;
+#define GET_FD_MAP_TREE(d) \
+  (d)->fd_map_tree, FDMapNode *, \
+  TIMER_GET_IS_RED, TIMER_SET_IS_RED, \
+  parent, left, right, \
+  FD_MAP_NODES_COMPARE
+#define COMPARE_FD_TO_FD_MAP_NODE(a,b, rv) \
+  if (a < b->fd) rv = -1; \
+  else if (a > b->fd) rv = 1; \
+  else rv = 0;
+#endif
+
 /* declare the idle-handler list */
 #define GET_IDLE_LIST(d) \
   ProtobufCDispatchIdle *, d->first_idle, d->last_idle, prev, next
@@ -126,12 +180,16 @@ ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
   rv->callbacks = ALLOC (sizeof (Callback) * rv->notifies_desired_alloced);
   rv->changes_alloced = 8;
   rv->base.changes = ALLOC (sizeof (ProtobufC_FDNotify) * rv->changes_alloced);
+#if HAVE_SMALL_FDS
   rv->fd_map_size = 16;
   rv->fd_map = ALLOC (sizeof (FDMap) * rv->fd_map_size);
+  memset (rv->fd_map, 255, sizeof (FDMap) * rv->fd_map_size);
+#else
+  rv->fd_map_tree = NULL;
+#endif
   rv->allocator = allocator;
   rv->timer_tree = NULL;
   rv->first_idle = rv->last_idle = NULL;
-  memset (rv->fd_map, 255, sizeof (FDMap) * rv->fd_map_size);
   rv->recycled_idles = NULL;
   rv->recycled_timeouts = NULL;
 
@@ -145,6 +203,20 @@ ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
   return &rv->base;
 }
 
+#if !HAVE_SMALL_FDS
+void free_fd_tree_recursive (ProtobufCAllocator *allocator,
+                             FDMapNode          *node)
+{
+  if (node)
+    {
+      free_fd_tree_recursive (allocator, node->left);
+      free_fd_tree_recursive (allocator, node->right);
+      FREE (node);
+    }
+}
+#endif
+
+/* XXX: leaking timer_tree seemingly? */
 void
 protobuf_c_dispatch_free(ProtobufCDispatch *dispatch)
 {
@@ -165,7 +237,12 @@ protobuf_c_dispatch_free(ProtobufCDispatch *dispatch)
   FREE (d->base.notifies_desired);
   FREE (d->base.changes);
   FREE (d->callbacks);
+
+#if HAVE_SMALL_FDS
   FREE (d->fd_map);
+#else
+  free_fd_tree_recursive (allocator, d->fd_map_tree);
+#endif
   FREE (d);
 }
 
@@ -185,6 +262,7 @@ ProtobufCDispatch  *protobuf_c_dispatch_default (void)
   return def;
 }
 
+#if HAVE_SMALL_FDS
 static void
 enlarge_fd_map (RealDispatch *d,
                 unsigned      fd)
@@ -211,6 +289,7 @@ ensure_fd_map_big_enough (RealDispatch *d,
   if (fd >= d->fd_map_size)
     enlarge_fd_map (d, fd);
 }
+#endif
 
 static unsigned
 allocate_notifies_desired_index (RealDispatch *d)
@@ -247,46 +326,87 @@ allocate_change_index (RealDispatch *d)
     }
   return rv;
 }
+
+static inline FDMap *
+get_fd_map (RealDispatch *d, ProtobufC_FD fd)
+{
+#if HAVE_SMALL_FDS
+  if ((unsigned)fd >= d->fd_map_size)
+    return NULL;
+  else
+    return d->fd_map + fd;
+#else
+  FDMapNode *node;
+  GSK_RBTREE_LOOKUP_COMPARATOR (GET_FD_MAP_TREE (d), fd, COMPARE_FD_TO_FD_MAP_NODE, node);
+  return node ? &node->map : NULL;
+#endif
+}
+static inline FDMap *
+force_fd_map (RealDispatch *d, ProtobufC_FD fd)
+{
+#if HAVE_SMALL_FDS
+  ensure_fd_map_big_enough (d, fd);
+  return d->fd_map + fd;
+#else
+  {
+    FDMap *fm = get_fd_map (d, fd);
+    ProtobufCAllocator *allocator = d->allocator;
+    if (fm == NULL)
+      {
+        FDMapNode *node = ALLOC (sizeof (FDMapNode));
+        FDMapNode *conflict;
+        node->fd = fd;
+        memset (&node->map, 255, sizeof (FDMap));
+        GSK_RBTREE_INSERT (GET_FD_MAP_TREE (d), node, conflict);
+        assert (conflict == NULL);
+        fm = &node->map;
+      }
+    return fm;
+  }
+#endif
+}
+
 static void
 deallocate_change_index (RealDispatch *d,
-                         int fd)
+                         FDMap        *fm)
 {
-  unsigned ch_ind = d->fd_map[fd].change_index;
+  unsigned ch_ind = fm->change_index;
   unsigned from = d->base.n_changes - 1;
-  unsigned from_fd;
+  ProtobufC_FD from_fd;
   if (ch_ind == from)
     {
       d->base.n_changes--;
       return;
     }
   from_fd = d->base.changes[ch_ind].fd;
-  d->fd_map[from_fd].change_index = ch_ind;
+  get_fd_map (d, from_fd)->change_index = ch_ind;
   d->base.changes[ch_ind] = d->base.changes[from];
   d->base.n_changes--;
 }
 
 static void
 deallocate_notify_desired_index (RealDispatch *d,
-                                 int fd)
+                                 ProtobufC_FD  fd,
+                                 FDMap        *fm)
 {
-  unsigned nd_ind = d->fd_map[fd].notify_desired_index;
+  unsigned nd_ind = fm->notify_desired_index;
   unsigned from = d->base.n_notifies_desired - 1;
-  unsigned from_fd;
+  ProtobufC_FD from_fd;
+  (void) fd;
 #if DEBUG_DISPATCH_INTERNALS
   fprintf (stderr, "deallocate_notify_desired_index: fd=%d, nd_ind=%u\n",fd,nd_ind);
 #endif
-  d->fd_map[fd].notify_desired_index = -1;
+  fm->notify_desired_index = -1;
   if (nd_ind == from)
     {
       d->base.n_notifies_desired--;
       return;
     }
   from_fd = d->base.notifies_desired[from].fd;
-  d->fd_map[from_fd].notify_desired_index = nd_ind;
+  get_fd_map (d, from_fd)->notify_desired_index = nd_ind;
   d->base.notifies_desired[nd_ind] = d->base.notifies_desired[from];
   d->base.n_notifies_desired--;
 }
-
 
 /* Registering file-descriptors to watch. */
 void
@@ -300,6 +420,7 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
   unsigned f = fd;              /* avoid tiring compiler warnings: "comparison of signed versus unsigned" */
   unsigned nd_ind, change_ind;
   unsigned old_events;
+  FDMap *fm;
 #if DEBUG_DISPATCH
   fprintf (stderr, "dispatch: watch_fd: %d, %s%s\n",
            fd,
@@ -310,42 +431,45 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
     assert (events == 0);
   else
     assert (events != 0);
-  ensure_fd_map_big_enough (d, f);
-  if (d->fd_map[f].notify_desired_index == -1)
+  fm = force_fd_map (d, f);
+
+  /* XXX: should we set fm->map.closed_since_notify_started=0 ??? */
+
+  if (fm->notify_desired_index == -1)
     {
       if (callback != NULL)
-        nd_ind = d->fd_map[f].notify_desired_index = allocate_notifies_desired_index (d);
+        nd_ind = fm->notify_desired_index = allocate_notifies_desired_index (d);
       old_events = 0;
     }
   else
     {
-      old_events = dispatch->notifies_desired[d->fd_map[f].notify_desired_index].events;
+      old_events = dispatch->notifies_desired[fm->notify_desired_index].events;
       if (callback == NULL)
-        deallocate_notify_desired_index (d, f);
+        deallocate_notify_desired_index (d, fd, fm);
       else
-        nd_ind = d->fd_map[f].notify_desired_index;
+        nd_ind = fm->notify_desired_index;
     }
   if (callback == NULL)
     {
-      if (d->fd_map[f].change_index == -1)
+      if (fm->change_index == -1)
         {
-          change_ind = d->fd_map[f].change_index = allocate_change_index (d);
+          change_ind = fm->change_index = allocate_change_index (d);
           dispatch->changes[change_ind].old_events = old_events;
         }
       else
-        change_ind = d->fd_map[f].change_index;
+        change_ind = fm->change_index;
       d->base.changes[change_ind].fd = f;
       d->base.changes[change_ind].events = 0;
       return;
     }
   assert (callback != NULL && events != 0);
-  if (d->fd_map[f].change_index == -1)
+  if (fm->change_index == -1)
     {
-      change_ind = d->fd_map[f].change_index = allocate_change_index (d);
+      change_ind = fm->change_index = allocate_change_index (d);
       dispatch->changes[change_ind].old_events = old_events;
     }
   else
-    change_ind = d->fd_map[f].change_index;
+    change_ind = fm->change_index;
 
   d->base.changes[change_ind].fd = fd;
   d->base.changes[change_ind].events = events;
@@ -365,19 +489,19 @@ protobuf_c_dispatch_close_fd (ProtobufCDispatch *dispatch,
 
 void
 protobuf_c_dispatch_fd_closed(ProtobufCDispatch *dispatch,
-                              int                 fd)
+                              ProtobufC_FD        fd)
 {
-  unsigned f = fd;
   RealDispatch *d = (RealDispatch *) dispatch;
+  FDMap *fm;
 #if DEBUG_DISPATCH
   fprintf (stderr, "dispatch: fd %d closed\n", fd);
 #endif
-  ensure_fd_map_big_enough (d, f);
-  d->fd_map[fd].closed_since_notify_started = 1;
-  if (d->fd_map[f].change_index != -1)
-    deallocate_change_index (d, f);
-  if (d->fd_map[f].notify_desired_index != -1)
-    deallocate_notify_desired_index (d, f);
+  fm = force_fd_map (d, fd);
+  fm->closed_since_notify_started = 1;
+  if (fm->change_index != -1)
+    deallocate_change_index (d, fm);
+  if (fm->notify_desired_index != -1)
+    deallocate_notify_desired_index (d, fd, fm);
 }
 
 static void
@@ -479,8 +603,9 @@ protobuf_c_dispatch_clear_changes (ProtobufCDispatch *dispatch)
   unsigned i;
   for (i = 0; i < dispatch->n_changes; i++)
     {
-      assert (d->fd_map[dispatch->changes[i].fd].change_index == (int) i);
-      d->fd_map[dispatch->changes[i].fd].change_index = -1;
+      FDMap *fm = get_fd_map (d, dispatch->changes[i].fd);
+      assert (fm->change_index == (int) i);
+      fm->change_index = -1;
     }
   dispatch->n_changes = 0;
 }
