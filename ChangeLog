@@ -1,3 +1,11 @@
+0.11:  (NOT YET RELEASED)
+      - allow CFLAGS=-DPRINT_UNPACK_ERRORS=0 to suppress
+        unpack warnings from being printed at compile time (Andrei Nigmatulin)
+      - give error if an unknown wire-type is encountered (Andrei Nigmatulin)
+      - fix technically possible overflows during unpack of very
+        large messages (Andrei Nigmatulin)
+      - [UNFINISHED] windows RPC work
+
 0.10:
       - build issue on platforms which don't compute library dependencies
         automatically.

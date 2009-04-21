@@ -8,6 +8,11 @@ AC_PROG_CXX
 AC_PROG_LIBTOOL
 AC_PATH_PROG(PROTOC, protoc)
 AC_CHECK_HEADERS(inttypes.h)
+AC_CHECK_HEADERS(sys/poll.h)
+AC_CHECK_HEADERS(sys/select.h)
+AC_CHECK_HEADERS(alloca.h)
+AC_CHECK_HEADERS(malloc.h)
+AC_CHECK_HEADERS(winsock.h)
 
 # --- Check for the protobuf library. ---
 AC_LANG_PUSH([C++])

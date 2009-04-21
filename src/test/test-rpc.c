@@ -205,16 +205,16 @@ int main()
   assert (server != NULL);
   message ("waiting to connect");
   is_done = 0;
+
+  /* technically, there's no way to know how long it'll take to connect
+     if the machine is heavily loaded.  We give 250 millis,
+     which should be ample on an unloaded system. */
   protobuf_c_dispatch_add_timer_millis (protobuf_c_dispatch_default (),
                                         250, set_boolean_true, &is_done);
   while (!is_done && !protobuf_c_rpc_client_is_connected (client))
     protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
-
-  /* technically, there's no way to know how long it'll take to connect
-     if the machine is heavily loaded, so the following
-     assert could fail, without it meaning an error.  On an unloaded system,
-     it really shouldn't happen. */
-  assert (protobuf_c_rpc_client_is_connected (client));
+  if (!protobuf_c_rpc_client_is_connected (client))
+    assert(0);          /* operation timed-out; could be high machine load */
 
   /* wait for the timer to elapse, since that's laziest way to handle it. */
   while (!is_done)

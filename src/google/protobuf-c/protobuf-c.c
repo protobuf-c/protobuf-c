@@ -19,7 +19,9 @@
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
 
+#ifndef PRINT_UNPACK_ERRORS
 #define PRINT_UNPACK_ERRORS              1
+#endif
 
 #include "protobuf-c.h"
 
@@ -1001,13 +1003,15 @@ parse_tag_and_wiretype (size_t len,
   return 0;                   /* error: bad header */
 }
 
+/* sizeof(ScannedMember) must be <= (1<<BOUND_SIZEOF_SCANNED_MEMBER_LOG2) */
+#define BOUND_SIZEOF_SCANNED_MEMBER_LOG2  5
 typedef struct _ScannedMember ScannedMember;
 struct _ScannedMember
 {
   uint32_t tag;
-  const ProtobufCFieldDescriptor *field;
   uint8_t wire_type;
   uint8_t length_prefix_len;
+  const ProtobufCFieldDescriptor *field;
   size_t len;
   const uint8_t *data;
 };
@@ -1372,6 +1376,26 @@ setup_default_values (ProtobufCMessage *message)
       }
 }
 
+/* ScannedMember slabs (an unpacking implementation detail).
+   Before doing real unpacking, we first scan through the
+   elements to see how many there are (for repeated fields),
+   and which field to use (for non-repeated fields given twice).
+
+ * In order to avoid allocations for small messages,
+   we keep a stack-allocated slab of ScannedMembers of
+   size FIRST_SCANNED_MEMBER_SLAB_SIZE (16).
+   After we fill that up, we allocate each slab twice
+   as large as the previous one. */
+#define FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2             4
+
+/* The number of slabs, including the stack-allocated ones;
+   choose the number so that we would overflow if we needed
+   a slab larger than provided. */
+#define MAX_SCANNED_MEMBER_SLAB                          \
+  (sizeof(void*)*8 - 1                                   \
+   - BOUND_SIZEOF_SCANNED_MEMBER_LOG2                    \
+   - FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)
+
 ProtobufCMessage *
 protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
                                    ProtobufCAllocator  *allocator,
@@ -1382,10 +1406,15 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   size_t rem = len;
   const uint8_t *at = data;
   const ProtobufCFieldDescriptor *last_field = desc->fields + 0;
-  ScannedMember first_member_slab[16];
-  ScannedMember *scanned_member_slabs[30];               /* size of member i is (1<<(i+4)) */
-  unsigned which_slab = 0;
-  unsigned in_slab_index = 0;
+  ScannedMember first_member_slab[1<<FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2];
+
+  /* scanned_member_slabs[i] is an array of arrays of ScannedMember.
+     The first slab (scanned_member_slabs[0] is just a pointer to
+     first_member_slab), above.  All subsequent slabs will be allocated
+     using the allocator. */
+  ScannedMember *scanned_member_slabs[MAX_SCANNED_MEMBER_SLAB+1];
+  unsigned which_slab = 0;       /* the slab we are currently populating */
+  unsigned in_slab_index = 0;    /* number of members in the slab */
   size_t n_unknown = 0;
   unsigned f;
   unsigned i_slab;
@@ -1481,10 +1510,6 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             tmp.length_prefix_len = pref_len;
             break;
           }
-        case PROTOBUF_C_WIRE_TYPE_START_GROUP:
-        case PROTOBUF_C_WIRE_TYPE_END_GROUP:
-          UNPACK_ERROR (("unsupported group tag at offset %u", (unsigned)(at-data))); 
-          goto error_cleanup_during_scan;
         case PROTOBUF_C_WIRE_TYPE_32BIT:
           if (rem < 4)
             {
@@ -1494,13 +1519,22 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             }
           tmp.len = 4;
           break;
+        default:
+          UNPACK_ERROR (("unsupported tag %u at offset %u",
+                         wire_type, (unsigned)(at-data))); 
+          goto error_cleanup_during_scan;
         }
-      if (in_slab_index == (1U<<(which_slab+4)))
+      if (in_slab_index == (1U<<(which_slab+FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)))
         {
           size_t size;
           in_slab_index = 0;
+          if (which_slab == MAX_SCANNED_MEMBER_SLAB)
+            {
+              UNPACK_ERROR (("too many fields"));
+              goto error_cleanup_during_scan;
+            }
           which_slab++;
-          size = sizeof(ScannedMember) << (which_slab+4);
+          size = sizeof(ScannedMember) << (which_slab+FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2);
           /* TODO: consider using alloca() ! */
           if (allocator->tmp_alloc != NULL)
             scanned_member_slabs[which_slab] = TMPALLOC(allocator, size);
@@ -1511,8 +1545,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
 
       if (field != NULL && field->label == PROTOBUF_C_LABEL_REPEATED)
         {
-          size_t *n_ptr = (size_t*)((char*)rv + field->quantifier_offset);
-          (*n_ptr) += 1;
+          STRUCT_MEMBER (size_t, rv, field->quantifier_offset) += 1;
         }
 
       at += tmp.len;
@@ -1531,17 +1564,17 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             unsigned n = *n_ptr;
             *n_ptr = 0;
             assert(rv->descriptor != NULL);
+#define CLEAR_REMAINING_N_PTRS()                                            \
+            for(f++;f < desc->n_fields; f++)                                \
+              {                                                             \
+                field = desc->fields + f;                                   \
+                if (field->label == PROTOBUF_C_LABEL_REPEATED)              \
+                  STRUCT_MEMBER (size_t, rv, field->quantifier_offset) = 0; \
+              }
             DO_ALLOC (STRUCT_MEMBER (void *, rv, field->offset),
                       allocator, siz * n,
-                      for(f++;f < desc->n_fields; f++) {
-                         field = desc->fields + f;
-                         if (field->label == PROTOBUF_C_LABEL_REPEATED)
-                           {
-                             n_ptr = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
-                             *n_ptr = 0;
-                           }
-                       }
-                      goto error_cleanup);
+                      CLEAR_REMAINING_N_PTRS (); goto error_cleanup);
+#undef CLEAR_REMAINING_N_PTRS
           }
       }
 

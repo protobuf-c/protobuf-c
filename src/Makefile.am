@@ -27,6 +27,13 @@ google/protobuf-c/protobuf-c-data-buffer.c \
 google/protobuf-c/protobuf-c-rpc.c \
 google/protobuf-c/protobuf-c.c
 
+# ah, -no-undefined, goofball windows hack.
+# the documentation for this is rather confusing to me,
+# but suffice it to say this is needed
+# on a few garbage platforms (AIX, windows),
+# and it compiles to a no-op on sensible platforms (elf)
+libprotobuf_c_la_LDFLAGS = -no-undefined
+
 noinst_HEADERS = \
 google/protobuf/compiler/c/c_message_field.h \
 google/protobuf/compiler/c/c_service.h \
