@@ -32,7 +32,9 @@ google/protobuf-c/protobuf-c.c
 # but suffice it to say this is needed
 # on a few garbage platforms (AIX, windows),
 # and it compiles to a no-op on sensible platforms (elf)
-libprotobuf_c_la_LDFLAGS = -no-undefined
+libprotobuf_c_la_LDFLAGS = \
+-no-undefined \
+-version-info 0:0:0
 
 noinst_HEADERS = \
 google/protobuf/compiler/c/c_message_field.h \

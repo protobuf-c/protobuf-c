@@ -1,5 +1,5 @@
 #! /bin/sh -e
 libtoolize
-aclocal
+aclocal$automake_version
 autoconf
-automake -a --foreign
+automake$automake_version -a --foreign

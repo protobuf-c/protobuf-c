@@ -1,7 +1,5 @@
-AC_INIT(src/google/protobuf-c/protobuf-c.h)
-PROTOBUF_C_VERSION=0.10
-
-AM_INIT_AUTOMAKE(protobuf-c, $PROTOBUF_C_VERSION)
+AC_INIT([protobuf-c], [0.10])
+AM_INIT_AUTOMAKE([1.9 foreign])
 PACKAGE=protobuf-c
 AC_PROG_CC
 AC_PROG_CXX

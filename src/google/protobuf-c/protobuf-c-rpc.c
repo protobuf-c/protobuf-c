@@ -404,8 +404,7 @@ begin_name_lookup (ProtobufC_RPC_Client *client)
     }
 }
 
-
-void
+static void
 handle_init_idle (ProtobufCDispatch *dispatch,
                   void              *data)
 {
@@ -1215,7 +1214,7 @@ server_new_from_fd (ProtobufC_FD              listening_fd,
    XXX: we should survey what others do here... like x-windows...
  */
 /* NOTE: stolen from gsk, obviously */
-void
+static void
 _gsk_socket_address_local_maybe_delete_stale_socket (const char *path,
                                                      struct sockaddr *addr,
                                                      unsigned addr_len)
