@@ -5,6 +5,11 @@
       - fix technically possible overflows during unpack of very
         large messages (Andrei Nigmatulin)
       - [UNFINISHED] windows RPC work
+      - use automake's "foreign" mode from within configure.ac
+        and add version information to the library (Robert Edmonds)
+      - ProtobufCServiceDescriptor::method_indices_by_name:  missing
+        const.  (Issue 21)
+      - Update to support new UnknownFields API.  (fix by dcreager) (Issue 20)
 
 0.10:
       - build issue on platforms which don't compute library dependencies

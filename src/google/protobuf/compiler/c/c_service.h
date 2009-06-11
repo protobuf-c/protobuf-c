@@ -49,7 +49,6 @@ class ServiceGenerator {
   void GenerateMainHFile(io::Printer* printer);
   void GenerateVfuncs(io::Printer* printer);
   void GenerateInitMacros(io::Printer* printer);
-  void GenerateCreateServiceDeclaration(io::Printer* printer);
   void GenerateDescriptorDeclarations(io::Printer* printer);
   void GenerateCallersDeclarations(io::Printer* printer);
 

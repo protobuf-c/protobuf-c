@@ -35,6 +35,16 @@ perhaps you need to add -Llibdir to your LDFLAGS.])])
 LIBS="$pbc_savelibs"
 AC_LANG_POP()
 
+dnl Determine the version of the protoc compiler.
+
+if test -n $PROTOC; then
+   AC_MSG_CHECKING([which version of protoc is installed])
+   raw_vers=`protoc --version 2>/dev/null | sed -e 's/libprotoc //'`
+   vers=`echo $raw_vers | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+   AC_DEFINE_UNQUOTED([PROTOC_VERSION], [$vers])
+   AC_MSG_RESULT([$raw_vers])
+fi
+
 
 dnl  ------ define IS_LITTLE_ENDIAN ------
 # We try to use, where possible the headers <endian.h>, <mach/endian.h>,

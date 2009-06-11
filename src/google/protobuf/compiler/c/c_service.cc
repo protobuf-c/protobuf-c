@@ -53,7 +53,6 @@ void ServiceGenerator::GenerateMainHFile(io::Printer* printer)
 {
   GenerateVfuncs(printer);
   GenerateInitMacros(printer);
-  GenerateCreateServiceDeclaration(printer);
   GenerateCallersDeclarations(printer);
 }
 void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
@@ -118,11 +117,6 @@ void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
                    "     $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
                    "     $padddddddddddddddddd$ void *closure_data);\n");
   }
-}
-
-void ServiceGenerator::GenerateCreateServiceDeclaration(io::Printer* printer)
-{
-  printer->Print(vars_, "ProtobufCService *$lcfullname$__create_service ($cname$_Service *service);\n");
 }
 
 void ServiceGenerator::GenerateDescriptorDeclarations(io::Printer* printer)
