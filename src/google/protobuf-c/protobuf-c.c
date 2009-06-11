@@ -15,6 +15,17 @@
  * under the License.
  */
 
+/* TODO: certain implementations use 32-bit math even for
+   (uint64_size, uint64_pack, parse_uint64) */
+
+/* TODO: get_packed_size and pack seem to use type-prefixed names,
+   whereas parse uses type-suffixed names.  pick one and stick with it.
+      Decision:  go with type-suffixed, since the type (or its instance)
+      is typically the object of the verb.
+   NOTE: perhaps the "parse" methods should be reanemd to "unpack"
+   at the same time.
+ */
+
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
@@ -148,6 +159,10 @@ protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,
 }
 
 /* === get_packed_size() === */
+
+/* Return the number of bytes required to store the
+   tag for the field (which includes 3 bits for
+   the wire-type, and a single bit that denotes the end-of-tag. */
 static inline size_t
 get_tag_size (unsigned number)
 {
@@ -162,6 +177,10 @@ get_tag_size (unsigned number)
   else
     return 5;
 }
+
+/* Return the number of bytes required to store
+   a variable-length unsigned integer that fits in 32-bit uint
+   in base-128 encoding. */
 static inline size_t
 uint32_size (uint32_t v)
 {
@@ -176,6 +195,9 @@ uint32_size (uint32_t v)
   else
     return 5;
 }
+/* Return the number of bytes required to store
+   a variable-length signed integer that fits in 32-bit int
+   in base-128 encoding. */
 static inline size_t
 int32_size (int32_t v)
 {
@@ -192,6 +214,7 @@ int32_size (int32_t v)
   else
     return 5;
 }
+/* return the zigzag-encoded 32-bit unsigned int from a 32-bit signed int */
 static inline uint32_t
 zigzag32 (int32_t v)
 {
@@ -200,11 +223,19 @@ zigzag32 (int32_t v)
   else
     return v * 2;
 }
+/* Return the number of bytes required to store
+   a variable-length signed integer that fits in 32-bit int,
+   converted to unsigned via the zig-zag algorithm,
+   then packed using base-128 encoding. */
 static inline size_t
 sint32_size (int32_t v)
 {
   return uint32_size(zigzag32(v));
 }
+
+/* Return the number of bytes required to store
+   a variable-length unsigned integer that fits in 64-bit uint
+   in base-128 encoding. */
 static inline size_t
 uint64_size (uint64_t v)
 {
@@ -224,6 +255,8 @@ uint64_size (uint64_t v)
   else
     return 10;
 }
+
+/* return the zigzag-encoded 64-bit unsigned int from a 64-bit signed int */
 static inline uint64_t
 zigzag64 (int64_t v)
 {
@@ -232,12 +265,19 @@ zigzag64 (int64_t v)
   else
     return v * 2;
 }
+
+/* Return the number of bytes required to store
+   a variable-length signed integer that fits in 64-bit int,
+   converted to unsigned via the zig-zag algorithm,
+   then packed using base-128 encoding. */
 static inline size_t
 sint64_size (int64_t v)
 {
   return uint64_size(zigzag64(v));
 }
 
+/* Get serialized size of a single field in the message,
+   including the space needed by the identifying tag. */
 static size_t
 required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
                                 const void *member)
@@ -293,6 +333,10 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
   PROTOBUF_C_ASSERT_NOT_REACHED ();
   return 0;
 }
+
+/* Get serialized size of a single optional field in the message,
+   including the space needed by the identifying tag.
+   Returns 0 if the optional field isn't set. */
 static size_t
 optional_field_get_packed_size (const ProtobufCFieldDescriptor *field,
                                 const protobuf_c_boolean *has,
@@ -314,6 +358,9 @@ optional_field_get_packed_size (const ProtobufCFieldDescriptor *field,
   return required_field_get_packed_size (field, member);
 }
 
+/* Get serialized size of a repeated field in the message,
+   which may consist of any number of values (including 0).
+   Includes the space needed by the identifying tags (as needed). */
 static size_t
 repeated_field_get_packed_size (const ProtobufCFieldDescriptor *field,
                                 size_t count,
@@ -386,13 +433,18 @@ repeated_field_get_packed_size (const ProtobufCFieldDescriptor *field,
   return rv;
 }
 
+/* Get the packed size of a unknown field (meaning one that
+   is passed through mostly uninterpreted... this is done
+   for forward compatibilty with the addition of new fields). */
 static inline size_t
 unknown_field_get_packed_size (const ProtobufCMessageUnknownField *field)
 {
   return get_tag_size (field->tag) + field->len;
 }
 
-size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
+/* Get the number of bytes that the message will occupy once serialized. */
+size_t
+protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 {
   unsigned i;
   size_t rv = 0;
@@ -416,6 +468,8 @@ size_t    protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
   return rv;
 }
 /* === pack() === */
+/* Pack an unsigned 32-bit integer in base-128 encoding, and return the number of bytes needed:
+   this will be 5 or less. */
 static inline size_t
 uint32_pack (uint32_t value, uint8_t *out)
 {
@@ -444,6 +498,9 @@ uint32_pack (uint32_t value, uint8_t *out)
   out[rv++] = value;
   return rv;
 }
+
+/* Pack a 32-bit signed integer, returning the number of bytes needed.
+   Negative numbers are packed as twos-complement 64-bit integers. */
 static inline size_t
 int32_pack (int32_t value, uint8_t *out)
 {
@@ -461,10 +518,16 @@ int32_pack (int32_t value, uint8_t *out)
   else
     return uint32_pack (value, out);
 }
-static inline size_t sint32_pack (int32_t value, uint8_t *out)
+
+/* Pack a 32-bit integer in zigwag encoding. */
+static inline size_t
+sint32_pack (int32_t value, uint8_t *out)
 {
   return uint32_pack (zigzag32 (value), out);
 }
+
+/* Pack a 64-bit unsigned integer that fits in a 64-bit uint,
+   using base-128 encoding. */
 static size_t
 uint64_pack (uint64_t value, uint8_t *out)
 {
@@ -496,11 +559,20 @@ uint64_pack (uint64_t value, uint8_t *out)
   out[rv++] = hi;
   return rv;
 }
-static inline size_t sint64_pack (int64_t value, uint8_t *out)
+
+/* Pack a 64-bit signed integer in zigzan encoding,
+   return the size of the packed output.
+   (Max returned value is 10) */
+static inline size_t
+sint64_pack (int64_t value, uint8_t *out)
 {
   return uint64_pack (zigzag64 (value), out);
 }
-static inline size_t fixed32_pack (uint32_t value, uint8_t *out)
+
+/* Pack a 32-bit value, little-endian.
+   Used for fixed32, sfixed32, float) */
+static inline size_t
+fixed32_pack (uint32_t value, uint8_t *out)
 {
 #if IS_LITTLE_ENDIAN
   memcpy (out, &value, 4);
@@ -512,7 +584,9 @@ static inline size_t fixed32_pack (uint32_t value, uint8_t *out)
 #endif
   return 4;
 }
-static inline size_t fixed64_pack (uint64_t value, uint8_t *out)
+
+static inline size_t
+fixed64_pack (uint64_t value, uint8_t *out)
 {
 #if IS_LITTLE_ENDIAN
   memcpy (out, &value, 8);
@@ -522,12 +596,16 @@ static inline size_t fixed64_pack (uint64_t value, uint8_t *out)
 #endif
   return 8;
 }
-static inline size_t boolean_pack (protobuf_c_boolean value, uint8_t *out)
+
+static inline size_t
+boolean_pack (protobuf_c_boolean value, uint8_t *out)
 {
   *out = value ? 1 : 0;
   return 1;
 }
-static inline size_t string_pack (const char * str, uint8_t *out)
+
+static inline size_t
+string_pack (const char * str, uint8_t *out)
 {
   if (str == NULL)
     {
@@ -542,7 +620,9 @@ static inline size_t string_pack (const char * str, uint8_t *out)
       return rv + len;
     }
 }
-static inline size_t binary_data_pack (const ProtobufCBinaryData *bd, uint8_t *out)
+
+static inline size_t
+binary_data_pack (const ProtobufCBinaryData *bd, uint8_t *out)
 {
   size_t len = bd->len;
   size_t rv = uint32_pack (len, out);
