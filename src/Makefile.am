@@ -19,7 +19,7 @@ google/protobuf/compiler/c/main.cc \
 google/protobuf/compiler/c/c_bytes_field.cc
 
 protoc_c_LDADD = \
--lprotoc -lprotobuf
+-lprotoc -lprotobuf -lpthread
 
 libprotobuf_c_la_SOURCES = \
 google/protobuf-c/protobuf-c-dispatch.c \

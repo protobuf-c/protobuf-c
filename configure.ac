@@ -24,7 +24,7 @@ you must add '-Iincludedir' to CXXFLAGS
 and '-Llibdir' to LDFLAGS.
 ])])
 pbc_savelibs="$LIBS"
-LIBS="$LIBS -lprotoc -lprotobuf"
+LIBS="$LIBS -lprotoc -lprotobuf -lpthread"
 AC_TRY_LINK([#include <google/protobuf/compiler/command_line_interface.h>],
             [google::protobuf::compiler::CommandLineInterface cli;],
 	    [],
@@ -36,7 +36,7 @@ LIBS="$pbc_savelibs"
 AC_LANG_POP()
 
 dnl Determine the version of the protoc compiler.
-
+dnl (only needed for c++ packed-data comparison)
 if test -n $PROTOC; then
    AC_MSG_CHECKING([which version of protoc is installed])
    raw_vers=`protoc --version 2>/dev/null | sed -e 's/libprotoc //'`
