@@ -50,6 +50,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   variables["TYPE"] = type_macro;
   variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
   variables["name"] = FieldName(descriptor_);
+  variables["proto_name"] = descriptor_->name();
   variables["descriptor_addr"] = descriptor_addr;
   variables["value"] = SimpleItoa(descriptor_->number());
 
@@ -63,7 +64,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 
   printer->Print(variables,
     "{\n"
-    "  \"$name$\",\n"
+    "  \"$proto_name$\",\n"
     "  $value$,\n"
     "  PROTOBUF_C_LABEL_$LABEL$,\n"
     "  PROTOBUF_C_TYPE_$TYPE$,\n");
