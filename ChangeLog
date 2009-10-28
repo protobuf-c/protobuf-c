@@ -2,6 +2,10 @@
       - for field names which are reserved words, use the real name 
         given in the protobuf-c file, not the mangled name which 
 	is the name of the member in the C structure.  (Andrei Nigmatulin)
+      - add protobuf_c_message_init() function; add virtual function
+        that implements it efficiently.  (Andrei Nigmatulin)
+      - support for --init-only command-line option to suppress generation
+        of unpack/pack functions.  (Andrei Nigmatulin)
 
 0.11:
       - allow CFLAGS=-DPRINT_UNPACK_ERRORS=0 to suppress
