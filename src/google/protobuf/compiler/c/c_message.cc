@@ -141,8 +141,12 @@ GenerateStructDefinition(io::Printer* printer) {
 }
 
 void MessageGenerator::
-GenerateHelperFunctionDeclarations(io::Printer* printer)
+GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage)
 {
+  for (int i = 0; i < descriptor_->nested_type_count(); i++) {
+    nested_generators_[i]->GenerateHelperFunctionDeclarations(printer, true);
+  }
+
   std::map<string, string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
@@ -150,6 +154,9 @@ GenerateHelperFunctionDeclarations(io::Printer* printer)
 		 "/* $classname$ methods */\n"
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message);\n"
+		);
+  if (!is_submessage) {
+    printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$   *message);\n"
 		 "size_t $lcclassname$__pack\n"
@@ -167,6 +174,7 @@ GenerateHelperFunctionDeclarations(io::Printer* printer)
 		 "                     ($classname$ *message,\n"
 		 "                      ProtobufCAllocator *allocator);\n"
 		);
+  }
 }
 
 void MessageGenerator::
@@ -206,8 +214,12 @@ compare_pfields_by_number (const void *a, const void *b)
 }
 
 void MessageGenerator::
-GenerateHelperFunctionDefinitions(io::Printer* printer)
+GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 {
+  for (int i = 0; i < descriptor_->nested_type_count(); i++) {
+    nested_generators_[i]->GenerateHelperFunctionDefinitions(printer, true);
+  }
+
   std::map<string, string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
@@ -219,7 +231,8 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "  static $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
 		 "}\n");
-  printer->Print(vars,
+  if (!is_submessage) {
+    printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
 		 "{\n"
@@ -258,6 +271,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer)
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
 		 "}\n"
 		);
+  }
 }
 
 void MessageGenerator::
@@ -411,7 +425,8 @@ GenerateMessageDescriptor(io::Printer* printer) {
   "  $lcclassname$__field_indices_by_name,\n"
   "  $n_ranges$,"
   "  $lcclassname$__number_ranges,\n"
-  "  NULL,NULL,NULL,NULL    /* reserved[1234] */\n"
+  "  (ProtobufCMessageInit) $lcclassname$__init,\n"
+  "  NULL,NULL,NULL    /* reserved[123] */\n"
   "};\n");
 }
 

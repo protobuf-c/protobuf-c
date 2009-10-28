@@ -23,7 +23,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <alloca.h>
+#if HAVE_ALLOCA_H
+# include <alloca.h>
+#elif HAVE_MALLOC_H
+# include <malloc.h>
+#endif
+#include <stdlib.h>
 #include "protobuf-c-data-buffer.h"
 
 #undef TRUE

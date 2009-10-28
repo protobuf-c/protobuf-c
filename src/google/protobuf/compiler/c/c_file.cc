@@ -140,7 +140,7 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   }
 
   for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateHelperFunctionDeclarations(printer);
+    message_generators_[i]->GenerateHelperFunctionDeclarations(printer, false);
   }
 
   printer->Print("/* --- per-message closures --- */\n\n");
@@ -208,7 +208,7 @@ void FileGenerator::GenerateSource(io::Printer* printer) {
 #endif
 
   for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateHelperFunctionDefinitions(printer);
+    message_generators_[i]->GenerateHelperFunctionDefinitions(printer, false);
   }
   for (int i = 0; i < file_->message_type_count(); i++) {
     message_generators_[i]->GenerateMessageDescriptor(printer);

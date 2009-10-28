@@ -175,6 +175,8 @@ struct _ProtobufCEnumDescriptor
 /* --- messages --- */
 typedef struct _ProtobufCMessageDescriptor ProtobufCMessageDescriptor;
 typedef struct _ProtobufCFieldDescriptor ProtobufCFieldDescriptor;
+typedef struct _ProtobufCMessage ProtobufCMessage;
+typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
 /* ProtobufCFieldDescriptor: description of a single field
  * in a message.
  * 'name' is the name of the field, as given in the .proto file.
@@ -240,10 +242,10 @@ struct _ProtobufCMessageDescriptor
   unsigned n_field_ranges;
   const ProtobufCIntRange *field_ranges;
 
+  ProtobufCMessageInit message_init;
   void *reserved1;
   void *reserved2;
   void *reserved3;
-  void *reserved4;
 };
 
 
@@ -267,7 +269,6 @@ struct _ProtobufCMessageDescriptor
  * 'n_unknown_fields' is the number of fields we didn't recognize.
  * 'unknown_fields' are fields we didn't recognize.
  */
-typedef struct _ProtobufCMessage ProtobufCMessage;
 typedef struct _ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
 struct _ProtobufCMessage
 {
@@ -300,9 +301,8 @@ void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
                                              ProtobufCAllocator  *allocator);
 
 /* WARNING: 'to_init' must be a block of memory 
-   of size description->sizeof_message. */
-size_t    protobuf_c_message_init           (const ProtobufCMessageDescriptor *,
-                                             ProtobufCMessage       *to_init);
+   of size descriptor->sizeof_message. */
+#define protobuf_c_message_init(descriptor, message) (descriptor)->message_init(message)
 
 /* --- services --- */
 typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;

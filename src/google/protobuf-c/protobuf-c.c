@@ -113,6 +113,9 @@ static void system_free (void *allocator_data, void *data)
     free (data);
 }
 
+/* Some users may configure the default allocator;
+   providing your own allocator to unpack() is prefered.
+   this allocator is still used for packing nested messages. */
 ProtobufCAllocator protobuf_c_default_allocator =
 {
   system_alloc,
@@ -122,6 +125,10 @@ ProtobufCAllocator protobuf_c_default_allocator =
   NULL
 };
 
+/* Users should NOT modify this structure,
+   but it's difficult to prevent.
+
+   please modify protobuf_c_default_allocator instead. */
 ProtobufCAllocator protobuf_c_system_allocator =
 {
   system_alloc,
@@ -585,6 +592,11 @@ fixed32_pack (uint32_t value, uint8_t *out)
   return 4;
 }
 
+/* Pack a 64-bit fixed-length value.
+   (Used for fixed64, sfixed64, double) */
+/* XXX: the big-endian impl is really only good for 32-bit machines,
+   a 64-bit version would be appreciated, plus a way
+   to decide to use 64-bit math where convenient. */
 static inline size_t
 fixed64_pack (uint64_t value, uint8_t *out)
 {
@@ -597,6 +609,11 @@ fixed64_pack (uint64_t value, uint8_t *out)
   return 8;
 }
 
+
+/* Pack a boolean as 0 or 1, even though the protobuf_c_boolean
+   can really assume any integer value. */
+/* XXX: perhaps on some platforms "*out = !!value" would be
+   a better impl, b/c that is idiotmatic c++ in some stl impls. */
 static inline size_t
 boolean_pack (protobuf_c_boolean value, uint8_t *out)
 {
@@ -604,6 +621,15 @@ boolean_pack (protobuf_c_boolean value, uint8_t *out)
   return 1;
 }
 
+/* Pack a length-prefixed string.
+   The input string is NUL-terminated.
+
+   The NULL pointer is treated as an empty string.
+   This isn't really necessary, but it allows people
+   to leave required strings blank.
+   (See Issue 13 in the bug tracker for a 
+   little more explanation).
+ */
 static inline size_t
 string_pack (const char * str, uint8_t *out)
 {
@@ -649,13 +675,16 @@ prefixed_message_pack (const ProtobufCMessage *message, uint8_t *out)
 }
 
 /* wire-type will be added in required_field_pack() */
-static size_t tag_pack (uint32_t id, uint8_t *out)
+/* XXX: just call uint64_pack on 64-bit platforms. */
+static size_t
+tag_pack (uint32_t id, uint8_t *out)
 {
   if (id < (1<<(32-3)))
     return uint32_pack (id<<3, out);
   else
     return uint64_pack (((uint64_t)id) << 3, out);
 }
+
 static size_t
 required_field_pack (const ProtobufCFieldDescriptor *field,
                      const void *member,
@@ -740,7 +769,8 @@ optional_field_pack (const ProtobufCFieldDescriptor *field,
 }
 
 /* TODO: implement as a table lookup */
-static inline size_t sizeof_elt_in_repeated_array (ProtobufCType type)
+static inline size_t
+sizeof_elt_in_repeated_array (ProtobufCType type)
 {
   switch (type)
     {
@@ -770,6 +800,7 @@ static inline size_t sizeof_elt_in_repeated_array (ProtobufCType type)
   PROTOBUF_C_ASSERT_NOT_REACHED ();
   return 0;
 }
+
 static size_t
 repeated_field_pack (const ProtobufCFieldDescriptor *field,
                      size_t count,
@@ -790,7 +821,8 @@ repeated_field_pack (const ProtobufCFieldDescriptor *field,
   return rv;
 }
 static size_t
-unknown_field_pack (const ProtobufCMessageUnknownField *field, uint8_t *out)
+unknown_field_pack (const ProtobufCMessageUnknownField *field,
+                    uint8_t *out)
 {
   size_t rv = tag_pack (field->tag, out);
   out[0] |= field->wire_type;
@@ -798,8 +830,9 @@ unknown_field_pack (const ProtobufCMessageUnknownField *field, uint8_t *out)
   return rv + field->len;
 }
 
-size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
-                                             uint8_t                *out)
+size_t
+protobuf_c_message_pack           (const ProtobufCMessage *message,
+                                   uint8_t                *out)
 {
   unsigned i;
   size_t rv = 0;
@@ -808,11 +841,20 @@ size_t    protobuf_c_message_pack           (const ProtobufCMessage *message,
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
       const void *member = ((const char *) message) + field->offset;
+
+      /* it doesn't hurt to compute qmember (a pointer to the quantifier
+         field of the structure), but the pointer is only valid if
+         the field is one of:
+           - a repeated field
+           - an optional field that isn't a pointer type
+             (meaning: not a message or a string) */
       const void *qmember = ((const char *) message) + field->quantifier_offset;
 
       if (field->label == PROTOBUF_C_LABEL_REQUIRED)
         rv += required_field_pack (field, member, out + rv);
       else if (field->label == PROTOBUF_C_LABEL_OPTIONAL)
+        /* note that qmember is bogus for strings and messages,
+           but it isn't used */
         rv += optional_field_pack (field, qmember, member, out + rv);
       else
         rv += repeated_field_pack (field, * (const size_t *) qmember, member, out + rv);
@@ -1799,8 +1841,20 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
 {
   GenericHandler *handlers;
   GenericHandler handler;
+
+  /* Verify that method_index is within range.
+     If this fails, you are likely invoking a newly added
+     method on an old service.  (Although other memory corruption
+     bugs can cause this assertion too) */
   PROTOBUF_C_ASSERT (method_index < service->descriptor->n_methods);
+
+  /* Get the array of virtual methods (which are enumerated by 
+     the generated code) */
   handlers = (GenericHandler *) (service + 1);
+
+  /* get our method and invoke it */
+  /* TODO: seems like handler==NULL is a situation that
+     needs handling */
   handler = handlers[method_index];
   (*handler) (service, input, closure, closure_data);
 }
@@ -1913,7 +1967,9 @@ protobuf_c_service_descriptor_get_method_by_name
   while (count > 1)
     {
       unsigned mid = start + count / 2;
-      int rv = strcmp (desc->methods[desc->method_indices_by_name[mid]].name, name);
+      unsigned mid_index = desc->method_indices_by_name[mid];
+      const char *mid_name = desc->methods[mid_index].name;
+      int rv = strcmp (mid_name, name);
       if (rv == 0)
         return desc->methods + desc->method_indices_by_name[mid];
       if (rv < 0)
