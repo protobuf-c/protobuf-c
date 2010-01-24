@@ -23,7 +23,7 @@
 #include <google/protobuf/compiler/c/c_string_field.h>
 #include <google/protobuf/compiler/c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
-#include <google/protobuf/wire_format_inl.h>
+#include <google/protobuf/wire_format.h>
 #include <google/protobuf/descriptor.pb.h>
 
 namespace google {

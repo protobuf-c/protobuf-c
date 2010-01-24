@@ -23,7 +23,7 @@
 #include <google/protobuf/compiler/c/c_message_field.h>
 #include <google/protobuf/compiler/c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
-#include <google/protobuf/wire_format_inl.h>
+#include <google/protobuf/wire_format.h>
 
 namespace google {
 namespace protobuf {

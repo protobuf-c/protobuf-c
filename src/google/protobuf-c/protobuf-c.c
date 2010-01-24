@@ -714,7 +714,7 @@ required_field_pack (const ProtobufCFieldDescriptor *field,
     case PROTOBUF_C_TYPE_FIXED32:
     case PROTOBUF_C_TYPE_FLOAT:
       out[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
-      return rv + fixed32_pack (*(const uint64_t *) member, out + rv);
+      return rv + fixed32_pack (*(const uint32_t *) member, out + rv);
     case PROTOBUF_C_TYPE_SFIXED64:
     case PROTOBUF_C_TYPE_FIXED64:
     case PROTOBUF_C_TYPE_DOUBLE:
@@ -906,7 +906,7 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
     case PROTOBUF_C_TYPE_FIXED32:
     case PROTOBUF_C_TYPE_FLOAT:
       scratch[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
-      rv += fixed32_pack (*(const uint64_t *) member, scratch + rv);
+      rv += fixed32_pack (*(const uint32_t *) member, scratch + rv);
       buffer->append (buffer, rv, scratch);
       break;
     case PROTOBUF_C_TYPE_SFIXED64:

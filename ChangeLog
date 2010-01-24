@@ -1,9 +1,13 @@
-0.12 [NOT YET RELEASED]
+0.12:
       - for field names which are reserved words, use the real name 
         given in the protobuf-c file, not the mangled name which 
 	is the name of the member in the C structure.  (Andrei Nigmatulin)
       - add protobuf_c_message_init() function; add virtual function
         that implements it efficiently.  (Andrei Nigmatulin)
+      - bug fix for sfixed32, fixed32, float wire-types on
+        big-endian platforms (Robert Edmonds)
+      - compile with the latest protobuf (the header file wire_format_inl.h
+        is now wire_format.h) (Robert Edmonds)
 
 0.11:
       - allow CFLAGS=-DPRINT_UNPACK_ERRORS=0 to suppress
