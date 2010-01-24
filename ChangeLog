@@ -1,3 +1,7 @@
+0.13:
+      - Fix for when the number of connections gets too great in RPC.
+        (Leszek Swirski) (issue #32)
+
 0.12:
       - for field names which are reserved words, use the real name 
         given in the protobuf-c file, not the mangled name which 

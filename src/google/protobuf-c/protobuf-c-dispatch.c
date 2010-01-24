@@ -300,9 +300,13 @@ allocate_notifies_desired_index (RealDispatch *d)
     {
       unsigned new_size = d->notifies_desired_alloced * 2;
       ProtobufC_FDNotify *n = ALLOC (new_size * sizeof (ProtobufC_FDNotify));
+      Callback *c = ALLOC (new_size * sizeof (Callback));
       memcpy (n, d->base.notifies_desired, d->notifies_desired_alloced * sizeof (ProtobufC_FDNotify));
       FREE (d->base.notifies_desired);
+      memcpy (c, d->callbacks, d->notifies_desired_alloced * sizeof (Callback));
+      FREE (d->callbacks);
       d->base.notifies_desired = n;
+      d->callbacks = c;
       d->notifies_desired_alloced = new_size;
     }
 #if DEBUG_DISPATCH_INTERNALS
