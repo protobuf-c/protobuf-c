@@ -409,6 +409,7 @@ deallocate_notify_desired_index (RealDispatch *d,
   from_fd = d->base.notifies_desired[from].fd;
   get_fd_map (d, from_fd)->notify_desired_index = nd_ind;
   d->base.notifies_desired[nd_ind] = d->base.notifies_desired[from];
+  d->callbacks[nd_ind] = d->callbacks[from];
   d->base.n_notifies_desired--;
 }
 
