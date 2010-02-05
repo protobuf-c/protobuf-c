@@ -12,39 +12,47 @@ AC_CHECK_HEADERS(alloca.h)
 AC_CHECK_HEADERS(malloc.h)
 AC_CHECK_HEADERS(winsock.h)
 
+BUILD_PROTOC_C=1
+AC_ARG_ENABLE(protoc, [  --disable-protoc    Suppress build of protoc_c],
+              if test "x$enableval" = xno ; then
+	        BUILD_PROTOC_C=0
+              fi)
+AM_CONDITIONAL(BUILD_PROTOC_C, test $BUILD_PROTOC_C = 1)
+
 # --- Check for the protobuf library. ---
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER(google/protobuf/stubs/common.h,,
-                [AC_MSG_ERROR([
-ERROR: protobuf headers are required.
+if test $BUILD_PROTOC_C = 1; then
+  AC_LANG_PUSH([C++])
+  AC_CHECK_HEADER(google/protobuf/stubs/common.h,,
+		  [AC_MSG_ERROR([
+  ERROR: protobuf headers are required.
 
-You must either install protobuf from google,
-or if you have it installed in a custom location
-you must add '-Iincludedir' to CXXFLAGS
-and '-Llibdir' to LDFLAGS.
-])])
-pbc_savelibs="$LIBS"
-LIBS="$LIBS -lprotoc -lprotobuf -lpthread"
-AC_TRY_LINK([#include <google/protobuf/compiler/command_line_interface.h>],
-            [google::protobuf::compiler::CommandLineInterface cli;],
-	    [],
-	    [AC_MSG_ERROR([
-ERROR:
-protobuf test program failed to link:
-perhaps you need to add -Llibdir to your LDFLAGS.])])
-LIBS="$pbc_savelibs"
-AC_LANG_POP()
+  You must either install protobuf from google,
+  or if you have it installed in a custom location
+  you must add '-Iincludedir' to CXXFLAGS
+  and '-Llibdir' to LDFLAGS.
+  ])])
+  pbc_savelibs="$LIBS"
+  LIBS="$LIBS -lprotoc -lprotobuf -lpthread"
+  AC_TRY_LINK([#include <google/protobuf/compiler/command_line_interface.h>],
+	      [google::protobuf::compiler::CommandLineInterface cli;],
+	      [],
+	      [AC_MSG_ERROR([
+  ERROR:
+  protobuf test program failed to link:
+  perhaps you need to add -Llibdir to your LDFLAGS.])])
+  LIBS="$pbc_savelibs"
+  AC_LANG_POP()
 
-dnl Determine the version of the protoc compiler.
-dnl (only needed for c++ packed-data comparison)
-if test -n $PROTOC; then
-   AC_MSG_CHECKING([which version of protoc is installed])
-   raw_vers=`protoc --version 2>/dev/null | sed -e 's/libprotoc //'`
-   vers=`echo $raw_vers | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-   AC_DEFINE_UNQUOTED([PROTOC_VERSION], [$vers])
-   AC_MSG_RESULT([$raw_vers])
+  dnl Determine the version of the protoc compiler.
+  dnl (only needed for c++ packed-data comparison)
+  if test -n $PROTOC; then
+     AC_MSG_CHECKING([which version of protoc is installed])
+     raw_vers=`protoc --version 2>/dev/null | sed -e 's/libprotoc //'`
+     vers=`echo $raw_vers | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+     AC_DEFINE_UNQUOTED([PROTOC_VERSION], [$vers])
+     AC_MSG_RESULT([$raw_vers])
+  fi
 fi
-
 
 dnl  ------ define IS_LITTLE_ENDIAN ------
 # We try to use, where possible the headers <endian.h>, <mach/endian.h>,
