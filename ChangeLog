@@ -1,6 +1,7 @@
 0.13:
       - Fix for when the number of connections gets too great in RPC.
         (Leszek Swirski) (issue #32)
+      - Add --disable-protoc to only build libprotobuf-c (daveb)
 
 0.12:
       - for field names which are reserved words, use the real name 
