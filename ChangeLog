@@ -2,6 +2,8 @@
       - Fix for when the number of connections gets too great in RPC.
         (Leszek Swirski) (issue #32)
       - Add --disable-protoc to only build libprotobuf-c (daveb)
+      - Bug fixes for protobuf_c_enum_descriptor_get_value_by_name()
+        and protobuf_c_service_descriptor_get_method_by_name()
 
 0.12:
       - for field names which are reserved words, use the real name 
