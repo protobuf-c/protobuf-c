@@ -1891,7 +1891,7 @@ protobuf_c_enum_descriptor_get_value_by_name
         return desc->values + desc->values_by_name[mid].index;
       else if (rv < 0)
         {
-          count = start + count - (mid - 1);
+          count = start + count - (mid + 1);
           start = mid + 1;
         }
       else
@@ -1974,7 +1974,7 @@ protobuf_c_service_descriptor_get_method_by_name
         return desc->methods + desc->method_indices_by_name[mid];
       if (rv < 0)
         {
-          count = start + count - (mid - 1);
+          count = start + count - (mid + 1);
           start = mid + 1;
         }
       else
