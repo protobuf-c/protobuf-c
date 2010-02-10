@@ -4,6 +4,8 @@
       - Add --disable-protoc to only build libprotobuf-c (daveb)
       - Bug fixes for protobuf_c_enum_descriptor_get_value_by_name()
         and protobuf_c_service_descriptor_get_method_by_name()
+      - if descriptor->message_init != NULL, use it from unpack()
+        as an optimization (daveb)
 
 0.12:
       - for field names which are reserved words, use the real name 

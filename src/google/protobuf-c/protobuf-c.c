@@ -1448,11 +1448,17 @@ parse_member (ScannedMember *scanned_member,
   return 0;
 }
 
-static inline void
-setup_default_values (ProtobufCMessage *message)
+
+/* TODO: expose/use this function if desc->message_init==NULL 
+   (which occurs for old code, and may be useful for certain
+   programatic techniques for generating descriptors). */
+void
+protobuf_c_message_init_generic (const ProtobufCMessageDescriptor *desc,
+                                 ProtobufCMessage *message)
 {
-  const ProtobufCMessageDescriptor *desc = message->descriptor;
   unsigned i;
+  memset (message, 0, desc->sizeof_message);
+  message->descriptor = desc;
   for (i = 0; i < desc->n_fields; i++)
     if (desc->fields[i].default_value != NULL
      && desc->fields[i].label != PROTOBUF_C_LABEL_REPEATED)
@@ -1548,10 +1554,15 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   DO_ALLOC (rv, allocator, desc->sizeof_message, return NULL);
   scanned_member_slabs[0] = first_member_slab;
 
-  memset (rv, 0, desc->sizeof_message);
-  rv->descriptor = desc;
-
-  setup_default_values (rv);
+  /* Generated code always defines "message_init".
+     However, we provide a fallback for (1) users of old protobuf-c
+     generated-code that do not provide the function,
+     and (2) descriptors constructed from some other source
+     (most likely, direct construction from the .proto file) */
+  if (desc->message_init != NULL)
+    protobuf_c_message_init (desc, rv);
+  else
+    protobuf_c_message_init_generic (desc, rv);
 
   while (rem > 0)
     {
