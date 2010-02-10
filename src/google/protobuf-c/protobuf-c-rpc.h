@@ -46,7 +46,8 @@ typedef struct _ProtobufC_RPC_Client ProtobufC_RPC_Client;
 ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
                                              const char               *name,
                                              const ProtobufCServiceDescriptor *descriptor,
-                                             ProtobufCDispatch       *dispatch);
+                                             ProtobufCDispatch       *dispatch /* or NULL */
+                                            );
 
 /* forcing the client to connect */
 typedef enum
@@ -101,7 +102,8 @@ ProtobufC_RPC_Server *
      protobuf_c_rpc_server_new        (ProtobufC_RPC_AddressType type,
                                        const char               *name,
                                        ProtobufCService         *service,
-                                       ProtobufCDispatch       *dispatch);
+                                       ProtobufCDispatch       *dispatch /* or NULL */
+                                      );
 ProtobufCService *
      protobuf_c_rpc_server_destroy    (ProtobufC_RPC_Server     *server,
                                        protobuf_c_boolean        free_underlying_service);
