@@ -43,14 +43,11 @@ if test $BUILD_PROTOC_C = 1; then
   LIBS="$pbc_savelibs"
   AC_LANG_POP()
 
-  dnl Determine the version of the protoc compiler.
-  dnl (only needed for c++ packed-data comparison)
-  if test -n $PROTOC; then
-     AC_MSG_CHECKING([which version of protoc is installed])
-     raw_vers=`protoc --version 2>/dev/null | sed -e 's/libprotoc //'`
-     vers=`echo $raw_vers | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-     AC_DEFINE_UNQUOTED([PROTOC_VERSION], [$vers])
-     AC_MSG_RESULT([$raw_vers])
+  dnl We need $PROTOC around for the test code generation.
+  dnl This is merely needed for c++ packed-data comparison.
+  if test "x$PROTOC" = x; then
+    echo "ERROR: missing google's protoc program; adjust \$PATH (or use --disable-protoc)" 1>&2
+    exit 1
   fi
 fi
 
