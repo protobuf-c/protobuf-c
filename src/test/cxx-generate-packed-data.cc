@@ -759,7 +759,7 @@ static void dump_test_unknown_fields (void)
   const google::protobuf::Message::Reflection *reflection = mess.GetReflection();
   google::protobuf::UnknownFieldSet *fs = reflection->MutableUnknownFields(&mess);
 
-#if PROTOC_VERSION >= 2001000
+#if GOOGLE_PROTOBUF_VERSION >= 2001000
   fs->AddVarint(5454, 255);
   fs->AddFixed32(5555, 260);
 #else
@@ -774,7 +774,7 @@ static void dump_test_unknown_fields (void)
 
   fs->Clear();
 
-#if PROTOC_VERSION >= 2001000
+#if GOOGLE_PROTOBUF_VERSION >= 2001000
   fs->AddLengthDelimited(6666, "xxxxxxxx");
   fs->AddFixed64(7777, 0x10101);
 #else
