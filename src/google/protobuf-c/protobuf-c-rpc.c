@@ -777,6 +777,17 @@ protobuf_c_rpc_client_set_autoreconnect_period (ProtobufC_RPC_Client *client,
   client->autoreconnect = 1;
   client->autoreconnect_millis = millis;
 }
+
+
+void
+protobuf_c_rpc_client_set_error_handler (ProtobufC_RPC_Client *client,
+                                         ProtobufC_RPC_Error_Func func,
+                                         void                    *func_data)
+{
+  client->error_handler = func;
+  client->error_handler_data = func_data;
+}
+
 void
 protobuf_c_rpc_client_disable_autoreconnect (ProtobufC_RPC_Client *client)
 {
@@ -1342,4 +1353,13 @@ protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server *server,
   server->allocator->free (server->allocator, server);
 
   return rv;
+}
+
+void
+protobuf_c_rpc_server_set_error_handler (ProtobufC_RPC_Server *server,
+                                         ProtobufC_RPC_Error_Func func,
+                                         void                 *error_func_data)
+{
+  server->error_handler = func;
+  server->error_handler_data = error_func_data;
 }
