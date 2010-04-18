@@ -448,8 +448,8 @@ uint32_to_le (uint32_t le)
   return le;
 #else
   return (le << 24) | (le >> 24)
-       | ((le >> 8) & 0xff0000)
-       | ((le << 8) & 0xff00);
+       | ((le >> 8) & 0xff00)
+       | ((le << 8) & 0xff0000);
 #endif
 }
 #define uint32_from_le uint32_to_le             /* make the code more readable, i guess */
