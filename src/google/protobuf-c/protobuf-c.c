@@ -15,7 +15,7 @@
  * under the License.
  */
 
-/* TODO: certain implementations use 32-bit math even for
+/* TODO: certain implementations use 32-bit math even on 64-bit platforms
    (uint64_size, uint64_pack, parse_uint64) */
 
 /* TODO: get_packed_size and pack seem to use type-prefixed names,
@@ -1838,7 +1838,6 @@ protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
 }
 
 /* === services === */
-typedef void (*DestroyHandler)(void *service);
 typedef void (*GenericHandler)(void *service,
                                const ProtobufCMessage *input,
                                ProtobufCClosure  closure,

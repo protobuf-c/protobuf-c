@@ -300,9 +300,9 @@ ProtobufCMessage *
 void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
                                              ProtobufCAllocator  *allocator);
 
-/* WARNING: 'to_init' must be a block of memory 
+/* WARNING: 'message' must be a block of memory 
    of size descriptor->sizeof_message. */
-#define protobuf_c_message_init(descriptor, message) (descriptor)->message_init(message)
+#define protobuf_c_message_init(descriptor, message) ((descriptor)->message_init((ProtobufCMessage*) (message)))
 
 /* --- services --- */
 typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
