@@ -18,6 +18,7 @@ test_rpc_LDADD = \
 ../libprotobuf-c.la
 cxx_generate_packed_data_SOURCES = \
 cxx-generate-packed-data.cc generated-code/test-full.pb.cc
+cxx-generate-packed-data.lo: generated-code/test-full.pb.h
 cxx_generate_packed_data_LDADD = -lprotobuf
 cxx_generate_packed_data_LDFLAGS = -pthread
 example_server_SOURCES = \
