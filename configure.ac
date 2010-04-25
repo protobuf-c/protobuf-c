@@ -30,6 +30,11 @@ if test $BUILD_PROTOC_C = 1; then
   or if you have it installed in a custom location
   you must add '-Iincludedir' to CXXFLAGS
   and '-Llibdir' to LDFLAGS.
+
+  If you did not specify a prefix when installing
+  protobuf, try 
+    './configure CXXFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib'
+  In some 64-bit environments, try LDFLAGS=-L/usr/local/lib64.
   ])])
   pbc_savelibs="$LIBS"
   LIBS="$LIBS -lprotoc -lprotobuf -lpthread"

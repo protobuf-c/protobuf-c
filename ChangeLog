@@ -1,3 +1,5 @@
+0.14 (NOT YET RELEASED)
+      - build fix (missing dependency in test directory)
 0.13:
       - Fix for when the number of connections gets too great in RPC.
         (Leszek Swirski) (issue #32)
