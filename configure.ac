@@ -114,6 +114,6 @@ else
 fi
 AC_DEFINE_UNQUOTED(IS_LITTLE_ENDIAN, $is_little_endian)
 
-AC_OUTPUT(Makefile src/Makefile src/test/Makefile pkgwriteinfo ibprotobuf-c.pc)
+AC_OUTPUT(Makefile src/Makefile src/test/Makefile pkgwriteinfo libprotobuf-c.pc)
 
 
