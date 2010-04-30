@@ -2,6 +2,9 @@ SUBDIRS = src
 
 EXTRA_DIST = scripts pkgwriteinfo.in
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libprotobuf-c.pc
+
 # --- packages ---
 DEBARCH = `dpkg --print-architecture`
 deb:

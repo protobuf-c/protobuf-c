@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libprotobuf-c
+Description: C-API for Google's protocol buffers
+Version: @VERSION@
+URL: http://code.google.com/p/protobuf-c/
+Requires:
+Libs: -L${libdir} -lprotobuf-c
+Cflags: -I${includedir}
+

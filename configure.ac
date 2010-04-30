@@ -1,4 +1,4 @@
-AC_INIT([protobuf-c], [0.12])
+AC_INIT([protobuf-c], [0.13])
 AM_INIT_AUTOMAKE([1.9 foreign])
 PACKAGE=protobuf-c
 AC_PROG_CC
@@ -114,6 +114,6 @@ else
 fi
 AC_DEFINE_UNQUOTED(IS_LITTLE_ENDIAN, $is_little_endian)
 
-AC_OUTPUT( Makefile src/Makefile src/test/Makefile pkgwriteinfo )
+AC_OUTPUT(Makefile src/Makefile src/test/Makefile pkgwriteinfo ibprotobuf-c.pc)
 
 
