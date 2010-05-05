@@ -24,5 +24,9 @@ test-generated-code
    generated-code/test.pb-c.c   Protobuf-C generated code based on test.proto
 
 test-generated-code2
-   test-full.proto
-   ..
+   test-full.proto              Protobuf declarations for the exhaustive test.
+   cxx-generate-packed-data.cc  C++ code to generated data to compare with C.
+   cxx-generate-packed-data     Program whichs generates data (using C++ api)
+   generated-code/test-full-cxx-output.inc  Output of cxx-generate-packed-data.
+   test-generated-code2.c       Actual test code.
+   test-generated-code2         Test executable.
