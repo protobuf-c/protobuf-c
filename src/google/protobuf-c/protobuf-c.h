@@ -204,9 +204,11 @@ struct _ProtobufCFieldDescriptor
   unsigned offset;
   const void *descriptor;   /* for MESSAGE and ENUM types */
   const void *default_value;   /* or NULL if no default-value */
+  protobuf_c_boolean packed;
 
-  void *reserved1;
+  unsigned reserved_flags;
   void *reserved2;
+  void *reserved3;
 };
 /* ProtobufCMessageDescriptor: description of a message.
  *

@@ -1,6 +1,7 @@
 0.14 (NOT YET RELEASED)
       - build fix (missing dependency in test directory)
       - add generation / installation of pkg-config files. (Bobby Powers)
+      - support for packed repeated fields (Dave Benson)
 
 0.13:
       - Fix for when the number of connections gets too great in RPC.

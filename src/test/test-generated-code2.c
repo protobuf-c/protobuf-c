@@ -976,6 +976,235 @@ static void test_repeated_SubMess (void)
 #undef DO_TEST
 }
 
+#define DO_TEST_PACKED_REPEATED(lc_member_name, cast, \
+                         static_array, example_packed_data, \
+                         equals_macro) \
+  do{ \
+  Foo__TestMessPacked mess = FOO__TEST_MESS_PACKED__INIT; \
+  Foo__TestMessPacked *mess2; \
+  size_t len; \
+  uint8_t *data; \
+  unsigned i; \
+  mess.n_##lc_member_name = N_ELEMENTS (static_array); \
+  mess.lc_member_name = cast static_array; \
+  mess2 = test_compare_pack_methods ((ProtobufCMessage*)(&mess), &len, &data); \
+  TEST_VERSUS_STATIC_ARRAY (len, data, example_packed_data); \
+  assert(mess2->n_##lc_member_name == N_ELEMENTS (static_array)); \
+  for (i = 0; i < N_ELEMENTS (static_array); i++) \
+    assert(equals_macro(mess2->lc_member_name[i], static_array[i])); \
+  free (data); \
+  foo__test_mess_packed__free_unpacked (mess2, NULL); \
+  }while(0)
+
+static void test_packed_repeated_int32 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_int32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (int32_arr0, test_packed_repeated_int32_arr0);
+  DO_TEST (int32_arr1, test_packed_repeated_int32_arr1);
+  DO_TEST (int32_arr_min_max, test_packed_repeated_int32_arr_min_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_sint32 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_sint32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (int32_arr0, test_packed_repeated_sint32_arr0);
+  DO_TEST (int32_arr1, test_packed_repeated_sint32_arr1);
+  DO_TEST (int32_arr_min_max, test_packed_repeated_sint32_arr_min_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_sfixed32 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_sfixed32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (int32_arr0, test_packed_repeated_sfixed32_arr0);
+  DO_TEST (int32_arr1, test_packed_repeated_sfixed32_arr1);
+  DO_TEST (int32_arr_min_max, test_packed_repeated_sfixed32_arr_min_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_uint32 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_uint32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (uint32_roundnumbers, test_packed_repeated_uint32_roundnumbers);
+  DO_TEST (uint32_0_max, test_packed_repeated_uint32_0_max);
+
+#undef DO_TEST
+}
+
+
+
+static void test_packed_repeated_fixed32 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_fixed32, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (uint32_roundnumbers, test_packed_repeated_fixed32_roundnumbers);
+  DO_TEST (uint32_0_max, test_packed_repeated_fixed32_0_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_int64 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_int64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (int64_roundnumbers, test_packed_repeated_int64_roundnumbers);
+  DO_TEST (int64_min_max, test_packed_repeated_int64_min_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_sint64 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_sint64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (int64_roundnumbers, test_packed_repeated_sint64_roundnumbers);
+  DO_TEST (int64_min_max, test_packed_repeated_sint64_min_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_sfixed64 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_sfixed64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST (int64_roundnumbers, test_packed_repeated_sfixed64_roundnumbers);
+  DO_TEST (int64_min_max, test_packed_repeated_sfixed64_min_max);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_uint64 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_uint64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(uint64_roundnumbers, test_packed_repeated_uint64_roundnumbers);
+  DO_TEST(uint64_0_1_max, test_packed_repeated_uint64_0_1_max);
+  DO_TEST(uint64_random, test_packed_repeated_uint64_random);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_fixed64 (void)
+{
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_fixed64, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(uint64_roundnumbers, test_packed_repeated_fixed64_roundnumbers);
+  DO_TEST(uint64_0_1_max, test_packed_repeated_fixed64_0_1_max);
+  DO_TEST(uint64_random, test_packed_repeated_fixed64_random);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_float (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_float, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(float_random, test_packed_repeated_float_random);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_double (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_double, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(double_random, test_packed_repeated_double_random);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_boolean (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_boolean, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(boolean_0, test_packed_repeated_boolean_0);
+  DO_TEST(boolean_1, test_packed_repeated_boolean_1);
+  DO_TEST(boolean_random, test_packed_repeated_boolean_random);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_TestEnumSmall (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_enum_small, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(enum_small_0, test_packed_repeated_enum_small_0);
+  DO_TEST(enum_small_1, test_packed_repeated_enum_small_1);
+  DO_TEST(enum_small_random, test_packed_repeated_enum_small_random);
+
+#undef DO_TEST
+}
+
+static void test_packed_repeated_TestEnum (void)
+{
+
+#define DO_TEST(static_array, example_packed_data) \
+  DO_TEST_PACKED_REPEATED(test_enum, , \
+                   static_array, example_packed_data, \
+                   NUMERIC_EQUALS)
+
+  DO_TEST(enum_0, test_packed_repeated_enum_0);
+  DO_TEST(enum_1, test_packed_repeated_enum_1);
+  DO_TEST(enum_random, test_packed_repeated_enum_random);
+
+#undef DO_TEST
+}
+
+
 static void test_unknown_fields (void)
 {
   static Foo__EmptyMess mess = FOO__EMPTY_MESS__INIT;
@@ -1331,6 +1560,22 @@ static Test tests[] =
   { "test repeated string", test_repeated_string },
   { "test repeated bytes", test_repeated_bytes },
   { "test repeated SubMess", test_repeated_SubMess },
+
+  { "test packed repeated int32", test_packed_repeated_int32 },
+  { "test packed repeated sint32", test_packed_repeated_sint32 },
+  { "test packed repeated sfixed32" ,test_packed_repeated_sfixed32 },
+  { "test packed repeated uint32", test_packed_repeated_uint32 },
+  { "test packed repeated int64", test_packed_repeated_int64 },
+  { "test packed repeated sint64", test_packed_repeated_sint64 },
+  { "test packed repeated sfixed64", test_packed_repeated_sfixed64 },
+  { "test packed repeated fixed32", test_packed_repeated_fixed32 },
+  { "test packed repeated uint64", test_packed_repeated_uint64 },
+  { "test packed repeated fixed64", test_packed_repeated_fixed64 },
+  { "test packed repeated float", test_packed_repeated_float },
+  { "test packed repeated double", test_packed_repeated_double },
+  { "test packed repeated boolean", test_packed_repeated_boolean },
+  { "test packed repeated TestEnumSmall", test_packed_repeated_TestEnumSmall },
+  { "test packed repeated TestEnum", test_packed_repeated_TestEnum },
 
   { "test unknown fields", test_unknown_fields },
 

@@ -39,6 +39,27 @@ namespace c {
 FieldGenerator::~FieldGenerator()
 {
 }
+static bool is_packable_type(FieldDescriptor::Type type)
+{
+  return type == FieldDescriptor::TYPE_DOUBLE
+      || type == FieldDescriptor::TYPE_FLOAT
+      || type == FieldDescriptor::TYPE_INT64
+      || type == FieldDescriptor::TYPE_UINT64
+      || type == FieldDescriptor::TYPE_INT32
+      || type == FieldDescriptor::TYPE_FIXED64
+      || type == FieldDescriptor::TYPE_FIXED32
+      || type == FieldDescriptor::TYPE_BOOL
+      || type == FieldDescriptor::TYPE_UINT32
+      || type == FieldDescriptor::TYPE_ENUM
+      || type == FieldDescriptor::TYPE_SFIXED32
+      || type == FieldDescriptor::TYPE_SFIXED64
+      || type == FieldDescriptor::TYPE_SINT32
+      || type == FieldDescriptor::TYPE_SINT64;
+    //TYPE_BYTES
+    //TYPE_STRING
+    //TYPE_GROUP
+    //TYPE_MESSAGE
+}
 
 void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 							  bool optional_uses_has,
@@ -62,12 +83,20 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
     variables["default_value"] = "NULL";
   }
 
+  if (descriptor_->label() == FieldDescriptor::LABEL_REPEATED
+   && is_packable_type (descriptor_->type())
+   && descriptor_->options().packed())
+    variables["packed"] = "1";
+  else
+    variables["packed"] = "0";
+
   printer->Print(variables,
     "{\n"
     "  \"$proto_name$\",\n"
     "  $value$,\n"
     "  PROTOBUF_C_LABEL_$LABEL$,\n"
     "  PROTOBUF_C_TYPE_$TYPE$,\n");
+  bool packed = false;
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables, "  0,   /* quantifier_offset */\n");
@@ -86,7 +115,8 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, $name$),\n");
   printer->Print(variables, "  $descriptor_addr$,\n");
   printer->Print(variables, "  $default_value$,\n");
-  printer->Print(variables, "  NULL,NULL    /* reserved1, reserved2 */\n");
+  printer->Print(variables, "  $packed$,            /* packed */\n");
+  printer->Print(variables, "  0,NULL,NULL    /* reserved1,reserved2, etc */\n");
   printer->Print("},\n");
 }
 
