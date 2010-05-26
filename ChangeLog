@@ -2,6 +2,8 @@
       - build fix (missing dependency in test directory)
       - add generation / installation of pkg-config files. (Bobby Powers)
       - support for packed repeated fields (Dave Benson)
+      - bug in dsk_dispatch_close_fd(), which usually only
+        showed up in later function calls.
 
 0.13:
       - Fix for when the number of connections gets too great in RPC.
