@@ -377,6 +377,7 @@ deallocate_change_index (RealDispatch *d,
   unsigned ch_ind = fm->change_index;
   unsigned from = d->base.n_changes - 1;
   ProtobufC_FD from_fd;
+  fm->change_index = -1;
   if (ch_ind == from)
     {
       d->base.n_changes--;
