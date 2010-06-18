@@ -1473,10 +1473,6 @@ struct _ScannedMember
   const uint8_t *data;
 };
 
-#define MESSAGE_GET_UNKNOWNS(message) \
-  STRUCT_MEMBER_PTR (ProtobufCMessageUnknownFieldArray, \
-                     (message), (message)->descriptor->unknown_field_array_offset)
-
 static inline uint32_t
 scan_length_prefixed_data (size_t len, const uint8_t *data, size_t *prefix_len_out)
 {

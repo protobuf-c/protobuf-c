@@ -91,10 +91,15 @@ struct _ProtobufCAllocator
  * By default, it uses the system allocator (meaning malloc() and free()).
  * This is typically done to incorporate into frameworks that provide
  * some nonstandard allocation functions.
+ *
+ * NOTE: you may modify this allocator.
  */
 extern ProtobufCAllocator protobuf_c_default_allocator; /* settable */
 
-/* This is the system allocator, meaning it uses malloc() and free() */
+/* This is the system allocator, meaning it uses malloc() and free().
+ *
+ * NOTE: please do NOT modify this allocator.
+ */
 extern ProtobufCAllocator protobuf_c_system_allocator;  /* use malloc, free etc */
 
 /* This is the function that our default allocators call when they 
