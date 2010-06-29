@@ -107,7 +107,7 @@ struct _ProtobufCAllocator
 
 /* This is a configurable allocator.
  * By default, it uses the system allocator (meaning malloc() and free()).
- * This is typically done to incorporate into frameworks that provide
+ * This is typically changed to adapt to frameworks that provide
  * some nonstandard allocation functions.
  *
  * NOTE: you may modify this allocator.
