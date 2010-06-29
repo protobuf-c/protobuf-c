@@ -18,7 +18,6 @@
 #ifndef __PROTOBUF_C_RUNTIME_H_
 #define __PROTOBUF_C_RUNTIME_H_
 
-#include <inttypes.h>
 #include <stddef.h>
 #include <assert.h>
 
@@ -28,6 +27,25 @@
 #else
 # define PROTOBUF_C_BEGIN_DECLS
 # define PROTOBUF_C_END_DECLS
+#endif
+
+/* Define int32_t, int64_t, uint32_t, uint64_t, uint8_t.
+
+   Usually, just include <inttypes.h> to do the work.
+   XXX: should we use stdint.h?
+ */
+#ifndef PROTOBUF_C_SKIP_INTTYPES_H
+#  if defined(_MSC_VER)
+     /* On windows, in ms visual studio, define the types ourselves */
+#    define int32_t      signed __int32
+#    define uint32_t     unsigned __int32
+#    define int64_t      signed __int64
+#    define uint64_t     unsigned __int64
+#    define uint8_t      unsigned char
+#  else
+     /* Use the system inttypes.h */
+#    include <inttypes.h>
+#  endif
 #endif
 
 PROTOBUF_C_BEGIN_DECLS
