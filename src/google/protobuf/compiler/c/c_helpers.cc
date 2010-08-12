@@ -238,6 +238,13 @@ string FieldName(const FieldDescriptor* field) {
   return result;
 }
 
+string FieldDeprecated(const FieldDescriptor* field) {
+  if (field->options().deprecated()) {
+    return " PROTOBUF_C_DEPRECATED";
+  }
+  return "";
+}
+
 string StripProto(const string& filename) {
   if (HasSuffixString(filename, ".protodevel")) {
     return StripSuffixString(filename, ".protodevel");

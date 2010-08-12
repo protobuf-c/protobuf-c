@@ -4,6 +4,8 @@
       - support for packed repeated fields (Dave Benson)
       - bug in dsk_dispatch_close_fd(), which usually only
         showed up in later function calls.
+      - support for deprecated fields -- enable a GCC warning
+        if a field has the "deprecated" option enabled. (Andrey Nigmatulin)
 
 0.13:
       - Fix for when the number of connections gets too great in RPC.

@@ -38,6 +38,7 @@ void SetBytesVariables(const FieldDescriptor* descriptor,
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["default"] =
     "\"" + CEscape(descriptor->default_value_string()) + "\"";
+  (*variables)["deprecated"] = FieldDeprecated(descriptor);
 }
 
 // ===================================================================
@@ -57,15 +58,15 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
-      printer->Print(variables_, "ProtobufCBinaryData $name$;\n");
+      printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(variables_, "protobuf_c_boolean has_$name$;\n");
-      printer->Print(variables_, "ProtobufCBinaryData $name$;\n");
+      printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
+      printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print(variables_, "size_t n_$name$;\n");
-      printer->Print(variables_, "ProtobufCBinaryData *$name$;\n");
+      printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
+      printer->Print(variables_, "ProtobufCBinaryData *$name$$deprecated$;\n");
       break;
   }
 }

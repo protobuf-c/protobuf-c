@@ -29,6 +29,12 @@
 # define PROTOBUF_C_END_DECLS
 #endif
 
+#if !defined(PROTOBUF_C_NO_DEPRECATED) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#define PROTOBUF_C_DEPRECATED __attribute__((__deprecated__))
+#else
+#define PROTOBUF_C_DEPRECATED
+#endif
+
 /* Define int32_t, int64_t, uint32_t, uint64_t, uint8_t.
 
    Usually, just include <inttypes.h> to do the work.

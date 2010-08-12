@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
 
 namespace google {
@@ -61,6 +62,9 @@ char* FastHexToBuffer(int i, char* buffer);
 // should be using lowercase-with-underscores style for proto field names
 // anyway, so normally this just returns field->name().
 string FieldName(const FieldDescriptor* field);
+
+// Get macro string for deprecated field
+string FieldDeprecated(const FieldDescriptor* field);
 
 // Returns the scope where the field was defined (for extensions, this is
 // different from the message type to which the field applies).

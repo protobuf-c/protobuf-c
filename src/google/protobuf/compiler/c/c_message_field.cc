@@ -46,14 +46,15 @@ void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
   map<string, string> vars;
   vars["name"] = FieldName(descriptor_);
   vars["type"] = FullNameToC(descriptor_->message_type()->full_name());
+  vars["deprecated"] = FieldDeprecated(descriptor_);
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(vars, "$type$ *$name$;\n");
+      printer->Print(vars, "$type$ *$name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print(vars, "size_t n_$name$;\n");
-      printer->Print(vars, "$type$ **$name$;\n");
+      printer->Print(vars, "size_t n_$name$$deprecated$;\n");
+      printer->Print(vars, "$type$ **$name$$deprecated$;\n");
       break;
   }
 }

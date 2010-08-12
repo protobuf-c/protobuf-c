@@ -45,6 +45,7 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
 			    + "__" + ToUpper(default_value->name());
   } else
     (*variables)["default"] = "0";
+  (*variables)["deprecated"] = FieldDeprecated(descriptor);
 }
 
 // ===================================================================
@@ -62,15 +63,15 @@ void EnumFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
-      printer->Print(variables_, "$type$ $name$;\n");
+      printer->Print(variables_, "$type$ $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(variables_, "protobuf_c_boolean has_$name$;\n");
-      printer->Print(variables_, "$type$ $name$;\n");
+      printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
+      printer->Print(variables_, "$type$ $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print(variables_, "size_t n_$name$;\n");
-      printer->Print(variables_, "$type$ *$name$;\n");
+      printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
+      printer->Print(variables_, "$type$ *$name$$deprecated$;\n");
       break;
   }
 }
