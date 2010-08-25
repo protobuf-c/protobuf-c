@@ -5,7 +5,9 @@
       - bug in dsk_dispatch_close_fd(), which usually only
         showed up in later function calls.
       - support for deprecated fields -- enable a GCC warning
-        if a field has the "deprecated" option enabled. (Andrey Nigmatulin)
+        if a field has the "deprecated" option enabled. (Andrei Nigmatulin)
+      - fix for protobuf_c_message_unpack() to issue error if any "required" field
+        is missing in input stream. (Andrei Nigmatulin)
 
 0.13:
       - Fix for when the number of connections gets too great in RPC.

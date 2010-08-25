@@ -2103,11 +2103,20 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   size_t n_unknown = 0;
   unsigned f;
   unsigned i_slab;
+  unsigned last_field_index = 0;
+  unsigned long *required_fields_bitmap;
+  unsigned required_fields_bitmap_len;
+  static const unsigned word_bits = sizeof(long) * 8;
 
   ASSERT_IS_MESSAGE_DESCRIPTOR (desc);
 
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
+
+  required_fields_bitmap_len = (desc->n_fields + word_bits - 1) / word_bits;
+  required_fields_bitmap = alloca(required_fields_bitmap_len * sizeof(long));
+  memset(required_fields_bitmap, 0, required_fields_bitmap_len * sizeof(long));
+
   DO_ALLOC (rv, allocator, desc->sizeof_message, return NULL);
   scanned_member_slabs[0] = first_member_slab;
 
@@ -2150,10 +2159,14 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             {
               field = desc->fields + field_index;
               last_field = field;
+              last_field_index = field_index;
             }
         }
       else
         field = last_field;
+
+      if (field != NULL && field->label == PROTOBUF_C_LABEL_REQUIRED)
+        required_fields_bitmap[last_field_index / word_bits] |= (1UL << (last_field_index % word_bits));
 
       at += used;
       rem -= used;
@@ -2258,11 +2271,12 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
       rem -= tmp.len;
     }
 
-  /* allocate space for repeated fields */
+  /* allocate space for repeated fields, also check that all required fields have been set */
   for (f = 0; f < desc->n_fields; f++)
-    if (desc->fields[f].label == PROTOBUF_C_LABEL_REPEATED)
-      {
-        const ProtobufCFieldDescriptor *field = desc->fields + f;
+  {
+    const ProtobufCFieldDescriptor *field = desc->fields + f;
+    if (field->label == PROTOBUF_C_LABEL_REPEATED)
+    {
         size_t siz = sizeof_elt_in_repeated_array (field->type);
         size_t *n_ptr = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
         if (*n_ptr != 0)
@@ -2282,7 +2296,16 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
                       CLEAR_REMAINING_N_PTRS (); goto error_cleanup);
 #undef CLEAR_REMAINING_N_PTRS
           }
+    }
+    else if (field->label == PROTOBUF_C_LABEL_REQUIRED)
+    {
+      if (field->default_value == NULL && 0 == (required_fields_bitmap[f / word_bits] & (1UL << (f % word_bits))))
+      {
+        UNPACK_ERROR (("message '%s': missing required field '%s'", desc->name, field->name));
+        goto error_cleanup;
       }
+    }
+  }
 
   /* allocate space for unknown fields */
   if (n_unknown)
