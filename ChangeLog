@@ -1,4 +1,4 @@
-0.14 (NOT YET RELEASED)
+0.14:
       - build fix (missing dependency in test directory)
       - add generation / installation of pkg-config files. (Bobby Powers)
       - support for packed repeated fields (Dave Benson)
@@ -6,8 +6,9 @@
         showed up in later function calls.
       - support for deprecated fields -- enable a GCC warning
         if a field has the "deprecated" option enabled. (Andrei Nigmatulin)
-      - fix for protobuf_c_message_unpack() to issue error if any "required" field
-        is missing in input stream. (Andrei Nigmatulin)
+      - hackery to try to avoid touching inttypes.h on windows (Issue #41)
+      - fix for protobuf_c_message_unpack() to issue error if any
+        "required" field is missing in input stream. (Andrei Nigmatulin)
 
 0.13:
       - Fix for when the number of connections gets too great in RPC.
