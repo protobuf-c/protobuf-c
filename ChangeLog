@@ -2,7 +2,7 @@
       - build fix (missing dependency in test directory)
       - add generation / installation of pkg-config files. (Bobby Powers)
       - support for packed repeated fields (Dave Benson)
-      - bug in dsk_dispatch_close_fd(), which usually only
+      - bug in protobuf_c_dispatch_close_fd(), which usually only
         showed up in later function calls.
       - support for deprecated fields -- enable a GCC warning
         if a field has the "deprecated" option enabled. (Andrei Nigmatulin)
