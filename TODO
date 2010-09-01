@@ -2,6 +2,12 @@
 --- IMPORTANT TODO ---
 ----------------------
 - ensure enums are int-size
+- per comments on the main page: wire_format_inl.h is now
+  wire_format_lite_inl.h .. adjust somehow .. possibly write an email
+- rpc protocol should not hardcode method_index (although it's fine
+  for API to do so)
+- BUG? shouldn't enum..by_name[] and enum..by_number[] in the generated-code
+  be static??
 
 --------------------
 --- NEEDED TESTS ---
@@ -13,6 +19,9 @@
   - default values
   - message unpack alloc failures when allocating new slab
   - message unpack alloc failures when allocating unknown field buffers
+  - packed message corruption.
+    - meta-todo: get a list of all the unpack errors together to check off
+- run gcov
 
 ---------------------
 --- DOCUMENTATION ---
@@ -25,7 +34,6 @@ Document:
 --- LOW PRIORITY STUFF ---
 --------------------------
 - support Group (whatever it is)
-- almost no code generator options are obeyed
 - proper support for extensions
   - slot for ranges in descriptor
   - extends is implemented as c-style function
@@ -51,6 +59,17 @@ Document:
 --- IDEAS TO CONSIDER ---
 -------------------------
 
+- optimization: structures without repeated members could skip
+  the ScannedMember phase
+
+- optimization: a way to ignore unknown-fields when unpacking
+
+- optimization: certain functions are not well setup for WORDSIZE==64;
+  especially the int64 routines are inefficient that way.
+  The best might be an internal #define WORDSIZE (sizeof(long)*8)"
+  except w/ a real constant there, one that the preprocessor can use.
+  I think the functions in protobuf-c.c are already tagged.
+
 - lifetime functions for messages:
    message__new()
        return a new message using an allocator with standard allocation policy
@@ -66,3 +85,6 @@ Document:
   - Rewrite the code-generator in C, including the parser.
   - This would have the huge advantage that we could use ".proto" files
     directly, instead of having to invoke the compilers.
+  - keep in a separate c file for static linking optimziation purposes
+  - need alignment tests
+  - the CAVEATS should discuss our structure-packing assumptions
