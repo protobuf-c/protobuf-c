@@ -333,7 +333,8 @@ void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
 
 /* WARNING: 'message' must be a block of memory 
    of size descriptor->sizeof_message. */
-#define protobuf_c_message_init(descriptor, message) ((descriptor)->message_init((ProtobufCMessage*) (message)))
+void      protobuf_c_message_init           (const ProtobufCMessageDescriptor *,
+                                             void                *message);
 
 /* --- services --- */
 typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
