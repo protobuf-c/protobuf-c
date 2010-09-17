@@ -1,0 +1,110 @@
+#! /bin/sh
+
+die () {
+  echo "$1" 1>&2 
+  exit 1
+}
+
+die_unless_set () {
+  eval "isset=\$$1"
+  test -z "$isset" && die "$1 not set"
+}
+
+# test_is_equal DEFINE_TYPE SIZEOF_TYPE EVAL_IF_TRUE
+test_is_equal () {
+  # Write out C file
+  cat > test-compile-for-structure-packing-0.c <<EOF
+#include <inttypes.h>
+$1;
+int main ()
+{
+  /* Program does not compile iff alignof(int32_t) is 2 */
+  switch (0) { case $2: case sizeof(TYPE): ; }
+}
+EOF
+
+  # If it DOESN'T compile, then the values are equal.
+  $CC -o /dev/null test-compile-for-structure-packing-0.c > /dev/null 2>&1 || { eval "$3" ; }
+  rm -f test-compile-for-structure-packing-0.c 
+}
+test_is_not_equal () {
+  # Write out C file
+  cat > test-compile-for-structure-packing-0.c <<EOF
+#include <inttypes.h>
+$1;
+int main ()
+{
+  /* Program does not compile iff alignof(int32_t) is 2 */
+  switch (0) { case $2: case sizeof(TYPE): ; }
+}
+EOF
+
+  # If it DOESN'T compile, then the values are equal.
+  $CC -o /dev/null test-compile-for-structure-packing-0.c > /dev/null 2>&1 && { eval "$3" ; }
+  rm -f test-compile-for-structure-packing-0.c 
+}
+
+
+test_is_equal "typedef int TYPE" 2 "SIZEOF_INT=2"
+test_is_equal "typedef int TYPE" 4 "SIZEOF_INT=4"
+test_is_equal "typedef int TYPE" 8 "SIZEOF_INT=8"
+die_unless_set SIZEOF_INT
+test_is_equal "typedef void* TYPE" 2 "SIZEOF_POINTER=2"
+test_is_equal "typedef void* TYPE" 4 "SIZEOF_POINTER=4"
+test_is_equal "typedef void* TYPE" 8 "SIZEOF_POINTER=8"
+die_unless_set SIZEOF_POINTER
+
+test_is_not_equal "typedef float TYPE" 4 'die "expecting float to be 4 bytes"'
+test_is_not_equal "typedef double TYPE" 8 'die "expecting double to be 4 bytes"'
+test_is_equal "typedef struct { char c; int32_t i; }" 5 "ALIGNOF_INT32=1"
+test_is_equal "typedef struct { char c; int32_t i; }" 6 "ALIGNOF_INT32=2"
+test_is_equal "typedef struct { char c; int32_t i; }" 8 "ALIGNOF_INT32=4"
+die_unless_set ALIGNOF_INT32
+test_is_equal "typedef struct { char c; int64_t i; }" 9 "ALIGNOF_INT64=1"
+test_is_equal "typedef struct { char c; int64_t i; }" 10 "ALIGNOF_INT64=2"
+test_is_equal "typedef struct { char c; int64_t i; }" 12 "ALIGNOF_INT64=4"
+test_is_equal "typedef struct { char c; int64_t i; }" 16 "ALIGNOF_INT64=8"
+die_unless_set ALIGNOF_INT64
+test_is_equal "typedef struct { char c; float i; }" 5 "ALIGNOF_FLOAT=1"
+test_is_equal "typedef struct { char c; float i; }" 6 "ALIGNOF_FLOAT=2"
+test_is_equal "typedef struct { char c; float i; }" 8 "ALIGNOF_FLOAT=4"
+die_unless_set ALIGNOF_FLOAT
+test_is_equal "typedef struct { char c; double i; }" 9 "ALIGNOF_DOUBLE=1"
+test_is_equal "typedef struct { char c; double i; }" 10 "ALIGNOF_DOUBLE=2"
+test_is_equal "typedef struct { char c; double i; }" 12 "ALIGNOF_DOUBLE=4"
+test_is_equal "typedef struct { char c; double i; }" 16 "ALIGNOF_DOUBLE=8"
+die_unless_set ALIGNOF_DOUBLE
+case "$SIZEOF_POINTER" in
+  2)
+    test_is_equal "typedef struct { char c; void *i; }" 3 "ALIGNOF_POINTER=1"
+    test_is_equal "typedef struct { char c; void *i; }" 4 "ALIGNOF_POINTER=2"
+    ;;
+  4)
+    test_is_equal "typedef struct { char c; void *i; }" 5 "ALIGNOF_POINTER=1"
+    test_is_equal "typedef struct { char c; void *i; }" 6 "ALIGNOF_POINTER=2"
+    test_is_equal "typedef struct { char c; void *i; }" 8 "ALIGNOF_POINTER=4"
+    ;;
+  8)
+    test_is_equal "typedef struct { char c; void *i; }" 9 "ALIGNOF_POINTER=1"
+    test_is_equal "typedef struct { char c; void *i; }" 10 "ALIGNOF_POINTER=2"
+    test_is_equal "typedef struct { char c; void *i; }" 12 "ALIGNOF_POINTER=4"
+    test_is_equal "typedef struct { char c; void *i; }" 16 "ALIGNOF_POINTER=8"
+    ;;
+  *)
+    die "bad SIZEOF_POINTER=$SIZEOF_POINTER"
+esac
+die_unless_set ALIGNOF_POINTER
+
+case "$SIZEOF_INT" in
+  2) ALIGNOF_INT=$ALIGNOF_INT16 ;;
+  4) ALIGNOF_INT=$ALIGNOF_INT32 ;;
+  8) ALIGNOF_INT=$ALIGNOF_INT64 ;;
+  *) die "bad SIZEOF_INT=$SIZEOF_INT" ;;
+esac
+
+for a in SIZEOF_INT SIZEOF_POINTER \
+         ALIGNOF_INT16 ALIGNOF_INT32 ALIGNOF_INT64 ALIGNOF_INT ALIGNOF_POINTER
+do
+  eval "v=\$$a"
+  echo "#define $a $v"
+done
