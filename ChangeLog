@@ -1,5 +1,7 @@
 0.15 (NOT YET RELEASED)
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
+      - Fix for freeing memory after unpacking bytes w/o a default-value.
+        (Andrei Nigmatulin)
 
 0.14:
       - build fix (missing dependency in test directory)

@@ -1751,7 +1751,9 @@ parse_required_member (ScannedMember *scanned_member,
         const ProtobufCBinaryData *def_bd;
         unsigned pref_len = scanned_member->length_prefix_len;
         def_bd = scanned_member->field->default_value;
-        if (maybe_clear && bd->data != NULL && bd->data != def_bd->data)
+        if (maybe_clear
+         && bd->data != NULL
+         && (def_bd == NULL || bd->data != def_bd->data))
           FREE (allocator, bd->data);
         DO_ALLOC (bd->data, allocator, len - pref_len, return 0);
         memcpy (bd->data, data + pref_len, len - pref_len);
