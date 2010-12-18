@@ -417,7 +417,7 @@ deallocate_notify_desired_index (RealDispatch *d,
 /* Registering file-descriptors to watch. */
 void
 protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
-                              int                 fd,
+                              ProtobufC_FD        fd,
                               unsigned            events,
                               ProtobufCDispatchCallback callback,
                               void               *callback_data)
@@ -487,7 +487,7 @@ protobuf_c_dispatch_watch_fd (ProtobufCDispatch *dispatch,
 
 void
 protobuf_c_dispatch_close_fd (ProtobufCDispatch *dispatch,
-                              int                 fd)
+                              ProtobufC_FD        fd)
 {
   protobuf_c_dispatch_fd_closed (dispatch, fd);
   close (fd);

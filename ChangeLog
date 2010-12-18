@@ -2,6 +2,9 @@
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
       - Fix for freeing memory after unpacking bytes w/o a default-value.
         (Andrei Nigmatulin)
+      - minor windows portability issues (use ProtobufC_FD) (Pop Stelian)
+      - --with-endianness={little,big} (Pop Stelian)
+
 
 0.14:
       - build fix (missing dependency in test directory)
