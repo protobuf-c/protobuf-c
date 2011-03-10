@@ -567,6 +567,7 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
       idle->next = d->recycled_idles;
       d->recycled_idles = idle;
     }
+  dispatch->has_idle = 0;
 
   /* handle timers */
   gettimeofday (&tv, NULL);
@@ -654,26 +655,22 @@ protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
     }
 
   /* compute timeout */
-  if (d->first_idle != NULL)
-    {
-      timeout = 0;
-    }
-  else if (d->timer_tree == NULL)
+  if (dispatch->has_idle)
+    timeout = 0;
+  else if (!dispatch->has_timeout)
     timeout = -1;
   else
     {
-      ProtobufCDispatchTimer *min_timer;
-      GSK_RBTREE_FIRST (GET_TIMER_TREE (d), min_timer);
       struct timeval tv;
       gettimeofday (&tv, NULL);
-      if (min_timer->timeout_secs < (unsigned long) tv.tv_sec
-       || (min_timer->timeout_secs == (unsigned long) tv.tv_sec
-        && min_timer->timeout_usecs <= (unsigned) tv.tv_usec))
+      if (dispatch->timeout_secs < (unsigned long) tv.tv_sec
+       || (dispatch->timeout_secs == (unsigned long) tv.tv_sec
+        && dispatch->timeout_usecs <= (unsigned) tv.tv_usec))
         timeout = 0;
       else
         {
-          int du = min_timer->timeout_usecs - tv.tv_usec;
-          int ds = min_timer->timeout_secs - tv.tv_sec;
+          int du = dispatch->timeout_usecs - tv.tv_usec;
+          int ds = dispatch->timeout_secs - tv.tv_sec;
           if (du < 0)
             {
               du += 1000000;
@@ -833,6 +830,7 @@ protobuf_c_dispatch_add_idle (ProtobufCDispatch *dispatch,
   rv->func = func;
   rv->func_data = func_data;
   rv->dispatch = d;
+  dispatch->has_idle = 1;
   return rv;
 }
 
