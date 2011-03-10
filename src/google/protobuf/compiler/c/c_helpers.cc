@@ -33,6 +33,19 @@ namespace protobuf {
 namespace compiler {
 namespace c {
 
+#if defined(_MSC_VER)
+// FIXME: In the case where the generated string is longer than the buffer,
+// _snprint() returns a negative value, where snprintf() returns the number
+// of characters that *would* have been stored, had there been room.
+// That is fundamental, as it allows snprintf() to be used to find the size
+// necessary for the buffer, simply by calling it with the size of the buffer
+// passed in as zero.
+// Note: at the present moment return value isn't used in the code.
+#define snprintf _snprintf
+#pragma warning(disable:4800)
+#pragma warning(disable:4996)
+#endif
+
 string DotsToUnderscores(const string& name) {
   return StringReplace(name, ".", "_", true);
 }
@@ -41,11 +54,6 @@ string DotsToColons(const string& name) {
   return StringReplace(name, ".", "::", true);
 }
 
-string SimpleItoa(int i) {
-  char buf[100];
-  snprintf(buf,sizeof(buf),"%d",i);
-  return buf;
-}
 string SimpleFtoa(float f) {
   char buf[100];
   snprintf(buf,sizeof(buf),"%.*g", FLT_DIG, f);
@@ -132,7 +140,7 @@ string FullNameToLower(const string &full_name) {
   vector<string> pieces;
   SplitStringUsing(full_name, ".", &pieces);
   string rv = "";
-  for (int i = 0; i < pieces.size(); i++) {
+  for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
     if (rv != "") rv += "__";
     rv += CamelToLower(pieces[i]);
@@ -143,7 +151,7 @@ string FullNameToUpper(const string &full_name) {
   vector<string> pieces;
   SplitStringUsing(full_name, ".", &pieces);
   string rv = "";
-  for (int i = 0; i < pieces.size(); i++) {
+  for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
     if (rv != "") rv += "__";
     rv += CamelToUpper(pieces[i]);
@@ -154,7 +162,7 @@ string FullNameToC(const string &full_name) {
   vector<string> pieces;
   SplitStringUsing(full_name, ".", &pieces);
   string rv = "";
-  for (int i = 0; i < pieces.size(); i++) {
+  for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
     if (rv != "") rv += "__";
     rv += ToCamel(pieces[i]);
@@ -256,7 +264,7 @@ string StripProto(const string& filename) {
 // Convert a file name into a valid identifier.
 string FilenameIdentifier(const string& filename) {
   string result;
-  for (int i = 0; i < filename.size(); i++) {
+  for (unsigned i = 0; i < filename.size(); i++) {
     if (isalnum(filename[i])) {
       result.push_back(filename[i]);
     } else {

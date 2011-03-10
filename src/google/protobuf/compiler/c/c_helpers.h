@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
@@ -46,7 +47,12 @@ string ClassName(const Descriptor* descriptor, bool qualified);
 string ClassName(const EnumDescriptor* enum_descriptor, bool qualified);
 
 // --- Borrowed from stubs. ---
-string SimpleItoa(int i);
+template <typename T> string SimpleItoa(T n) {
+  std::stringstream stream;
+  stream << n;
+  return stream.str();
+}
+
 string SimpleFtoa(float f);
 string SimpleDtoa(double f);
 void SplitStringUsing(const string &str, const char *delim, std::vector<string> *out);

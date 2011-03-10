@@ -44,7 +44,7 @@ void ParseOptions(const string& text, vector<pair<string, string> >* output) {
   vector<string> parts;
   SplitStringUsing(text, ",", &parts);
 
-  for (int i = 0; i < parts.size(); i++) {
+  for (unsigned i = 0; i < parts.size(); i++) {
     string::size_type equals_pos = parts[i].find_first_of('=');
     pair<string, string> value;
     if (equals_pos == string::npos) {
@@ -90,7 +90,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
   // __declspec(dllimport) depending on what is being compiled.
   string dllexport_decl;
 
-  for (int i = 0; i < options.size(); i++) {
+  for (unsigned i = 0; i < options.size(); i++) {
     if (options[i].first == "dllexport_decl") {
       dllexport_decl = options[i].second;
     } else {

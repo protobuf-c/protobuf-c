@@ -1,6 +1,6 @@
 SUBDIRS = src
 
-EXTRA_DIST = scripts pkgwriteinfo.in
+EXTRA_DIST = scripts pkgwriteinfo.in CMakeLists.txt
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libprotobuf-c.pc

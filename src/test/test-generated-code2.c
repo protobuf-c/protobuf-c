@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -1434,33 +1433,32 @@ static void test_free (void *allocator_data, void *data)
 }
 
 static ProtobufCAllocator test_allocator = {
-  .alloc = test_alloc,
-  .free = test_free,
-  .allocator_data = &test_allocator_data,
+  test_alloc, test_free, 0, 0, &test_allocator_data
 };
 
 #define SETUP_TEST_ALLOC_BUFFER(pbuf, len)					\
+  uint8_t bytes[] = "some bytes", *pbuf;						\
+  size_t len, _len2;                                        \
   Foo__DefaultRequiredValues _req = FOO__DEFAULT_REQUIRED_VALUES__INIT;		\
   Foo__AllocValues _mess = FOO__ALLOC_VALUES__INIT;				\
   _mess.a_string = "some string";						\
   _mess.r_string = repeated_strings_2;						\
   _mess.n_r_string = sizeof(repeated_strings_2) / sizeof(*repeated_strings_2);	\
-  uint8_t bytes[] = "some bytes";						\
   _mess.a_bytes.len = sizeof(bytes);						\
   _mess.a_bytes.data = bytes;							\
   _mess.a_mess = &_req;								\
-  size_t len = foo__alloc_values__get_packed_size (&_mess);			\
-  uint8_t *pbuf = malloc (len);							\
+  len = foo__alloc_values__get_packed_size (&_mess);			\
+  pbuf = malloc (len);							\
   assert (pbuf);								\
-  size_t _len2 = foo__alloc_values__pack (&_mess, pbuf);			\
+  _len2 = foo__alloc_values__pack (&_mess, pbuf);			\
   assert (len == _len2);
 
 static void
 test_alloc_graceful_cleanup (uint8_t *packed, size_t len, int good_allocs)
 {
+  Foo__AllocValues *mess;
   test_allocator_data.alloc_count = 0;
   test_allocator_data.allocs_left = good_allocs;
-  Foo__AllocValues *mess;
   mess = foo__alloc_values__unpack (&test_allocator, len, packed);
   assert (test_allocator_data.allocs_left < 0 ? !mess : !!mess);
   if (mess)

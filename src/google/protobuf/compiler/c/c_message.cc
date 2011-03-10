@@ -366,6 +366,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
       }
     }
 
+    if ( descriptor_->field_count() ) {
   printer->Print(vars,
 	"static const ProtobufCFieldDescriptor $lcclassname$__field_descriptors[$n_fields$] =\n"
 	"{\n");
@@ -411,6 +412,17 @@ GenerateMessageDescriptor(io::Printer* printer) {
   delete [] sorted_fields;
 
   vars["n_ranges"] = SimpleItoa(n_ranges);
+    } else {
+      /* MS compiler can't handle arrays with zero size and empty
+       * initialization list. Furthermore it is an extension of GCC only but
+       * not a standard. */
+      vars["n_ranges"] = "0";
+  printer->Print(vars,
+        "#define $lcclassname$__field_descriptors NULL\n"
+        "#define $lcclassname$__field_indices_by_name NULL\n"
+        "#define $lcclassname$__number_ranges NULL\n");
+    }
+  
   printer->Print(vars,
   "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
   "{\n"

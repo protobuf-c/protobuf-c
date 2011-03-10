@@ -11,6 +11,9 @@ AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(alloca.h)
 AC_CHECK_HEADERS(malloc.h)
 AC_CHECK_HEADERS(winsock.h)
+AC_CHECK_HEADERS(io.h)
+AC_CHECK_HEADERS(sys/uio.h)
+AC_CHECK_HEADERS(unistd.h)
 
 BUILD_PROTOC_C=1
 AC_ARG_ENABLE(protoc, [  --disable-protoc    Suppress build of protoc_c],

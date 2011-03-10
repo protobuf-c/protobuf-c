@@ -1,10 +1,12 @@
-0.15 (NOT YET RELEASED)
+0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
       - Fix for freeing memory after unpacking bytes w/o a default-value.
         (Andrei Nigmatulin)
       - minor windows portability issues (use ProtobufC_FD) (Pop Stelian)
       - --with-endianness={little,big} (Pop Stelian)
-
+      - bug setting up values of has_idle in public dispatch,
+        make protobuf_c_dispatch_run() use only public members (daveb)
+      - provide cmake support and some Windows compatibility (Nikita Manovich)
 
 0.14:
       - build fix (missing dependency in test directory)

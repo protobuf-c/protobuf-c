@@ -31,8 +31,8 @@
 /* enabled for efficiency, can be useful to disable for debugging */
 #define RECYCLE_REQUESTS                1
 
-#define UINT_TO_POINTER(ui)     ((void*)(ui))
-#define POINTER_TO_UINT(ptr)     ((unsigned)(ptr))
+#define UINT_TO_POINTER(ui)      ((void*)(uintptr_t)(ui))
+#define POINTER_TO_UINT(ptr)     ((unsigned)(uintptr_t)(ptr))
 
 #define MAX_FAILED_MSG_LENGTH   512
 

@@ -23,6 +23,7 @@ endif
 lib_LTLIBRARIES = libprotobuf-c.la
 protobufcincludedir = $(includedir)/google/protobuf-c
 
+EXTRA_DIST = CMakeLists.txt test/CMakeLists.txt
 
 libprotobuf_c_la_SOURCES = \
 google/protobuf-c/protobuf-c-dispatch.c \
