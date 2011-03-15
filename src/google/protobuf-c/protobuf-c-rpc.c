@@ -125,7 +125,6 @@ handle_autoreconnect_timeout (ProtobufCDispatch *dispatch,
                           void              *func_data)
 {
   ProtobufC_RPC_Client *client = func_data;
-  fprintf(stderr, "handle_autoreconnect_timeout: %s\n", client->info.failed_waiting.error_message);
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_FAILED_WAITING);
   client->allocator->free (client->allocator,
                            client->info.failed_waiting.error_message);
@@ -282,7 +281,6 @@ begin_connecting (ProtobufC_RPC_Client *client,
                   struct sockaddr      *address,
                   size_t                addr_len)
 {
-  fprintf(stderr, "begin_conencting\n");
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_NAME_LOOKUP);
 
   client->state = PROTOBUF_C_CLIENT_STATE_CONNECTING;
