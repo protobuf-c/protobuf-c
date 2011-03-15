@@ -1,4 +1,9 @@
+0.16 (NOT YET RELEASED)
+      - treat a "length-prefixed" wire-type message for a repeated field
+        as packed-repeated whenever it makes sense (for all types
+        other than messages, strings, and bytes).
       - switch to New BSD license.
+
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
       - Fix for freeing memory after unpacking bytes w/o a default-value.
@@ -34,7 +39,7 @@
 0.12:
       - for field names which are reserved words, use the real name 
         given in the protobuf-c file, not the mangled name which 
-	is the name of the member in the C structure.  (Andrei Nigmatulin)
+        is the name of the member in the C structure.  (Andrei Nigmatulin)
       - add protobuf_c_message_init() function; add virtual function
         that implements it efficiently.  (Andrei Nigmatulin)
       - bug fix for sfixed32, fixed32, float wire-types on
@@ -64,13 +69,13 @@
       - build issue: needed $(EXEEXT) in dependency lists for cygwin
       - bug fix:  protobuf_c_service_get_method_by_name() was not correct b/c
         the service's methods were not sorted by name (the header file
-	used to incorrectly state that they were).
-	Now we correctly implement protobuf_c_service_get_method_by_name()
-	(using a bsearch indexed by separate array).
+        used to incorrectly state that they were).
+        Now we correctly implement protobuf_c_service_get_method_by_name()
+        (using a bsearch indexed by separate array).
       - generated source incompatibility:  we added a new
         member to ProtobufCServiceDescriptor (method_indices_by_name).
-	You will have to run the latest protobuf
-	to generate those structures.
+        You will have to run the latest protobuf
+        to generate those structures.
       - rename rpc-client's "autoretry" mechanism to "autoreconnect".
       - bug fixes using TCP clients with the RPC system.
       - handle allocation failures more gracefully (Jason Lunz) (issue 15)

@@ -2008,6 +2008,14 @@ no_unpacking_needed:
 }
 
 static protobuf_c_boolean
+is_packable_type (ProtobufCType type)
+{
+  return type != PROTOBUF_C_TYPE_STRING
+     &&  type != PROTOBUF_C_TYPE_BYTES
+     &&  type != PROTOBUF_C_TYPE_MESSAGE;
+}
+
+static protobuf_c_boolean
 parse_member (ScannedMember *scanned_member,
               ProtobufCMessage *message,
               ProtobufCAllocator *allocator)
@@ -2032,8 +2040,8 @@ parse_member (ScannedMember *scanned_member,
     case PROTOBUF_C_LABEL_OPTIONAL:
       return parse_optional_member (scanned_member, member, message, allocator);
     case PROTOBUF_C_LABEL_REPEATED:
-      if (field->packed
-       && scanned_member->wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
+      if (scanned_member->wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED
+       && (field->packed || is_packable_type (field->type)))
         return parse_packed_repeated_member (scanned_member, member, message);
       else
         return parse_repeated_member (scanned_member, member, message, allocator);
@@ -2286,8 +2294,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
       if (field != NULL && field->label == PROTOBUF_C_LABEL_REPEATED)
         {
           size_t *n = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
-          if (field->packed
-           && wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
+          if (wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED
+           && (field->packed || is_packable_type (field->type)))
             {
               size_t count;
               if (!count_packed_elements (field->type,
