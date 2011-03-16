@@ -570,6 +570,13 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
   unsigned i;
   FDMap *fd_map = d->fd_map;
   struct timeval tv;
+
+  /* Re-entrancy guard.  If this is triggerred, then
+     you are calling protobuf_c_dispatch_dispatch (or _run)
+     from a callback function.  That's not allowed. */
+  protobuf_c_assert (!d->is_dispatching);
+  d->is_dispatching = 1;
+
   fd_max = 0;
   for (i = 0; i < n_notifies; i++)
     if (fd_max < (unsigned) notifies[i].fd)
@@ -643,6 +650,9 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
     }
   if (d->timer_tree == NULL)
     d->base.has_timeout = 0;
+
+  /* Finish reentrance guard. */
+  d->is_dispatching = 0;
 }
 
 void
@@ -756,7 +766,6 @@ protobuf_c_dispatch_run (ProtobufCDispatch *dispatch)
         if (events[n_events].events != 0)
           n_events++;
       }
-  protobuf_c_dispatch_clear_changes (dispatch);
   protobuf_c_dispatch_dispatch (dispatch, n_events, events);
   if (to_free)
     FREE (to_free);
