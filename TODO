@@ -8,6 +8,8 @@
   for API to do so)
 - BUG? shouldn't enum..by_name[] and enum..by_number[] in the generated-code
   be static??
+- dispatch-within-dispatch protection needed (ie assert that you can't
+  recursively invoke the main-loop)
 
 --------------------
 --- NEEDED TESTS ---
