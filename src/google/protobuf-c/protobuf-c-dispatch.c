@@ -137,6 +137,7 @@ struct _RealDispatch
   FDMapNode *fd_map_tree;       /* map indexed by fd */
 #endif
 
+  protobuf_c_boolean is_dispatching;
 
   ProtobufCDispatchTimer *timer_tree;
   ProtobufCAllocator *allocator;
@@ -234,6 +235,7 @@ ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
   rv->first_idle = rv->last_idle = NULL;
   rv->recycled_idles = NULL;
   rv->recycled_timeouts = NULL;
+  rv->is_dispatching = 0;
 
   /* need to handle SIGPIPE more gracefully than default */
   signal (SIGPIPE, SIG_IGN);
