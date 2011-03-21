@@ -3,6 +3,7 @@
         as packed-repeated whenever it makes sense (for all types
         other than messages, strings, and bytes).
       - switch to New BSD license.
+      - add protobuf_c_rpc_server_configure_threading()
 
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)

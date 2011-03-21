@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include "generated-code/test.pb-c.h"
 #include <google/protobuf-c/protobuf-c-rpc.h>
@@ -254,6 +255,8 @@ int main(int argc, char**argv)
   if (name == NULL)
     die ("missing --port=NUM or --unix=PATH");
   
+  signal (SIGPIPE, SIG_IGN);
+
   server = protobuf_c_rpc_server_new (address_type, name, (ProtobufCService *) &the_dir_lookup_service, NULL);
 
   for (;;)

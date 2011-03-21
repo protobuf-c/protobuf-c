@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <signal.h>
 #include "generated-code/test.pb-c.h"
 #include <google/protobuf-c/protobuf-c-rpc.h>
 
@@ -163,6 +164,14 @@ set_boolean_true (ProtobufCDispatch *dispatch,
   * (protobuf_c_boolean *) func_data = 1;
 }
 
+static protobuf_c_boolean
+pretend_we_are_in_another_thread (ProtobufC_RPC_Server *server,
+                                  ProtobufCDispatch    *dispatch,
+                                  void                 *data)
+{
+  return 0;             /* indicate we are NOT in RPC thread */
+}
+
 int main()
 {
   protobuf_c_boolean is_done;
@@ -170,6 +179,8 @@ int main()
   ProtobufCService *remote_service;
   ProtobufC_RPC_Client *client;
   ProtobufC_RPC_Server *server;
+
+  signal (SIGPIPE, SIG_IGN);
 
   message ("testing local service");
   test_service (local_service);
@@ -248,6 +259,10 @@ int main()
 
   /* Test the client again, for kicks. */
   message ("testing client again");
+  test_service (remote_service);
+
+  message ("testing client again (simulating threaded environment)");
+  protobuf_c_rpc_server_configure_threading (server, pretend_we_are_in_another_thread, NULL);
   test_service (remote_service);
 
   /* Destroy the client */

@@ -26,6 +26,7 @@ typedef enum
   PROTOBUF_C_ERROR_CODE_CONNECTION_REFUSED,
   PROTOBUF_C_ERROR_CODE_CLIENT_TERMINATED,
   PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
+  PROTOBUF_C_ERROR_CODE_PROXY_PROBLEM
 } ProtobufC_RPC_Error_Code;
 
 typedef enum
@@ -104,6 +105,7 @@ ProtobufC_RPC_Server *
                                        ProtobufCService         *service,
                                        ProtobufCDispatch       *dispatch /* or NULL */
                                       );
+
 ProtobufCService *
      protobuf_c_rpc_server_destroy    (ProtobufC_RPC_Server     *server,
                                        protobuf_c_boolean        free_underlying_service);
@@ -117,6 +119,15 @@ ProtobufCService *
 void protobuf_c_rpc_server_disable_autotimeout(ProtobufC_RPC_Server *server);
 void protobuf_c_rpc_server_set_autotimeout (ProtobufC_RPC_Server *server,
                                             unsigned              timeout_millis);
+
+typedef protobuf_c_boolean
+          (*ProtobufC_RPC_IsRpcThreadFunc) (ProtobufC_RPC_Server *server,
+                                            ProtobufCDispatch    *dispatch,
+                                            void                 *is_rpc_data);
+void protobuf_c_rpc_server_configure_threading (ProtobufC_RPC_Server *server,
+                                                ProtobufC_RPC_IsRpcThreadFunc func,
+                                                void          *is_rpc_data);
+
 
 /* Error handling */
 void protobuf_c_rpc_server_set_error_handler (ProtobufC_RPC_Server *server,
