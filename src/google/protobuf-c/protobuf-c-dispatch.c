@@ -233,6 +233,7 @@ ProtobufCDispatch *protobuf_c_dispatch_new (ProtobufCAllocator *allocator)
   rv->allocator = allocator;
   rv->timer_tree = NULL;
   rv->first_idle = rv->last_idle = NULL;
+  rv->has_idle = 0;
   rv->recycled_idles = NULL;
   rv->recycled_timeouts = NULL;
   rv->is_dispatching = 0;
