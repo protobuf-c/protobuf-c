@@ -1,4 +1,4 @@
-check_PROGRAMS = test-generated-code test-generated-code2 test-rpc test-leak-0
+check_PROGRAMS = test-generated-code test-generated-code2 test-rpc
 noinst_PROGRAMS = cxx-generate-packed-data example-server example-client
 INCLUDES = -I$(srcdir)/..
 test_generated_code_SOURCES = \
@@ -10,11 +10,6 @@ test_generated_code2_SOURCES = \
 test-generated-code2.c \
 generated-code/test-full.pb-c.c
 test_generated_code2_LDADD = \
-../libprotobuf-c.la
-test_leak_0_SOURCES = \
-test-leak-0.c \
-generated-code/test.pb-c.c
-test_leak_0_LDADD = \
 ../libprotobuf-c.la
 test_rpc_SOURCES = \
 test-rpc.c \
