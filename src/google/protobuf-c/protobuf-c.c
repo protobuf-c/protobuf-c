@@ -63,11 +63,14 @@
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
+#if 0                                   /* we no longer use alloca. */
 #if HAVE_ALLOCA_H
 #include <alloca.h>
 #elif HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+#endif
+
 
 #ifndef PRINT_UNPACK_ERRORS
 #define PRINT_UNPACK_ERRORS              1
@@ -79,6 +82,14 @@ unsigned protobuf_c_major = PROTOBUF_C_MAJOR;
 unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
 
 #define MAX_UINT64_ENCODED_SIZE 10
+
+/* This should be roughly the biggest message you think you'll encounter.
+   However, the only point of the hashing is to detect uninitialized required members.
+   I doubt many messages have 128 REQUIRED fields, so hopefully this'll be fine.
+
+   TODO: A better solution is to separately in the descriptor index the required fields,
+   and use the allcoator if the required field count is too big.  */
+#define MAX_MEMBERS_FOR_HASH_SIZE       128
 
 /* convenience macros */
 #define TMPALLOC(allocator, size) ((allocator)->tmp_alloc ((allocator)->allocator_data, (size)))
@@ -2153,7 +2164,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   unsigned f;
   unsigned i_slab;
   unsigned last_field_index = 0;
-  unsigned char required_fields_bitmap[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,};
+  unsigned char required_fields_bitmap[MAX_MEMBERS_FOR_HASH_SIZE/8] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,};
   static const unsigned word_bits = sizeof(long) * 8;
 
   ASSERT_IS_MESSAGE_DESCRIPTOR (desc);

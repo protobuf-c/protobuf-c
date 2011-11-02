@@ -13,6 +13,9 @@
         See Issue #63 for demo (w/ nice test case by dror.harari).
       - add PROTOBUF_C_{MAJOR,MINOR} for compile-time checks and
         protobuf_c_{major,minor} for checks about the running library. (Issue #53)
+      - use a small constant-size hash-table instead of alloca() for
+        detecting required fields, and it also prevents us from using too
+	much stack, etc.  (Related to Issue #60)
 
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
