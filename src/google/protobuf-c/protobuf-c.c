@@ -75,6 +75,9 @@
 
 #include "protobuf-c.h"
 
+unsigned protobuf_c_major = PROTOBUF_C_MAJOR;
+unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
+
 #define MAX_UINT64_ENCODED_SIZE 10
 
 /* convenience macros */

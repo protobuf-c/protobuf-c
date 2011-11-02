@@ -1,0 +1,47 @@
+#! /usr/bin/perl
+
+my $srcdir = $ENV{srcdir} || ".";
+
+# get numbers from ChangeLog
+open IN, "<$srcdir/ChangeLog" or die "error opening $srcdir/ChangeLog";
+my $line = scalar(<IN>);
+if ($line =~ /\d+\.\d+ \((NOT.*)\)/) {
+  die "ChangeLog still bears $1 (line 1)";
+}
+if ($line !~ /^(\d+\.\d+):\s*/) {
+  die "ChangeLog parse error (line 1)";
+}
+my $changelog_version = $1;
+
+# get numbers from protobuf-c.h
+open IN, "<$srcdir/src/google/protobuf-c/protobuf-c.h" or die "error opening $srcdir/src/google/protobuf-c/protobuf-c.h";
+while (<IN>)
+{
+  if (/^\#define\s+PROTOBUF_C_MAJOR\s+(\d+)\s*$/)
+    { $c_major = $1; }
+  if (/^\#define\s+PROTOBUF_C_MINOR\s+(\d+)\s*$/)
+    { $c_minor = $1; }
+}
+if (!defined $c_minor || !defined $c_major)
+  { die "missing PROTOBUF_C_MINOR or PROTOBUF_C_MAJOR in protobuf-c.h" }
+$c_version = "$c_major.$c_minor";
+
+# get numbers from configure.ac
+open IN, "<$srcdir/configure.ac" or die "error opening $srcdir/configure.ac";
+my $line = scalar(<IN>);
+die "first line of configure.ac did not match our expectations"
+     unless $line =~ /AC_INIT\(\[protobuf-c\], \[(\d+\.\d+)\]\)/;
+my $configure_version = $1;
+
+
+if ($c_version ne $configure_version || $c_version ne $changelog_version)
+{
+  print STDERR <<"EOF";
+Versions mismatched:
+  from configure.ac      $configure_version
+  from ChangeLog         $changelog_version
+  from protobuf-c.h      $c_version
+EOF
+  exit(1);
+}
+exit(0);

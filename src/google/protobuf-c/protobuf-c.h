@@ -59,6 +59,14 @@
 #define PROTOBUF_C_DEPRECATED
 #endif
 
+/* The version of protobuf-c you are compiling against. */
+#define PROTOBUF_C_MAJOR                0
+#define PROTOBUF_C_MINOR                14
+
+/* The version of protobuf-c you are linking against. */
+extern unsigned protobuf_c_major;
+extern unsigned protobuf_c_minor;
+
 /* Define int32_t, int64_t, uint32_t, uint64_t, uint8_t.
 
    Usually, just include <inttypes.h> to do the work.

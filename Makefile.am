@@ -5,6 +5,9 @@ EXTRA_DIST = scripts pkgwriteinfo.in CMakeLists.txt LICENSE
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libprotobuf-c.pc
 
+dist-hook:
+	scripts/assert-version-numbers-match
+
 # --- packages ---
 DEBARCH = `dpkg --print-architecture`
 deb:

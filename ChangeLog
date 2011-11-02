@@ -11,6 +11,8 @@
         (srobbins99: Issue #68 Comment 1)
       - bug fix: fix for memory error is the required-field check fails.
         See Issue #63 for demo (w/ nice test case by dror.harari).
+      - add PROTOBUF_C_{MAJOR,MINOR} for compile-time checks and
+        protobuf_c_{major,minor} for checks about the running library. (Issue #53)
 
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
