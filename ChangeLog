@@ -5,6 +5,8 @@
       - switch to New BSD license.
       - add protobuf_c_rpc_server_configure_threading()
       - bugs in dsk-dispatch (Issue #65 for one)
+      - bug in packing 64-bit versions on some platforms
+        (srobbins99: Issue #68 Comment 1)
 
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)

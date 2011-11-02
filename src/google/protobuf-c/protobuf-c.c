@@ -654,7 +654,7 @@ fixed64_pack (uint64_t value, void *out)
   memcpy (out, &value, 8);
 #else
   fixed32_pack (value, out);
-  fixed32_pack (value>>32, out+4);
+  fixed32_pack (value>>32, ((char*)out)+4);
 #endif
   return 8;
 }
