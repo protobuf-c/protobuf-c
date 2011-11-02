@@ -4,9 +4,13 @@
         other than messages, strings, and bytes).
       - switch to New BSD license.
       - add protobuf_c_rpc_server_configure_threading()
-      - bugs in dsk-dispatch (Issue #65 for one)
-      - bug in packing 64-bit versions on some platforms
+      - bugs in dsk-dispatch (Issue #65 for one thing; POLLHUP for another;
+        and a problem where we moved fd_map into a local variable, when in
+	fact in can be reallocated all over the place, in dsk_dispatch_dispatch())
+      - compile error in packing 64-bit versions on some platforms
         (srobbins99: Issue #68 Comment 1)
+      - bug fix: fix for memory error is the required-field check fails.
+        See Issue #63 for demo (w/ nice test case by dror.harari).
 
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
