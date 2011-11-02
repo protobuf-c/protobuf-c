@@ -159,10 +159,9 @@ ProtobufCAllocator protobuf_c_default_allocator =
 {
   system_alloc,
   system_free,
-  NULL,         /* allocator_data */
   NULL,         /* tmp_alloc */
-  NULL,         /* alloc_unaligned */
-  NULL,         /* unpack_error_handler: use default */
+  8192,         /* max_alloca */
+  NULL          /* allocator_data */
 };
 
 /* Users should NOT modify this structure,
@@ -173,10 +172,9 @@ ProtobufCAllocator protobuf_c_system_allocator =
 {
   system_alloc,
   system_free,
-  NULL,         /* allocator_data */
   NULL,         /* tmp_alloc */
-  NULL,         /* alloc_unaligned */
-  NULL,         /* unpack_error_handler: use default */
+  8192,         /* max_alloca */
+  NULL          /* allocator_data */
 };
 
 
@@ -2321,39 +2319,40 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
 
   /* allocate space for repeated fields, also check that all required fields have been set */
   for (f = 0; f < desc->n_fields; f++)
-  {
-    const ProtobufCFieldDescriptor *field = desc->fields + f;
-    if (field->label == PROTOBUF_C_LABEL_REPEATED)
     {
-        size_t siz = sizeof_elt_in_repeated_array (field->type);
-        size_t *n_ptr = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
-        if (*n_ptr != 0)
-          {
-            unsigned n = *n_ptr;
-            *n_ptr = 0;
-            assert(rv->descriptor != NULL);
-#define CLEAR_REMAINING_N_PTRS()                                            \
-            for(f++;f < desc->n_fields; f++)                                \
-              {                                                             \
-                field = desc->fields + f;                                   \
-                if (field->label == PROTOBUF_C_LABEL_REPEATED)              \
-                  STRUCT_MEMBER (size_t, rv, field->quantifier_offset) = 0; \
-              }
-            DO_ALLOC (STRUCT_MEMBER (void *, rv, field->offset),
-                      allocator, siz * n,
-                      CLEAR_REMAINING_N_PTRS (); goto error_cleanup);
+      const ProtobufCFieldDescriptor *field = desc->fields + f;
+      if (field->label == PROTOBUF_C_LABEL_REPEATED)
+        {
+          size_t siz = sizeof_elt_in_repeated_array (field->type);
+          size_t *n_ptr = STRUCT_MEMBER_PTR (size_t, rv, field->quantifier_offset);
+          if (*n_ptr != 0)
+            {
+              unsigned n = *n_ptr;
+              *n_ptr = 0;
+              assert(rv->descriptor != NULL);
+#define CLEAR_REMAINING_N_PTRS()                                              \
+              for(f++;f < desc->n_fields; f++)                                \
+                {                                                             \
+                  field = desc->fields + f;                                   \
+                  if (field->label == PROTOBUF_C_LABEL_REPEATED)              \
+                    STRUCT_MEMBER (size_t, rv, field->quantifier_offset) = 0; \
+                }
+              DO_ALLOC (STRUCT_MEMBER (void *, rv, field->offset),
+                        allocator, siz * n,
+                        CLEAR_REMAINING_N_PTRS (); goto error_cleanup);
+            }
+        }
+      else if (field->label == PROTOBUF_C_LABEL_REQUIRED)
+        {
+          if (field->default_value == NULL && 0 == (required_fields_bitmap[f / word_bits] & (1UL << (f % word_bits))))
+            {
+              CLEAR_REMAINING_N_PTRS ();
+              UNPACK_ERROR (("message '%s': missing required field '%s'", desc->name, field->name));
+              goto error_cleanup;
+            }
+        }
+    }
 #undef CLEAR_REMAINING_N_PTRS
-          }
-    }
-    else if (field->label == PROTOBUF_C_LABEL_REQUIRED)
-    {
-      if (field->default_value == NULL && 0 == (required_fields_bitmap[f / word_bits] & (1UL << (f % word_bits))))
-      {
-        UNPACK_ERROR (("message '%s': missing required field '%s'", desc->name, field->name));
-        goto error_cleanup;
-      }
-    }
-  }
 
   /* allocate space for unknown fields */
   if (n_unknown)
