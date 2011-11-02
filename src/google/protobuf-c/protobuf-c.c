@@ -2153,8 +2153,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   unsigned f;
   unsigned i_slab;
   unsigned last_field_index = 0;
-  unsigned long *required_fields_bitmap;
-  unsigned required_fields_bitmap_len;
+  unsigned char required_fields_bitmap[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,};
   static const unsigned word_bits = sizeof(long) * 8;
 
   ASSERT_IS_MESSAGE_DESCRIPTOR (desc);
@@ -2162,9 +2161,11 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
 
-  required_fields_bitmap_len = (desc->n_fields + word_bits - 1) / word_bits;
-  required_fields_bitmap = alloca(required_fields_bitmap_len * sizeof(long));
-  memset(required_fields_bitmap, 0, required_fields_bitmap_len * sizeof(long));
+  /* We treat all fields % (16*8), which should be good enough. */
+#define REQUIRED_FIELD_BITMAP_SET(index)   \
+  required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] |= (1<<((index)%8))
+#define REQUIRED_FIELD_BITMAP_IS_SET(index)   \
+  required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] & (1<<((index)%8))
 
   DO_ALLOC (rv, allocator, desc->sizeof_message, return NULL);
   scanned_member_slabs[0] = first_member_slab;
@@ -2215,7 +2216,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         field = last_field;
 
       if (field != NULL && field->label == PROTOBUF_C_LABEL_REQUIRED)
-        required_fields_bitmap[last_field_index / word_bits] |= (1UL << (last_field_index % word_bits));
+        REQUIRED_FIELD_BITMAP_SET (last_field_index);
 
       at += used;
       rem -= used;
@@ -2347,7 +2348,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         }
       else if (field->label == PROTOBUF_C_LABEL_REQUIRED)
         {
-          if (field->default_value == NULL && 0 == (required_fields_bitmap[f / word_bits] & (1UL << (f % word_bits))))
+          if (field->default_value == NULL
+           && !REQUIRED_FIELD_BITMAP_IS_SET (f))
             {
               CLEAR_REMAINING_N_PTRS ();
               UNPACK_ERROR (("message '%s': missing required field '%s'", desc->name, field->name));
