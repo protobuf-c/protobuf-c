@@ -39,6 +39,15 @@
  */
 
 
+/* A little enum helper macro:  this will ensure that your
+   enum's size is sizeof(int).  In protobuf, it need not
+   be larger than 32-bits.
+ 
+   This is written assuming it is appended to a list w/o a tail comma. */
+#ifndef _PROTOBUF_C_FORCE_ENUM_TO_BE_INT_SIZE
+  #define _PROTOBUF_C_FORCE_ENUM_TO_BE_INT_SIZE(enum_name) \
+    , _##enum_name##_IS_INT_SIZE = INT_MAX
+#endif
 
 /* === needs to be declared for the PROTOBUF_C_BUFFER_SIMPLE_INIT macro === */
 

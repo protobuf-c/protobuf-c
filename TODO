@@ -10,6 +10,9 @@
   be static??
 - dispatch-within-dispatch protection needed (ie assert that you can't
   recursively invoke the main-loop)
+- uh not sure i like the hash-based situation for required values.
+  perhaps we need a message-descriptor flag to help out. (Could always use
+  different hashes and sizes)
 
 --------------------
 --- NEEDED TESTS ---

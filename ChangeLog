@@ -16,6 +16,7 @@
       - use a small constant-size hash-table instead of alloca() for
         detecting required fields, and it also prevents us from using too
 	much stack, etc.  (Related to Issue #60)
+      - add a macro to ensure enums are the size of ints. (Issue #69)
 
 0.15:
       - make protobuf_c_message_init() into a function (Issue #49, daveb)

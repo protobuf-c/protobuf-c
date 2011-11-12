@@ -44,6 +44,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   map<string, string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["shortname"] = descriptor_->name();
+  vars["uc_name"] = FullNameToUpper(descriptor_->full_name());
 
   printer->Print(vars, "typedef enum _$classname$ {\n");
   printer->Indent();
@@ -53,10 +54,10 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
 
 
   vars["opt_comma"] = ",";
+  vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
   for (int i = 0; i < descriptor_->value_count(); i++) {
     vars["name"] = descriptor_->value(i)->name();
     vars["number"] = SimpleItoa(descriptor_->value(i)->number());
-    vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
 
@@ -70,6 +71,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
     }
   }
 
+  printer->Print(vars, "  _PROTOBUF_C_FORCE_ENUM_TO_BE_INT_SIZE($uc_name$)\n");
   printer->Outdent();
   printer->Print(vars, "} $classname$;\n");
 }
