@@ -44,6 +44,7 @@
 
 #include <stddef.h>
 #include <assert.h>
+#include <limits.h>
 
 #ifdef __cplusplus
 # define PROTOBUF_C_BEGIN_DECLS    extern "C" {
@@ -105,6 +106,7 @@ extern unsigned protobuf_c_minor;
 #else
 # define PROTOBUF_C_API
 #endif
+
 
 PROTOBUF_C_BEGIN_DECLS
 
@@ -275,6 +277,8 @@ typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
  *        otherwise NULL.
  * 'default_value' is a pointer to a default value for this field,
  *        where allowed.
+ * 'packed' is only for REPEATED fields (it is 0 otherwise); this is if
+ *        the repeated fields is marked with the 'packed' options.
  */
 struct _ProtobufCFieldDescriptor
 {
