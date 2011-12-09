@@ -579,6 +579,10 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
   protobuf_c_assert (!d->is_dispatching);
   d->is_dispatching = 1;
 
+  gettimeofday (&tv, NULL);
+  dispatch->last_dispatch_secs = tv.tv_sec;
+  dispatch->last_dispatch_usecs = tv.tv_usec;
+
   fd_max = 0;
   for (i = 0; i < n_notifies; i++)
     if (fd_max < (unsigned) notifies[i].fd)
@@ -621,9 +625,6 @@ protobuf_c_dispatch_dispatch (ProtobufCDispatch *dispatch,
   dispatch->has_idle = 0;
 
   /* handle timers */
-  gettimeofday (&tv, NULL);
-  dispatch->last_dispatch_secs = tv.tv_sec;
-  dispatch->last_dispatch_usecs = tv.tv_usec;
   while (d->timer_tree != NULL)
     {
       ProtobufCDispatchTimer *min_timer;
