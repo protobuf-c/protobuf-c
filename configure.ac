@@ -34,6 +34,10 @@ if test $BUILD_PROTOC_C = 1; then
   you must add '-Iincludedir' to CXXFLAGS
   and '-Llibdir' to LDFLAGS.
 
+  You can download the google's protobuf library from
+  the following page:
+      http://code.google.com/p/protobuf/downloads/list
+
   If you did not specify a prefix when installing
   protobuf, try 
     './configure CXXFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib'
