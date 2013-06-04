@@ -388,6 +388,9 @@ PROTOBUF_C_API ProtobufCMessage *
 PROTOBUF_C_API void      protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
                                              ProtobufCAllocator  *allocator);
 
+PROTOBUF_C_API protobuf_c_boolean
+                         protobuf_c_message_check (const ProtobufCMessage *message);
+
 /* WARNING: 'message' must be a block of memory 
    of size descriptor->sizeof_message. */
 PROTOBUF_C_API void      protobuf_c_message_init           (const ProtobufCMessageDescriptor *,
@@ -493,7 +496,15 @@ struct _ProtobufCBufferSimple
   do { if ((simp_buf)->must_free_data) \
          protobuf_c_default_allocator.free (&protobuf_c_default_allocator.allocator_data, (simp_buf)->data); } while (0)
 
-
+#ifdef PROTOBUF_C_PLEASE_INCLUDE_CTYPE
+// This type is meant to reduce duplicated logic between
+// various iterators.  It tells what type to expect at
+// the "offset" within the message (or, for repeated fields,
+// the contents of the buffer.)
+//
+// Because the names are confusing, and because this mechanism tends to be
+// seldom used, you have to specifically request
+// this API via #define PROTOBUF_C_PLEASE_INCLUDE_CTYPE.
 typedef enum
 {
   PROTOBUF_C_CTYPE_INT32,
@@ -507,11 +518,12 @@ typedef enum
   PROTOBUF_C_CTYPE_STRING,
   PROTOBUF_C_CTYPE_BYTES,
   PROTOBUF_C_CTYPE_MESSAGE,
-} ProtobufCCType;
+} ProtobufC_CType;
 
-extern ProtobufCCType protobuf_c_type_to_ctype (ProtobufCType type);
+extern ProtobufC_CType protobuf_c_type_to_ctype (ProtobufCType type);
 #define protobuf_c_type_to_ctype(type) \
-  ((ProtobufCCType)(protobuf_c_type_to_ctype_array[(type)]))
+  ((ProtobufC_CType)(protobuf_c_type_to_ctype_array[(type)]))
+#endif
 
 /* ====== private ====== */
 #include "protobuf-c-private.h"

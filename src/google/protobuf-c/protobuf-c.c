@@ -1007,6 +1007,7 @@ repeated_field_pack (const ProtobufCFieldDescriptor *field,
     }
   else
     {
+      // not "packed" cased
       /* CONSIDER: optimize this case a bit (by putting the loop inside the switch) */
       size_t rv = 0;
       unsigned siz = sizeof_elt_in_repeated_array (field->type);
@@ -2502,6 +2503,56 @@ protobuf_c_message_init (const ProtobufCMessageDescriptor *descriptor,
 {
   descriptor->message_init((ProtobufCMessage*) (message));
 }
+
+protobuf_c_boolean protobuf_c_message_check (const ProtobufCMessage *message)
+{
+  unsigned f;
+  for (f = 0; f < message->descriptor->n_fields; f++)
+    {
+      ProtobufCType type = message->descriptor->fields[f].type;
+      ProtobufCLabel label = message->descriptor->fields[f].label;
+      if (type == PROTOBUF_C_TYPE_MESSAGE)
+        {
+          unsigned offset = message->descriptor->fields[f].offset;
+          if (label == PROTOBUF_C_LABEL_REQUIRED)
+            {
+              ProtobufCMessage *sub = * (ProtobufCMessage**) ((char*)message + offset);
+              if (sub == NULL)
+                return FALSE;
+              if (!protobuf_c_message_check(sub))
+                return FALSE;
+            }
+          else if (label == PROTOBUF_C_LABEL_OPTIONAL)
+            {
+              ProtobufCMessage *sub = * (ProtobufCMessage**) ((char*)message + offset);
+              if (sub != NULL && !protobuf_c_message_check(sub))
+                return FALSE;
+            }
+          else if (label == PROTOBUF_C_LABEL_REPEATED)
+            {
+              unsigned n = * (unsigned *) ((char*)message + message->descriptor->fields[f].quantifier_offset);
+              ProtobufCMessage **subs = * (ProtobufCMessage***) ((char*)message + offset);
+              unsigned i;
+              for (i = 0; i < n; i++)
+                if (!protobuf_c_message_check (subs[i]))
+                  return FALSE;
+            }
+        }
+      else if (type == PROTOBUF_C_TYPE_STRING)
+        {
+          if (label == PROTOBUF_C_LABEL_REQUIRED)
+            {
+              char *str = * (char **) ((char*)message + message->descriptor->fields[f].offset);
+              if (str == NULL)
+                return FALSE;
+            }
+        }
+    }
+  return TRUE;
+}
+
+
+     
 
 /* === services === */
 typedef void (*GenericHandler)(void *service,
