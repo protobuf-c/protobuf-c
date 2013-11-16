@@ -1,8 +1,10 @@
 .*swp
 *.la
 *.lo
+*.log
 *.o
 *.tar.gz
+*.trs
 .deps/
 .dirstamp
 .libs/
@@ -13,6 +15,7 @@
 /configure
 /libtool
 /stamp-h1
+/test-suite.log
 Makefile
 Makefile.in
 TAGS
