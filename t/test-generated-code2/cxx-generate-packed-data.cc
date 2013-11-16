@@ -2,7 +2,7 @@
  * these are tested against eachother to make sure the c and c++ agree. */
 
 #define __STDC_LIMIT_MACROS
-#include "generated-code/test-full.pb.h"
+#include "test-full.pb.h"
 #include <limits.h>
 #  if defined(_MSC_VER)
      /* On windows, in ms visual studio, define the types ourselves */

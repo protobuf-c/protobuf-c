@@ -1,4 +1,4 @@
-#include "generated-code/test.pb-c.h"
+#include "test.pb-c.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
