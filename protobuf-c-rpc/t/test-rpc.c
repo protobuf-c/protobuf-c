@@ -3,8 +3,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <signal.h>
-#include "generated-code/test.pb-c.h"
-#include <google/protobuf-c/protobuf-c-rpc.h>
+
+#include <protobuf-c-rpc/protobuf-c-rpc.h>
+#include "t/test.pb-c.h"
 
 static void
 message (const char *format, ...)
