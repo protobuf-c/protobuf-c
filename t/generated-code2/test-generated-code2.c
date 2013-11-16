@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "test-full.pb-c.h"
+#include "../test-full.pb-c.h"
 #include "test-full-cxx-output.inc"
 
 #define TEST_ENUM_SMALL_TYPE_NAME   Foo__TestEnumSmall

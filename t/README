@@ -16,17 +16,23 @@ Please submit them as issues in the tracking system, or email me.
 
 Here are the files involved in each test:
 
-test-generated-code
-   test.proto                   Protobuf declarations for the simple test.
+test.proto                      Protobuf declarations for the simple test.
+test.pb-c.c                     Protobuf-C generated code based on test.proto
+test.pb-c.h                     Protobuf-C generated code based on test.proto
+
+test-full.proto                 Protobuf declarations for the exhaustive test.
+test-full.pb-c.c                Protobuf-C generated code based on test-full.proto
+test-full.pb-c.h                Protobuf-C generated code based on test-full.proto
+test-full.pb.cc                 Protobuf (C++) generated code based on test-full.proto
+test-full.pb.h                  Protobuf (C++) generated code based on test-full.proto
+
+generated-code/
    test-generated-code.c        Actual test code.
    test-generated-code          Test executable.
-   generated-code/test.pb-c.h   Protobuf-C generated code based on test.proto
-   generated-code/test.pb-c.c   Protobuf-C generated code based on test.proto
 
-test-generated-code2
-   test-full.proto              Protobuf declarations for the exhaustive test.
+generated-code2/
    cxx-generate-packed-data.cc  C++ code to generated data to compare with C.
    cxx-generate-packed-data     Program whichs generates data (using C++ api)
-   generated-code/test-full-cxx-output.inc  Output of cxx-generate-packed-data.
+   test-full-cxx-output.inc     Output of cxx-generate-packed-data.
    test-generated-code2.c       Actual test code.
    test-generated-code2         Test executable.
