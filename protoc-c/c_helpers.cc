@@ -25,7 +25,7 @@
 #include <stdio.h>		// for snprintf
 #include <float.h>
 
-#include <google/protobuf/compiler/c/c_helpers.h>
+#include <protoc-c/c_helpers.h>
 #include <google/protobuf/stubs/common.h>
 
 namespace google {

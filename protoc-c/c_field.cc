@@ -20,13 +20,13 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <google/protobuf/compiler/c/c_field.h>
-#include <google/protobuf/compiler/c/c_primitive_field.h>
-#include <google/protobuf/compiler/c/c_string_field.h>
-#include <google/protobuf/compiler/c/c_bytes_field.h>
-#include <google/protobuf/compiler/c/c_enum_field.h>
-#include <google/protobuf/compiler/c/c_message_field.h>
-#include <google/protobuf/compiler/c/c_helpers.h>
+#include <protoc-c/c_field.h>
+#include <protoc-c/c_primitive_field.h>
+#include <protoc-c/c_string_field.h>
+#include <protoc-c/c_bytes_field.h>
+#include <protoc-c/c_enum_field.h>
+#include <protoc-c/c_message_field.h>
+#include <protoc-c/c_helpers.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/io/printer.h>

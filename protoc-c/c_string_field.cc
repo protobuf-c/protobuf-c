@@ -20,8 +20,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <google/protobuf/compiler/c/c_string_field.h>
-#include <google/protobuf/compiler/c/c_helpers.h>
+#include <protoc-c/c_string_field.h>
+#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/descriptor.pb.h>

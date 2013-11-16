@@ -22,10 +22,10 @@
 
 #include <algorithm>
 #include <map>
-#include <google/protobuf/compiler/c/c_message.h>
-#include <google/protobuf/compiler/c/c_enum.h>
-#include <google/protobuf/compiler/c/c_extension.h>
-#include <google/protobuf/compiler/c/c_helpers.h>
+#include <protoc-c/c_message.h>
+#include <protoc-c/c_enum.h>
+#include <protoc-c/c_extension.h>
+#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format.h>

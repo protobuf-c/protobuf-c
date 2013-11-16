@@ -20,8 +20,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <google/protobuf/compiler/c/c_extension.h>
-#include <google/protobuf/compiler/c/c_helpers.h>
+#include <protoc-c/c_extension.h>
+#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 
 namespace google {

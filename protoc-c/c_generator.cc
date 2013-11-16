@@ -20,13 +20,13 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <google/protobuf/compiler/c/c_generator.h>
+#include <protoc-c/c_generator.h>
 
 #include <vector>
 #include <utility>
 
-#include <google/protobuf/compiler/c/c_file.h>
-#include <google/protobuf/compiler/c/c_helpers.h>
+#include <protoc-c/c_file.h>
+#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/descriptor.pb.h>

@@ -25,7 +25,7 @@
 
 #include <string>
 #include <google/protobuf/stubs/common.h>
-#include <google/protobuf/compiler/c/c_field.h>
+#include <protoc-c/c_field.h>
 
 namespace google {
 namespace protobuf {
