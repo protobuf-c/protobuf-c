@@ -1,20 +1,12 @@
-language: c
+language: cpp
 
 before_install:
-        - sudo apt-get update -qq
+    - sudo apt-get update -qq
 
 install:
-        # Install protobuf-2.5.0
-        - wget http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz
-        - tar -xzvf protobuf-2.5.0.tar.gz
-        - cd protobuf-2.5.0 && ./configure
-        - make -j8
-        - sudo make install && sudo ldconfig
-        - cd ../
+    - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev
 
 script:
-        - ./autogen.sh
-        - ./configure
-        - make -j8
-        - make check
-        - sudo make install
+    - ./autogen.sh
+    - ./configure && make distcheck && make clean
+    - ./configure --enable-rpc && make distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-rpc" && make clean
