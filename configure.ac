@@ -45,7 +45,7 @@ AC_ARG_ENABLE(
 AS_IF(
     [test "x$enable_protoc" != "xno"],
     [
-        PKG_CHECK_MODULES([protobuf], [protobuf])
+        PKG_CHECK_MODULES([protobuf], [protobuf >= 2.5.0])
         AC_LANG_PUSH([C++])
     ]
 )
