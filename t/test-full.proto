@@ -33,7 +33,6 @@ enum TestEnumDupValues {
   VALUE_F = 1000;
   VALUE_AA = 1000;
   VALUE_BB = 1001;
-  option allow_alias = true;
 }
 
 message TestFieldNo15 {			// should use 1 byte header
