@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../test-full.pb-c.h"
-#include "test-full-cxx-output.inc"
+#include "t/test-full.pb-c.h"
+#include "t/generated-code2/test-full-cxx-output.inc"
 
 #define TEST_ENUM_SMALL_TYPE_NAME   Foo__TestEnumSmall
 #define TEST_ENUM_SMALL(shortname)   FOO__TEST_ENUM_SMALL__##shortname

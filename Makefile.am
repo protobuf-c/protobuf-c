@@ -13,7 +13,9 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 AM_CPPFLAGS = \
 	-include $(top_builddir)/config.h \
-	-I${top_srcdir}/protobuf-c
+	-I${top_srcdir}/protobuf-c \
+	-I${top_builddir} \
+	-I${top_srcdir}
 AM_CFLAGS = ${my_CFLAGS}
 AM_LDFLAGS =
 
@@ -41,10 +43,6 @@ protobuf_c_libprotobuf_c_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBPROTOBUF_C_CURRENT):$(LIBPROTOBUF_C_REVISION):$(LIBPROTOBUF_C_AGE) \
 	-export-symbols-regex "^(protobuf_c_[a-z].*)" \
 	-no-undefined
-
-install-exec-hook:
-	rm -f $(DESTDIR)$(libdir)/libprotobuf-c.la
-	rm -f $(DESTDIR)$(libdir)/libprotobuf-c-rpc.la
 
 pkgconfig_DATA += protobuf-c/libprotobuf-c.pc
 CLEANFILES += protobuf-c/libprotobuf-c.pc
@@ -168,13 +166,13 @@ t_generated_code2_cxx_generate_packed_data_LDADD = \
 	$(protobuf_LIBS)
 
 t/test.pb-c.c t/test.pb-c.h: $(top_builddir)/protoc-c/protoc-c$(EXEEXT) $(top_srcdir)/t/test.proto
-	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) --c_out=$(top_builddir) $(top_srcdir)/t/test.proto
+	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test.proto
 
 t/test-full.pb-c.c t/test-full.pb-c.h: $(top_builddir)/protoc-c/protoc-c$(EXEEXT) $(top_srcdir)/t/test-full.proto
-	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) --c_out=$(top_builddir) $(top_srcdir)/t/test-full.proto
+	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test-full.proto
 
 t/test-full.pb.cc t/test-full.pb.h: @PROTOC@ $(top_srcdir)/t/test-full.proto
-	$(AM_V_GEN)@PROTOC@ --cpp_out=$(top_builddir) $(top_srcdir)/t/test-full.proto
+	$(AM_V_GEN)@PROTOC@ -I$(top_srcdir) --cpp_out=$(top_builddir) $(top_srcdir)/t/test-full.proto
 
 t/generated-code2/test-full-cxx-output.inc: t/generated-code2/cxx-generate-packed-data$(EXEEXT)
 	$(AM_V_GEN)$(top_builddir)/t/generated-code2/cxx-generate-packed-data$(EXEEXT) > $(top_builddir)/t/generated-code2/test-full-cxx-output.inc
