@@ -24,8 +24,6 @@ AC_CHECK_HEADERS(sys/uio.h)
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(winsock.h)
 
-AC_PATH_PROG(PROTOC, protoc)
-
 PKG_PROG_PKG_CONFIG
 if test -n "$PKG_CONFIG"; then
     # Horrible hack for systems where the pkg-config install directory is simply wrong!
@@ -38,18 +36,9 @@ else
     AC_MSG_ERROR([pkg-config is required!])
 fi
 
-AC_ARG_ENABLE(
-    [protoc],
-    AS_HELP_STRING([--disable-protoc], [Disable building the protobuf-c compiler])
-)
-AS_IF(
-    [test "x$enable_protoc" != "xno"],
-    [
-        PKG_CHECK_MODULES([protobuf], [protobuf])
-        AC_LANG_PUSH([C++])
-    ]
-)
-AM_CONDITIONAL([BUILD_PROTOC_C], [test "x$enable_protoc" != "xno"])
+PKG_CHECK_MODULES([protobuf], [protobuf])
+AC_LANG_PUSH([C++])
+AC_PATH_PROG(PROTOC, protoc)
 
 AC_ARG_ENABLE(
     [rpc],

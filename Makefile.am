@@ -86,8 +86,6 @@ endif
 # protoc-c
 #
 
-if BUILD_PROTOC_C
-
 bin_PROGRAMS += protoc-c/protoc-c
 protoc_c_protoc_c_SOURCES = \
 	protoc-c/c_bytes_field.cc \
@@ -124,13 +122,9 @@ protoc_c_protoc_c_LDADD = \
 	$(protobuf_LIBS) \
 	-lprotoc
 
-endif
-
 #
 # protobuf-c tests
 #
-
-if BUILD_PROTOC_C
 
 check_PROGRAMS += \
 	t/generated-code/test-generated-code \
@@ -188,13 +182,10 @@ EXTRA_DIST += \
 	t/test-full.proto \
 	t/generated-code2/common-test-arrays.h
 
-endif
-
 #
 # protobuf-c-rpc tests
 #
 
-if BUILD_PROTOC_C
 if BUILD_RPC
 
 check_PROGRAMS += \
@@ -210,7 +201,6 @@ protobuf_c_rpc_t_test_rpc_LDADD = \
 	protobuf-c/libprotobuf-c.la \
 	protobuf-c-rpc/libprotobuf-c-rpc.la
 
-endif
 endif
 
 #
