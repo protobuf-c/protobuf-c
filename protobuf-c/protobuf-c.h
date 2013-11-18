@@ -62,7 +62,7 @@
 
 /* The version of protobuf-c you are compiling against. */
 #define PROTOBUF_C_MAJOR                0
-#define PROTOBUF_C_MINOR                14
+#define PROTOBUF_C_MINOR                16
 
 /* The version of protobuf-c you are linking against. */
 extern unsigned protobuf_c_major;
