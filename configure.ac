@@ -67,10 +67,12 @@ AC_OUTPUT
 AC_MSG_RESULT([
     $PACKAGE $VERSION
 
-        compiler:               ${CC}
-        cflags:                 ${CFLAGS}
-        ldflags:                ${LDFLAGS}
-        libs:                   ${LIBS}
+        CC:                     ${CC}
+        CFLAGS:                 ${CFLAGS}
+        CXX:                    ${CXX}
+        CXXFLAGS:               ${CXXFLAGS}
+        LDFLAGS:                ${LDFLAGS}
+        LIBS:                   ${LIBS}
 
         prefix:                 ${prefix}
         sysconfdir:             ${sysconfdir}
