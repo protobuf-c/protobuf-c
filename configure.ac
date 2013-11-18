@@ -70,4 +70,5 @@ AC_MSG_RESULT([
         pkgconfigdir:           ${pkgconfigdir}
 
         bigendian:              ${ac_cv_c_bigendian}
+        protobuf version:       $($PROTOC --version)
 ])
