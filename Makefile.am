@@ -67,6 +67,8 @@ nobase_include_HEADERS += \
 	protobuf-c-rpc/protobuf-c-rpc.h
 
 protobuf_c_rpc_libprotobuf_c_rpc_la_SOURCES = \
+	protobuf-c-rpc/gsklistmacros.h \
+	protobuf-c-rpc/gskrbtreemacros.h \
 	protobuf-c-rpc/protobuf-c-data-buffer.c \
 	protobuf-c-rpc/protobuf-c-dispatch.c \
 	protobuf-c-rpc/protobuf-c-rpc.c
