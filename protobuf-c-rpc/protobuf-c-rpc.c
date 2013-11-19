@@ -704,6 +704,7 @@ destroy_client_rpc (ProtobufCService *service)
       break;
     case PROTOBUF_C_CLIENT_STATE_FAILED_WAITING:
       protobuf_c_dispatch_remove_timer (client->info.failed_waiting.timer);
+      client->allocator->free (client->allocator, client->info.failed_waiting.timer);
       client->allocator->free (client->allocator, client->info.failed_waiting.error_message);
       break;
     case PROTOBUF_C_CLIENT_STATE_FAILED:

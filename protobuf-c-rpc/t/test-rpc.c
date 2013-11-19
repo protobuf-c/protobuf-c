@@ -182,6 +182,18 @@ pretend_we_are_in_another_thread (ProtobufC_RPC_Server *server,
   return 0;             /* indicate we are NOT in RPC thread */
 }
 
+static void test_client_create_destroy (void)
+{
+   ProtobufCService *rpc_service =
+      protobuf_c_rpc_client_new(PROTOBUF_C_RPC_ADDRESS_LOCAL, "test.socket", NULL, NULL);
+
+   protobuf_c_dispatch_run(protobuf_c_dispatch_default());
+
+   rpc_service->destroy(rpc_service);
+
+   protobuf_c_dispatch_destroy_default();
+}
+
 int main()
 {
   protobuf_c_boolean is_done;
@@ -284,6 +296,9 @@ int main()
   protobuf_c_rpc_server_destroy (server, 0);
 
   protobuf_c_dispatch_destroy_default ();
+
+  message ("creating and destroying a client");
+  test_client_create_destroy();
 
   return 0;
 }
