@@ -33,7 +33,10 @@ test__by_name (Foo__DirLookup_Service *service,
   char *email = NULL;
   (void) service;
   if (name->name == NULL)
+  {
     closure (NULL, closure_data);
+    return;
+  }
   else if (strcmp (name->name, "dave") == 0)
     {
       number = "555-1212";
@@ -128,6 +131,12 @@ test_service (ProtobufCService *service)
   name.name = "asdfvcvzxsa";
   is_done = 0;
   foo__dir_lookup__by_name (service, &name, test_not_found_closure, &is_done);
+  while (!is_done)
+    protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
+
+  name.name = NULL;
+  is_done = 0;
+  foo__dir_lookup__by_name (service, &name, test_defunct_closure, &is_done);
   while (!is_done)
     protobuf_c_dispatch_run (protobuf_c_dispatch_default ());
 }

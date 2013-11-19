@@ -562,7 +562,6 @@ handle_client_fd_events (int                fd,
               uint32_t header[4];
               unsigned status_code, method_index, message_length, request_id;
               Closure *closure;
-              uint8_t *packed_data;
               ProtobufCMessage *msg;
               protobuf_c_data_buffer_peek (&client->incoming, header, sizeof (header));
               status_code = uint32_from_le (header[0]);
@@ -583,23 +582,36 @@ handle_client_fd_events (int                fd,
                 }
               closure = client->info.connected.closures + (request_id - 1);
 
-              /* read message and unpack */
+              /* Discard the RPC header */
               protobuf_c_data_buffer_discard (&client->incoming, 16);
-              packed_data = client->allocator->alloc (client->allocator, message_length);
-              protobuf_c_data_buffer_read (&client->incoming, packed_data, message_length);
 
-              /* TODO: use fast temporary allocator */
-              msg = protobuf_c_message_unpack (closure->response_type,
-                                               client->allocator,
-                                               message_length,
-                                               packed_data);
-              if (msg == NULL)
-                {
-                  fprintf(stderr, "unable to unpack msg of length %u", message_length);
-                  client_failed (client, "failed to unpack message");
-                  client->allocator->free (client->allocator, packed_data);
-                  return;
-                }
+              if (status_code == PROTOBUF_C_STATUS_CODE_SUCCESS)
+              {
+                 /* read message and unpack */
+                 uint8_t *packed_data =
+                    client->allocator->alloc (client->allocator, message_length);
+                 protobuf_c_data_buffer_read (&client->incoming, packed_data, message_length);
+
+                 /* TODO: use fast temporary allocator */
+                 msg = protobuf_c_message_unpack (closure->response_type,
+                       client->allocator,
+                       message_length,
+                       packed_data);
+
+                 client->allocator->free (client->allocator, packed_data);
+                 if (msg == NULL)
+                 {
+                    fprintf(stderr, "unable to unpack msg of length %u", message_length);
+                    client_failed (client, "failed to unpack message");
+                    return;
+                 }
+              }
+              else
+              {
+                 /* Server did not send a response message */
+                 protobuf_c_assert (message_length == 0);
+                 msg = NULL;
+              }
 
               /* invoke closure */
               closure->closure (msg, closure->closure_data);
@@ -609,8 +621,8 @@ handle_client_fd_events (int                fd,
               client->info.connected.first_free_request_id = request_id;
 
               /* clean up */
-              protobuf_c_message_free_unpacked (msg, client->allocator);
-              client->allocator->free (client->allocator, packed_data);
+              if (msg)
+                 protobuf_c_message_free_unpacked (msg, client->allocator);
             }
         }
     }
