@@ -1351,7 +1351,7 @@ protobuf_c_rpc_server_new       (ProtobufC_RPC_AddressType type,
     case PROTOBUF_C_RPC_ADDRESS_LOCAL:
       protocol_family = PF_UNIX;
       memset (&addr_un, 0, sizeof (addr_un));
-      addr_un.sun_family = AF_LOCAL;
+      addr_un.sun_family = AF_UNIX;
       strncpy (addr_un.sun_path, name, sizeof (addr_un.sun_path));
       address_len = sizeof (addr_un);
       address = (struct sockaddr *) (&addr_un);
