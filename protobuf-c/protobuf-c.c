@@ -51,14 +51,6 @@
 #include <stdio.h>                      /* for occasional printf()s */
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
-#if 0                                   /* we no longer use alloca. */
-#if HAVE_ALLOCA_H
-#include <alloca.h>
-#elif HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-#endif
-
 
 #ifndef PRINT_UNPACK_ERRORS
 #define PRINT_UNPACK_ERRORS              1
@@ -2288,7 +2280,6 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             }
           which_slab++;
           size = sizeof(ScannedMember) << (which_slab+FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2);
-          /* TODO: consider using alloca() ! */
           if (allocator->tmp_alloc != NULL)
             scanned_member_slabs[which_slab] = TMPALLOC(allocator, size);
           else
