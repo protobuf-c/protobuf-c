@@ -1,24 +1,87 @@
-0.16 (NOT YET RELEASED)
-      - treat a "length-prefixed" wire-type message for a repeated field
-        as packed-repeated whenever it makes sense (for all types
-        other than messages, strings, and bytes).
-      - switch to New BSD license.
-      - add protobuf_c_rpc_server_configure_threading()
-      - bugs in dsk-dispatch (Issue #65 for one thing; POLLHUP for another;
-        and a problem where we moved fd_map into a local variable, when in
-	fact in can be reallocated all over the place, in dsk_dispatch_dispatch())
-      - compile error in packing 64-bit versions on some platforms
-        (srobbins99: Issue #68 Comment 1)
-      - bug fix: fix for memory error is the required-field check fails.
-        See Issue #63 for demo (w/ nice test case by dror.harari).
-      - add PROTOBUF_C_{MAJOR,MINOR} for compile-time checks and
-        protobuf_c_{major,minor} for checks about the running library. (Issue #53)
-      - use a small constant-size hash-table instead of alloca() for
-        detecting required fields, and it also prevents us from using too
-	much stack, etc.  (Related to Issue #60)
-      - add a macro to ensure enums are the size of ints. (Issue #69)
+protobuf-c (0.16) UNRELEASED
 
-0.15:
+  [ Dave Benson ]
+  * Treat a "length-prefixed" wire-type message for a repeated field as
+    packed-repeated whenever it makes sense (for all types other than
+    messages, strings, and bytes).
+
+  * Switch to New BSD license.
+
+  * Add protobuf_c_message_check().
+
+  * Add protobuf_c_rpc_server_configure_threading().
+
+  * Bugs in dsk-dispatch (Issue #65 for one thing; POLLHUP for another; and
+    a problem where we moved fd_map into a local variable, when in fact in
+    can be reallocated all over the place, in dsk_dispatch_dispatch()).
+
+  * Compile error in packing 64-bit versions on some platforms
+    (srobbins99: Issue #68 Comment 1).
+
+  * Fix for memory error if the required-field check fails. See Issue #63
+    for demo (w/ nice test case by dror.harari).
+
+  * Add PROTOBUF_C_{MAJOR,MINOR} for compile-time checks and
+    protobuf_c_{major,minor} for checks about the running library
+    (Issue #53).
+
+  * Use a small constant-size hash-table instead of alloca() for detecting
+    required fields, and it also prevents us from using too much stack, etc.
+    (Related to Issue #60, #79).
+
+  * Add a macro to ensure enums are the size of ints (Issue #69).
+
+  [ Ilya Lipnitskiy ]
+  * Travis-CI integration.
+
+  * Add source .proto filename to generated files.
+
+  * Add protobuf-c version to protoc-c --version output (Issue #52).
+
+  * rpc: Rename AF_LOCAL to AF_UNIX (Issue #86, #100).
+
+  * rpc: Handle server responses with NULL messages on the client side
+    (Issue #78).
+
+  * rpc: Free the timer created by autoreconnect in case the client has
+    failed to connect (Issue #70).
+
+  [ Robert Edmonds ]
+  * Remove CMake (Issue #87).
+
+  * Modernize the build system.
+    - Don't generate any diagnostics when building the build system with
+      modern autotools (Issue #89).
+      
+    - Use the PKG_CHECK_MODULES macro to locate protobuf.
+
+    - Use the AC_C_BIGENDIAN macro to detect endianness, rather than custom
+      code.
+
+    - Use the automake silent-rules option so the build output is actually
+      readable.
+
+    - Generate our own pkg-config .pc files.
+
+  * Remove --disable-protoc configure option.
+
+  * Reorganize the source tree. This affects the public protobuf-c header
+    paths, which are now <protobuf-c/protobuf-c.h> and
+    <protobuf-c-rpc/protobuf-c-rpc.h>.
+
+  * Split out the RPC library code into its own shared library,
+    libprotobuf-c-rpc. This is now an optional component which is no longer
+    built by default. Specify --enable-rpc to configure to build the RPC
+    library.
+
+  * Bump the libprotobuf-c SONAME.
+
+  * Update copyright and license statements throughout. The original
+    protobuf code released by Google was relicensed from Apache-2.0 to
+    BSD-3-Clause. Dave Benson also converted his license from BSD-3-Clause
+    to BSD-2-Clause.
+
+protobuf-c (0.15)
       - make protobuf_c_message_init() into a function (Issue #49, daveb)
       - Fix for freeing memory after unpacking bytes w/o a default-value.
         (Andrei Nigmatulin)
@@ -28,7 +91,7 @@
         make protobuf_c_dispatch_run() use only public members (daveb)
       - provide cmake support and some Windows compatibility (Nikita Manovich)
 
-0.14:
+protobuf-c (0.14)
       - build fix (missing dependency in test directory)
       - add generation / installation of pkg-config files. (Bobby Powers)
       - support for packed repeated fields (Dave Benson)
@@ -40,7 +103,7 @@
       - fix for protobuf_c_message_unpack() to issue error if any
         "required" field is missing in input stream. (Andrei Nigmatulin)
 
-0.13:
+protobuf-c (0.13)
       - Fix for when the number of connections gets too great in RPC.
         (Leszek Swirski) (issue #32)
       - Add --disable-protoc to only build libprotobuf-c (daveb)
@@ -50,9 +113,9 @@
         as an optimization (daveb)
       - implement protobuf_c_{client,server}_set_error_handler()
 
-0.12:
-      - for field names which are reserved words, use the real name 
-        given in the protobuf-c file, not the mangled name which 
+protobuf-c (0.12)
+      - for field names which are reserved words, use the real name
+        given in the protobuf-c file, not the mangled name which
         is the name of the member in the C structure.  (Andrei Nigmatulin)
       - add protobuf_c_message_init() function; add virtual function
         that implements it efficiently.  (Andrei Nigmatulin)
@@ -61,7 +124,7 @@
       - compile with the latest protobuf (the header file wire_format_inl.h
         is now wire_format.h) (Robert Edmonds)
 
-0.11:
+protobuf-c (0.11)
       - allow CFLAGS=-DPRINT_UNPACK_ERRORS=0 to suppress
         unpack warnings from being printed at compile time (Andrei Nigmatulin)
       - give error if an unknown wire-type is encountered (Andrei Nigmatulin)
@@ -74,12 +137,12 @@
         const.  (Issue 21)
       - Update to support new UnknownFields API.  (fix by dcreager) (Issue 20)
 
-0.10:
+protobuf-c (0.10)
       - build issue on platforms which don't compute library dependencies
         automatically.
       - fix for certain types of corrupt messages (Landon Fuller) (issue 16)
 
-0.9:
+protobuf-c (0.9)
       - build issue: needed $(EXEEXT) in dependency lists for cygwin
       - bug fix:  protobuf_c_service_get_method_by_name() was not correct b/c
         the service's methods were not sorted by name (the header file
@@ -93,32 +156,40 @@
       - rename rpc-client's "autoretry" mechanism to "autoreconnect".
       - bug fixes using TCP clients with the RPC system.
       - handle allocation failures more gracefully (Jason Lunz) (issue 15)
-0.8:
+
+protobuf-c (0.8)
       - Destroy function typedef for Services was omitting a "*"
       - service_machgen_invoke was broken. (issue 12)
       - add RPC system (BETA)
       - don't segfault when packing NULL strings and messages. (issue 13)
-0.7:
+
+protobuf-c (0.7)
       - memory leak:  unknown fields were not being freed by free_unpacked()
       - lowercase field names consistently when composing
         default_value names. (issue 11)
       - remove spurious semicolon (issue 10)
-0.6:
+
+protobuf-c (0.6)
       - Warning suppression for -Wcast-qual and -Wshadow.
       - Support for default values of all types allowed by core protobuf.
       - Generate message__init functions, for when the static initializer
         isn't convenient.
       - add some reserved fields at the end of the various descriptors
-0.5: 
+
+protobuf-c (0.5)
       - License now included in major files.
       - Use little-endian optimizations; fix a bug therein.
       - Include 'make deb' target.
-0.4:
+
+protobuf-c (0.4)
       - Update to work with protobuf 2.0.1.
-0.2:
-0.3:
+
+protobuf-c (0.2)
+protobuf-c (0.3)
       - Minor pedantic concerns about generated code.
-0.1:
+
+protobuf-c (0.1)
       - Lots of test code (and bug fixes).
-0.0:
+
+protobuf-c (0.0)
       - Initial release.
