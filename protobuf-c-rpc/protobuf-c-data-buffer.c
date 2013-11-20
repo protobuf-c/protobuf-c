@@ -18,9 +18,6 @@
 
 #define BUFFER_RECYCLING                0
 
-#if HAVE_PROTOBUF_C_CONFIG_H
-#include "protobuf-c-config.h"
-#endif
 #include <sys/types.h>
 #if HAVE_SYS_UIO_H /* writev function isn't available on Windows */
 #include <sys/uio.h>

@@ -34,9 +34,6 @@
  *  * kqueue() implementation
  *  * windows port (yeah, right, volunteers are DEFINITELY needed for this one...)
  */
-#if HAVE_PROTOBUF_C_CONFIG_H
-#include "protobuf-c-config.h"
-#endif
 #include <assert.h>
 #if HAVE_ALLOCA_H
 # include <alloca.h>
