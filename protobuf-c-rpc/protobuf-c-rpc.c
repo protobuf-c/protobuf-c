@@ -444,7 +444,7 @@ grow_closure_array (ProtobufC_RPC_Client *client)
 static uint32_t 
 uint32_to_le (uint32_t le)
 {
-#if IS_LITTLE_ENDIAN
+#if !defined(WORDS_BIGENDIAN)
   return le;
 #else
   return (le << 24) | (le >> 24)

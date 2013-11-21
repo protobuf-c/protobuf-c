@@ -46,11 +46,7 @@ AC_ARG_ENABLE(
 )
 AM_CONDITIONAL([BUILD_RPC], [test "x$enable_rpc" = "xyes"])
 
-AC_C_BIGENDIAN(
-    [AC_DEFINE([IS_LITTLE_ENDIAN], [0], [Define to 1 if system is little endian])],
-    [AC_DEFINE([IS_LITTLE_ENDIAN], [1], [Define to 1 if system is little endian])],
-    [AC_MSG_FAILURE([unable to determine endianness])]
-)
+AC_C_BIGENDIAN
 
 AC_OUTPUT
 AC_MSG_RESULT([
