@@ -1994,10 +1994,12 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
   *p_n += count;
   return TRUE;
 
+#if !defined(WORDS_BIGENDIAN)
 no_unpacking_needed:
   memcpy (array, at, count * siz);
   *p_n += count;
   return TRUE;
+#endif
 }
 
 static protobuf_c_boolean
