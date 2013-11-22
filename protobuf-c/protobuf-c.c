@@ -1541,6 +1541,136 @@ max_b128_numbers (size_t len, const uint8_t *data)
   return rv;
 }
 
+/* Merge earlier message into the latter message as follows:
+ * For numeric types and strings, if the same value appears multiple times, the
+ * parser accepts the last value it sees.
+ * For embedded message fields, the parser merges multiple instances of the same
+ * field. That is, all singular scalar fields in the latter instance replace those
+ * in the former, singular embedded messages are merged, and repeated fields are
+ * concatenated.
+ * The earlier message should be freed after calling this function, as some of its
+ * fields may have been reused and changed to their default values during the merge*/
+static protobuf_c_boolean
+merge_messages (ProtobufCMessage *earlier_msg,
+                ProtobufCMessage *latter_msg,
+                ProtobufCAllocator *allocator)
+{
+  unsigned i;
+  const ProtobufCFieldDescriptor *fields = earlier_msg->descriptor->fields;
+  for (i = 0; i < latter_msg->descriptor->n_fields; i++)
+  {
+    if (fields[i].label == PROTOBUF_C_LABEL_REPEATED)
+    {
+      size_t *n_earlier =
+        STRUCT_MEMBER_PTR (size_t, earlier_msg, fields[i].quantifier_offset);
+      uint8_t **p_earlier =
+        STRUCT_MEMBER_PTR (uint8_t *, earlier_msg, fields[i].offset);
+      size_t *n_latter =
+        STRUCT_MEMBER_PTR (size_t, latter_msg, fields[i].quantifier_offset);
+      uint8_t **p_latter =
+        STRUCT_MEMBER_PTR (uint8_t *, latter_msg, fields[i].offset);
+
+      if (*n_earlier > 0)
+      {
+        if (*n_latter > 0)
+        {
+          /* Concatenate the repeated field */
+          size_t el_size = sizeof_elt_in_repeated_array (fields[i].type);
+          uint8_t *new_field;
+          DO_ALLOC (new_field, allocator, (*n_earlier + *n_latter) * el_size, return 0);
+
+          memcpy (new_field, *p_latter, *n_latter * el_size);
+          memcpy (new_field + *n_latter * el_size, *p_earlier, *n_earlier * el_size);
+
+          FREE (allocator, *p_latter);
+          FREE (allocator, *p_earlier);
+          *p_latter = new_field;
+          *n_latter = *n_earlier + *n_latter;
+        }
+        else
+        {
+          /* Zero copy the repeated field from the earlier message */
+          *n_latter = *n_earlier;
+          *p_latter = *p_earlier;
+        }
+        /* Make sure the field does not get double freed */
+        *n_earlier = 0;
+        *p_earlier = 0;
+      }
+    }
+    else if (fields[i].type == PROTOBUF_C_TYPE_MESSAGE)
+    {
+      ProtobufCMessage **em =
+        STRUCT_MEMBER_PTR (ProtobufCMessage *, earlier_msg, fields[i].offset);
+      ProtobufCMessage **lm =
+        STRUCT_MEMBER_PTR (ProtobufCMessage *, latter_msg, fields[i].offset);
+      if (*em != NULL)
+        if (*lm != NULL)
+          merge_messages (*em, *lm, allocator);
+        else
+        {
+          /* Zero copy the optional message */
+          assert (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL);
+          *lm = *em;
+          *em = NULL;
+        }
+    }
+    else if (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL)
+    {
+      size_t el_size = 0;
+      protobuf_c_boolean need_to_merge = 0;
+      void *earlier_elem =
+            STRUCT_MEMBER_P (earlier_msg, fields[i].offset);
+      void *latter_elem =
+            STRUCT_MEMBER_P (latter_msg, fields[i].offset);
+      const void *def_val = fields[i].default_value;
+
+      switch (fields[i].type)
+      {
+        case PROTOBUF_C_TYPE_BYTES:
+          el_size = sizeof (ProtobufCBinaryData);
+          uint8_t *e_data = ((ProtobufCBinaryData *)earlier_elem)->data;
+          uint8_t *l_data = ((ProtobufCBinaryData *)latter_elem)->data;
+          const ProtobufCBinaryData *d_bd = (ProtobufCBinaryData *)def_val;
+
+          need_to_merge = (e_data != NULL && (d_bd != NULL && e_data != d_bd->data))
+            && (l_data == NULL || (d_bd != NULL && l_data == d_bd->data));
+          break;
+        case PROTOBUF_C_TYPE_STRING:
+          el_size = sizeof (char *);
+          char *e_str = *(char **)earlier_elem;
+          char *l_str = *(char **)latter_elem;
+          const char *d_str = def_val;
+
+          need_to_merge = e_str != d_str && l_str == d_str;
+          break;
+        default:
+          el_size = sizeof_elt_in_repeated_array (fields[i].type);
+
+          need_to_merge =
+            STRUCT_MEMBER (protobuf_c_boolean, earlier_msg, fields[i].quantifier_offset)
+            && !STRUCT_MEMBER (protobuf_c_boolean, latter_msg, fields[i].quantifier_offset);
+          break;
+      }
+
+      if (need_to_merge)
+      {
+        memcpy (latter_elem, earlier_elem, el_size);
+        /* Reset the element from the old message to 0 to make sure earlier message
+         * deallocation doesn't corrupt zero-copied data in the new message, earlier
+         * message will be freed after this function is called anyway */
+        memset (earlier_elem, 0, el_size);
+
+        if (fields[i].quantifier_offset != 0)
+        {
+          /* Set the has field, if applicable */
+          STRUCT_MEMBER (protobuf_c_boolean, latter_msg, fields[i].quantifier_offset) = 1;
+          STRUCT_MEMBER (protobuf_c_boolean, earlier_msg, fields[i].quantifier_offset) = 0;
+        }
+      }
+    }
+  }
+}
 
 /* Given a raw slab of packed-repeated values,
    determine the number of elements.
@@ -1798,14 +1928,22 @@ parse_required_member (ScannedMember *scanned_member,
         const ProtobufCMessage *def_mess;
         unsigned pref_len = scanned_member->length_prefix_len;
         def_mess = scanned_member->field->default_value;
-        if (maybe_clear && *pmessage != NULL && *pmessage != def_mess)
-          protobuf_c_message_free_unpacked (*pmessage, allocator);
         subm = protobuf_c_message_unpack (scanned_member->field->descriptor,
                                           allocator,
                                           len - pref_len, data + pref_len);
-        *pmessage = subm;       /* since we freed the message we must clear the field, even if NULL */
+
+        if (maybe_clear && *pmessage != NULL && *pmessage != def_mess)
+        {
+          if (subm != NULL)
+            merge_messages (*pmessage, subm, allocator);
+          /* Delete the previous message */
+          protobuf_c_message_free_unpacked (*pmessage, allocator);
+          *pmessage = NULL;
+        }
         if (subm == NULL)
           return 0;
+
+        *pmessage = subm;
         return 1;
       }
     }
