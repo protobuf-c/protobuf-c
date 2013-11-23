@@ -1606,7 +1606,10 @@ merge_messages (ProtobufCMessage *earlier_msg,
         STRUCT_MEMBER_PTR (ProtobufCMessage *, latter_msg, fields[i].offset);
       if (*em != NULL)
         if (*lm != NULL)
-          merge_messages (*em, *lm, allocator);
+        {
+          if (!merge_messages (*em, *lm, allocator))
+            return 0;
+        }
         else
         {
           /* Zero copy the optional message */
@@ -1670,6 +1673,7 @@ merge_messages (ProtobufCMessage *earlier_msg,
       }
     }
   }
+  return 1;
 }
 
 /* Given a raw slab of packed-repeated values,
@@ -1926,6 +1930,7 @@ parse_required_member (ScannedMember *scanned_member,
         ProtobufCMessage **pmessage = member;
         ProtobufCMessage *subm;
         const ProtobufCMessage *def_mess;
+        protobuf_c_boolean merge_successful = 1;
         unsigned pref_len = scanned_member->length_prefix_len;
         def_mess = scanned_member->field->default_value;
         subm = protobuf_c_message_unpack (scanned_member->field->descriptor,
@@ -1935,12 +1940,12 @@ parse_required_member (ScannedMember *scanned_member,
         if (maybe_clear && *pmessage != NULL && *pmessage != def_mess)
         {
           if (subm != NULL)
-            merge_messages (*pmessage, subm, allocator);
+            merge_successful = merge_messages (*pmessage, subm, allocator);
           /* Delete the previous message */
           protobuf_c_message_free_unpacked (*pmessage, allocator);
           *pmessage = NULL;
         }
-        if (subm == NULL)
+        if (subm == NULL || !merge_successful)
           return 0;
 
         *pmessage = subm;
