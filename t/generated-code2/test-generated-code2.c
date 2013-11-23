@@ -1407,7 +1407,7 @@ test_optional_default_values (void)
 }
 
 static void
-test_optional_merge (void)
+test_field_merge (void)
 {
    Foo__TestMessOptional msg1 = FOO__TEST_MESS_OPTIONAL__INIT;
    Foo__SubMess sub1 = FOO__SUB_MESS__INIT;
@@ -1670,7 +1670,7 @@ static Test tests[] =
   { "test required default values", test_required_default_values },
   { "test optional default values", test_optional_default_values },
 
-  { "test optional merge", test_optional_merge },
+  { "test field merge", test_field_merge },
 
   { "test free unpacked", test_alloc_free_all },
   { "test alloc failure", test_alloc_fail },
