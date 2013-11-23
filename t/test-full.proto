@@ -2,6 +2,18 @@ package foo;
 
 message SubMess {
   required int32 test = 4;
+
+  optional int32 val1 = 6;
+  optional int32 val2 = 7;
+  repeated int32 rep = 8;
+  message SubSubMess {
+    optional int32 val1 = 1 [default = 100];
+    repeated int32 rep = 4;
+    optional bytes bytes1 = 2 [default = "a \0 char"];
+    optional string str1 = 3 [default = "hello world\n"];
+  }
+  optional SubSubMess sub1 = 9;
+  optional SubSubMess sub2 = 10;
 };
  
 enum TestEnumSmall {
