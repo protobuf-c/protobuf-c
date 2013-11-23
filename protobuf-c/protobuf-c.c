@@ -1943,12 +1943,10 @@ parse_required_member (ScannedMember *scanned_member,
             merge_successful = merge_messages (*pmessage, subm, allocator);
           /* Delete the previous message */
           protobuf_c_message_free_unpacked (*pmessage, allocator);
-          *pmessage = NULL;
         }
+        *pmessage = subm;
         if (subm == NULL || !merge_successful)
           return 0;
-
-        *pmessage = subm;
         return 1;
       }
     }
