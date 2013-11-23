@@ -46,6 +46,9 @@ protobuf-c (0.16) UNRELEASED
   * rpc: Free the timer created by autoreconnect in case the client has
     failed to connect (Issue #70).
 
+  * For embedded submessage fields, merge multiple instances of the same
+    field, per the protobuf documentation (Issue #91).
+
   [ Robert Edmonds ]
   * Remove CMake (Issue #87).
 
