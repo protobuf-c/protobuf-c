@@ -155,20 +155,6 @@ ProtobufCAllocator protobuf_c_default_allocator =
   NULL          /* allocator_data */
 };
 
-/* Users should NOT modify this structure,
-   but it's difficult to prevent.
-
-   please modify protobuf_c_default_allocator instead. */
-ProtobufCAllocator protobuf_c_system_allocator =
-{
-  system_alloc,
-  system_free,
-  NULL,         /* tmp_alloc */
-  8192,         /* max_alloca */
-  NULL          /* allocator_data */
-};
-
-
 /* === buffer-simple === */
 void
 protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,

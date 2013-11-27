@@ -164,12 +164,6 @@ struct _ProtobufCAllocator
  */
 extern PROTOBUF_C_API ProtobufCAllocator protobuf_c_default_allocator; /* settable */
 
-/* This is the system allocator, meaning it uses malloc() and free().
- *
- * NOTE: please do NOT modify this allocator.
- */
-extern PROTOBUF_C_API ProtobufCAllocator protobuf_c_system_allocator;  /* use malloc, free etc */
-
 /* This is the function that our default allocators call when they 
    run out-of-memory.  The default behavior of this function is to
    terminate your program. */
