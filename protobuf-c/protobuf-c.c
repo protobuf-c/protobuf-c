@@ -2625,6 +2625,10 @@ protobuf_c_message_init (const ProtobufCMessageDescriptor *descriptor,
 
 protobuf_c_boolean protobuf_c_message_check (const ProtobufCMessage *message)
 {
+  if (!message || !message->descriptor
+      || message->descriptor->magic != PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
+    return FALSE;
+
   unsigned f;
   for (f = 0; f < message->descriptor->n_fields; f++)
     {
