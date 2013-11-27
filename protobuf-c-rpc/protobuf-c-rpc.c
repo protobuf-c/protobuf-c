@@ -1054,7 +1054,7 @@ server_connection_response_closure (const ProtobufCMessage *message,
 
   uint8_t buffer_slab[512];
   ProtobufCBufferSimple buffer_simple = PROTOBUF_C_BUFFER_SIMPLE_INIT (buffer_slab);
-  if (message == NULL)
+  if (!protobuf_c_message_check (message))
     {
       /* send failed status */
       uint32_t header[4];
@@ -1064,6 +1064,8 @@ server_connection_response_closure (const ProtobufCMessage *message,
       header[3] = request->request_id;
       protobuf_c_buffer_simple_append (&buffer_simple.base,
                                        16, (uint8_t *) header);
+      server_failed_literal (server, PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
+            "response message was malformed, sending failed status to client");
     }
   else
     {
