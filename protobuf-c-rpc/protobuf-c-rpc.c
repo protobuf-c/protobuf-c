@@ -269,7 +269,6 @@ handle_client_fd_connect_events (int         fd,
   else
     {
       /* Call error handler */
-      protobuf_c_dispatch_close_fd (client->dispatch, client->fd);
       client_failed (client,
                      "failed connecting to server: %s",
                      strerror (fd_errno));
