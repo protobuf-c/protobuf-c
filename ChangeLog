@@ -55,7 +55,7 @@ protobuf-c (0.16) UNRELEASED
   * Modernize the build system.
     - Don't generate any diagnostics when building the build system with
       modern autotools (Issue #89).
-      
+
     - Use the PKG_CHECK_MODULES macro to locate protobuf.
 
     - Use the AC_C_BIGENDIAN macro to detect endianness, rather than custom
