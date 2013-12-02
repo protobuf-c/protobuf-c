@@ -92,6 +92,7 @@ alloc_failed_warning (unsigned size, const char *filename, unsigned line)
 
 /* Try to allocate memory, running some special code if it fails. */
 #define DO_ALLOC(dst, allocator, size, fail_code)                           \
+do                                                                          \
 { size_t da__allocation_size = (size);                                      \
   if (da__allocation_size == 0)                                             \
     dst = NULL;                                                             \
@@ -101,7 +102,7 @@ alloc_failed_warning (unsigned size, const char *filename, unsigned line)
       alloc_failed_warning (da__allocation_size, __FILE__, __LINE__);       \
       fail_code;                                                            \
     }                                                                       \
-}
+} while(0)
 #define DO_UNALIGNED_ALLOC  DO_ALLOC            /* placeholder */
 
 
