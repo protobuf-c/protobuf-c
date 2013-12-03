@@ -107,14 +107,14 @@ do                                                                          \
 
 
 
-#define ASSERT_IS_ENUM_DESCRIPTOR(desc) \
-  assert((desc)->magic == PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC)
-#define ASSERT_IS_MESSAGE_DESCRIPTOR(desc) \
-  assert((desc)->magic == PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
-#define ASSERT_IS_MESSAGE(message) \
-  ASSERT_IS_MESSAGE_DESCRIPTOR((message)->descriptor)
-#define ASSERT_IS_SERVICE_DESCRIPTOR(desc) \
-  assert((desc)->magic == PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC)
+#define IS_ENUM_DESCRIPTOR(desc) \
+  (desc && desc->magic == PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC)
+#define IS_MESSAGE_DESCRIPTOR(desc) \
+  (desc && desc->magic == PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
+#define IS_MESSAGE(message) \
+  (message && IS_MESSAGE_DESCRIPTOR(message->descriptor))
+#define IS_SERVICE_DESCRIPTOR(desc) \
+  (desc && desc->magic == PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC)
 
 /* --- allocator --- */
 
@@ -355,7 +355,6 @@ required_field_get_packed_size (const ProtobufCFieldDescriptor *field,
         return rv + uint32_size (subrv) + subrv;
       }
     }
-  PROTOBUF_C_ASSERT_NOT_REACHED ();
   return 0;
 }
 
@@ -481,7 +480,8 @@ protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 {
   unsigned i;
   size_t rv = 0;
-  ASSERT_IS_MESSAGE (message);
+  if (!IS_MESSAGE (message)) return 0;
+
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
@@ -769,7 +769,6 @@ required_field_pack (const ProtobufCFieldDescriptor *field,
                                            out + rv);
       }
     }
-  PROTOBUF_C_ASSERT_NOT_REACHED ();
   return 0;
 }
 static size_t
@@ -823,7 +822,6 @@ sizeof_elt_in_repeated_array (ProtobufCType type)
     case PROTOBUF_C_TYPE_BYTES:
       return sizeof (ProtobufCBinaryData);
     }
-  PROTOBUF_C_ASSERT_NOT_REACHED ();
   return 0;
 }
 
@@ -999,7 +997,8 @@ protobuf_c_message_pack           (const ProtobufCMessage *message,
 {
   unsigned i;
   size_t rv = 0;
-  ASSERT_IS_MESSAGE (message);
+  if (!IS_MESSAGE (message)) return 0;
+
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
@@ -1128,7 +1127,8 @@ required_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
         break;
       }
     default:
-      PROTOBUF_C_ASSERT_NOT_REACHED ();
+      rv = 0;
+      break;
     }
   return rv;
 }
@@ -1378,7 +1378,8 @@ protobuf_c_message_pack_to_buffer (const ProtobufCMessage *message,
 {
   unsigned i;
   size_t rv = 0;
-  ASSERT_IS_MESSAGE (message);
+  if (!IS_MESSAGE (message)) return 0;
+
   for (i = 0; i < message->descriptor->n_fields; i++)
     {
       const ProtobufCFieldDescriptor *field = message->descriptor->fields + i;
@@ -2169,7 +2170,6 @@ parse_member (ScannedMember *scanned_member,
       else
         return parse_repeated_member (scanned_member, member, message, allocator);
     }
-  PROTOBUF_C_ASSERT_NOT_REACHED ();
   return 0;
 }
 
@@ -2275,7 +2275,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   unsigned char required_fields_bitmap[MAX_MEMBERS_FOR_HASH_SIZE/8] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,};
   static const unsigned word_bits = sizeof(long) * 8;
 
-  ASSERT_IS_MESSAGE_DESCRIPTOR (desc);
+  if (!IS_MESSAGE_DESCRIPTOR (desc)) return NULL;
 
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
@@ -2540,7 +2540,8 @@ protobuf_c_message_free_unpacked  (ProtobufCMessage    *message,
 {
   const ProtobufCMessageDescriptor *desc = message->descriptor;
   unsigned f;
-  ASSERT_IS_MESSAGE (message);
+  if (!IS_MESSAGE (message)) return;
+
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
   message->descriptor = NULL;
@@ -2612,9 +2613,7 @@ protobuf_c_message_init (const ProtobufCMessageDescriptor *descriptor,
 
 protobuf_c_boolean protobuf_c_message_check (const ProtobufCMessage *message)
 {
-  if (!message || !message->descriptor
-      || message->descriptor->magic != PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
-    return FALSE;
+  if (!IS_MESSAGE (message)) return FALSE;
 
   unsigned f;
   for (f = 0; f < message->descriptor->n_fields; f++)
@@ -2701,7 +2700,8 @@ protobuf_c_service_generated_init (ProtobufCService *service,
                                    const ProtobufCServiceDescriptor *descriptor,
                                    ProtobufCServiceDestroy destroy)
 {
-  ASSERT_IS_SERVICE_DESCRIPTOR(descriptor);
+  if (!service || !IS_SERVICE_DESCRIPTOR(descriptor)) return;
+
   service->descriptor = descriptor;
   service->destroy = destroy;
   service->invoke = protobuf_c_service_invoke_internal;
