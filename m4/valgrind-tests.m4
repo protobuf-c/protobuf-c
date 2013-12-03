@@ -23,7 +23,8 @@ AC_DEFUN([gl_VALGRIND_TESTS],
 
   if test -n "$VALGRIND" && $VALGRIND -q true > /dev/null 2>&1; then
     opt_valgrind_tests=yes
-    VALGRIND="$VALGRIND -q --error-exitcode=1 --leak-check=full"
+    VALGRIND="$VALGRIND -q --error-exitcode=1 --leak-check=full \
+	--trace-children=yes --trace-children-skip=/usr/*,/bin/*"
   else
     opt_valgrind_tests=no
     VALGRIND=

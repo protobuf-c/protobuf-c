@@ -92,6 +92,8 @@ protoc_c_protoc_c_LDADD = \
 # protobuf-c tests
 #
 
+AM_TESTS_ENVIRONMENT = $(VALGRIND)
+
 check_PROGRAMS += \
 	t/generated-code/test-generated-code \
 	t/generated-code2/test-generated-code2
