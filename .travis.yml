@@ -5,6 +5,7 @@ before_install:
 
 install:
     - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev
+      valgrind
 
 script:
     - ./autogen.sh
