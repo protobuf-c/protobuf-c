@@ -110,6 +110,7 @@ protoc_c_protoc_c_SOURCES = \
 	protoc-c/c_message.h \
 	protoc-c/c_message_field.cc \
 	protoc-c/c_message_field.h \
+	protoc-c/c_options.h \
 	protoc-c/c_primitive_field.cc \
 	protoc-c/c_primitive_field.h \
 	protoc-c/c_service.cc \
