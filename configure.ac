@@ -23,7 +23,6 @@ AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(sys/uio.h)
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(winsock.h)
-AC_CHECK_HEADERS(stdarg.h)
 
 PKG_PROG_PKG_CONFIG
 if test -n "$PKG_CONFIG"; then

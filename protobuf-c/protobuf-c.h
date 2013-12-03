@@ -34,7 +34,6 @@
 #include <stddef.h>
 #include <assert.h>
 #include <limits.h>
-#include <stdarg.h>
 
 #ifdef __cplusplus
 # define PROTOBUF_C_BEGIN_DECLS    extern "C" {
@@ -145,22 +144,6 @@ struct _ProtobufCBinaryData
 
 typedef struct _ProtobufCIntRange ProtobufCIntRange; /* private */
 
-/* --- error handling --- */
-typedef enum
-{
-  PROTOBUF_C_ERROR_CODE_UNPACK,
-} ProtobufCErrorCode;
-
-typedef struct _ProtobufCErrorInfo ProtobufCErrorInfo;
-struct _ProtobufCErrorInfo
-{
-  ProtobufCErrorCode error_code;
-  /* standard printf format string and argument list */
-  const char *format;
-  va_list args;
-};
-typedef void (*ProtobufCErrorHandler) (ProtobufCErrorInfo *info);
-
 /* --- memory management --- */
 typedef struct _ProtobufCAllocator ProtobufCAllocator;
 struct _ProtobufCAllocator
@@ -170,7 +153,6 @@ struct _ProtobufCAllocator
   void *(*tmp_alloc)(void *allocator_data, size_t size);
   unsigned max_alloca;
   void *allocator_data;
-  ProtobufCErrorHandler error_handler;
 };
 
 /* This is a configurable allocator.

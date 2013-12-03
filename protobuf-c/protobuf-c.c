@@ -49,6 +49,10 @@
 #include <stdlib.h>                     /* for abort(), malloc() etc */
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
 
+#ifndef PRINT_UNPACK_ERRORS
+#define PRINT_UNPACK_ERRORS              1
+#endif
+
 #include "protobuf-c.h"
 
 unsigned protobuf_c_major = PROTOBUF_C_MAJOR;
@@ -140,13 +144,6 @@ static void system_free (void *allocator_data, void *data)
     free (data);
 }
 
-static void default_error_handler (ProtobufCErrorInfo *info)
-{
-   fprintf (stderr, "protobuf-c error: code %u, ", info->error_code);
-   vfprintf (stderr, info->format, info->args);
-   fprintf (stderr, "\n");
-}
-
 /* Some users may configure the default allocator;
    providing your own allocator to unpack() is prefered.
    this allocator is still used for packing nested messages. */
@@ -156,8 +153,7 @@ ProtobufCAllocator protobuf_c_default_allocator =
   system_free,
   NULL,         /* tmp_alloc */
   8192,         /* max_alloca */
-  NULL,         /* allocator_data */
-  default_error_handler,
+  NULL          /* allocator_data */
 };
 
 /* === buffer-simple === */
@@ -1403,24 +1399,11 @@ protobuf_c_message_pack_to_buffer (const ProtobufCMessage *message,
 }
 
 /* === unpacking === */
-static void output_error (ProtobufCErrorHandler error_handler, ProtobufCErrorCode code,
-   const char *fmt, ...)
-{
-  if (error_handler)
-  {
-     va_list args;
-     ProtobufCErrorInfo info;
-     info.error_code = code;
-     info.format = fmt;
-     va_start (args, fmt);
-     va_copy(info.args, args);
-     va_end(args);
-     error_handler (&info);
-     va_end(info.args);
-  }
-}
-#define UNPACK_ERROR(args...) \
-   output_error (error_handler, PROTOBUF_C_ERROR_CODE_UNPACK, args)
+#if PRINT_UNPACK_ERRORS
+# define UNPACK_ERROR(args)  do { printf args;printf("\n"); }while(0)
+#else
+# define UNPACK_ERROR(args)  do { } while (0)
+#endif
 
 static inline int
 int_range_lookup (unsigned n_ranges,
@@ -1505,8 +1488,7 @@ struct _ScannedMember
 };
 
 static inline uint32_t
-scan_length_prefixed_data (size_t len, const uint8_t *data, size_t *prefix_len_out,
-      ProtobufCErrorHandler error_handler)
+scan_length_prefixed_data (size_t len, const uint8_t *data, size_t *prefix_len_out)
 {
   unsigned hdr_max = len < 5 ? len : 5;
   unsigned hdr_len;
@@ -1522,15 +1504,15 @@ scan_length_prefixed_data (size_t len, const uint8_t *data, size_t *prefix_len_o
     }
   if (i == hdr_max)
     {
-      UNPACK_ERROR ("error parsing length for length-prefixed data");
+      UNPACK_ERROR (("error parsing length for length-prefixed data"));
       return 0;
     }
   hdr_len = i + 1;
   *prefix_len_out = hdr_len;
   if (hdr_len + val > len)
     {
-      UNPACK_ERROR ("data too short after length-prefix of %u",
-                     val);
+      UNPACK_ERROR (("data too short after length-prefix of %u",
+                     val));
       return 0;
     }
   return hdr_len + val;
@@ -1690,8 +1672,7 @@ static protobuf_c_boolean
 count_packed_elements (ProtobufCType type,
                        size_t len,
                        const uint8_t *data,
-                       size_t *count_out,
-                       ProtobufCErrorHandler error_handler)
+                       size_t *count_out)
 {
   switch (type)
     {
@@ -1700,7 +1681,7 @@ count_packed_elements (ProtobufCType type,
     case PROTOBUF_C_TYPE_FLOAT:
       if (len % 4 != 0)
         {
-          UNPACK_ERROR ("length must be a multiple of 4 for fixed-length 32-bit types");
+          UNPACK_ERROR (("length must be a multiple of 4 for fixed-length 32-bit types"));
           return FALSE;
         }
       *count_out = len / 4;
@@ -1711,7 +1692,7 @@ count_packed_elements (ProtobufCType type,
     case PROTOBUF_C_TYPE_DOUBLE:
       if (len % 8 != 0)
         {
-          UNPACK_ERROR ("length must be a multiple of 8 for fixed-length 64-bit types");
+          UNPACK_ERROR (("length must be a multiple of 8 for fixed-length 64-bit types"));
           return FALSE;
         }
       *count_out = len / 8;
@@ -1734,7 +1715,7 @@ count_packed_elements (ProtobufCType type,
     case PROTOBUF_C_TYPE_BYTES:
     case PROTOBUF_C_TYPE_MESSAGE:
     default:
-      UNPACK_ERROR ("bad protobuf-c type %u for packed-repeated", type);
+      UNPACK_ERROR (("bad protobuf-c type %u for packed-repeated", type));
       return FALSE;
     }
 }
@@ -2009,8 +1990,7 @@ static unsigned scan_varint (unsigned len, const uint8_t *data)
 static protobuf_c_boolean
 parse_packed_repeated_member (ScannedMember *scanned_member,
                               void *member,
-                              ProtobufCMessage *message,
-                              ProtobufCErrorHandler error_handler)
+                              ProtobufCMessage *message)
 {
   const ProtobufCFieldDescriptor *field = scanned_member->field;
   size_t *p_n = STRUCT_MEMBER_PTR(size_t, message, field->quantifier_offset);
@@ -2056,7 +2036,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
             unsigned s = scan_varint (rem, at);
             if (s == 0)
               {
-                UNPACK_ERROR ("bad packed-repeated int32 value");
+                UNPACK_ERROR (("bad packed-repeated int32 value"));
                 return FALSE;
               }
             ((int32_t*)array)[count++] = parse_int32 (s, at);
@@ -2071,7 +2051,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
             unsigned s = scan_varint (rem, at);
             if (s == 0)
               {
-                UNPACK_ERROR ("bad packed-repeated sint32 value");
+                UNPACK_ERROR (("bad packed-repeated sint32 value"));
                 return FALSE;
               }
             ((int32_t*)array)[count++] = unzigzag32 (parse_uint32 (s, at));
@@ -2086,7 +2066,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
             unsigned s = scan_varint (rem, at);
             if (s == 0)
               {
-                UNPACK_ERROR ("bad packed-repeated enum or uint32 value");
+                UNPACK_ERROR (("bad packed-repeated enum or uint32 value"));
                 return FALSE;
               }
             ((uint32_t*)array)[count++] = parse_uint32 (s, at);
@@ -2101,7 +2081,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
             unsigned s = scan_varint (rem, at);
             if (s == 0)
               {
-                UNPACK_ERROR ("bad packed-repeated sint64 value");
+                UNPACK_ERROR (("bad packed-repeated sint64 value"));
                 return FALSE;
               }
             ((int64_t*)array)[count++] = unzigzag64 (parse_uint64 (s, at));
@@ -2116,7 +2096,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
             unsigned s = scan_varint (rem, at);
             if (s == 0)
               {
-                UNPACK_ERROR ("bad packed-repeated int64/uint64 value");
+                UNPACK_ERROR (("bad packed-repeated int64/uint64 value"));
                 return FALSE;
               }
             ((int64_t*)array)[count++] = parse_uint64 (s, at);
@@ -2130,7 +2110,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
           {
             if (at[i] > 1)
               {
-                UNPACK_ERROR ("bad packed-repeated boolean value");
+                UNPACK_ERROR (("bad packed-repeated boolean value"));
                 return FALSE;
               }
             ((protobuf_c_boolean*)array)[i] = at[i];
@@ -2185,8 +2165,7 @@ parse_member (ScannedMember *scanned_member,
     case PROTOBUF_C_LABEL_REPEATED:
       if (scanned_member->wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED
        && (field->packed || is_packable_type (field->type)))
-        return parse_packed_repeated_member (scanned_member, member, message,
-         allocator->error_handler);
+        return parse_packed_repeated_member (scanned_member, member, message);
       else
         return parse_repeated_member (scanned_member, member, message, allocator);
     }
@@ -2301,8 +2280,6 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   if (allocator == NULL)
     allocator = &protobuf_c_default_allocator;
 
-  ProtobufCErrorHandler error_handler = allocator->error_handler;
-
   /* We treat all fields % (16*8), which should be good enough. */
 #define REQUIRED_FIELD_BITMAP_SET(index)   \
   required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] |= (1<<((index)%8))
@@ -2331,8 +2308,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
       ScannedMember tmp;
       if (used == 0)
         {
-          UNPACK_ERROR ("error parsing tag/wiretype at offset %u",
-                         (unsigned)(at-data));
+          UNPACK_ERROR (("error parsing tag/wiretype at offset %u",
+                         (unsigned)(at-data)));
           goto error_cleanup_during_scan;
         }
       /* XXX: consider optimizing for field[1].id == tag, if field[1] exists! */
@@ -2377,8 +2354,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
                 break;
             if (i == max_len)
               {
-                UNPACK_ERROR ("unterminated varint at offset %u",
-                               (unsigned)(at-data));
+                UNPACK_ERROR (("unterminated varint at offset %u",
+                               (unsigned)(at-data)));
                 goto error_cleanup_during_scan;
               }
             tmp.len = i + 1;
@@ -2387,8 +2364,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         case PROTOBUF_C_WIRE_TYPE_64BIT:
           if (rem < 8)
             {
-              UNPACK_ERROR ("too short after 64bit wiretype at offset %u",
-                             (unsigned)(at-data));
+              UNPACK_ERROR (("too short after 64bit wiretype at offset %u",
+                             (unsigned)(at-data)));
               goto error_cleanup_during_scan;
             }
           tmp.len = 8;
@@ -2396,8 +2373,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         case PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED:
           {
             size_t pref_len;
-            tmp.len = scan_length_prefixed_data (rem, at, &pref_len,
-              allocator->error_handler);
+            tmp.len = scan_length_prefixed_data (rem, at, &pref_len);
             if (tmp.len == 0)
               {
                 /* NOTE: scan_length_prefixed_data calls UNPACK_ERROR */
@@ -2409,15 +2385,15 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         case PROTOBUF_C_WIRE_TYPE_32BIT:
           if (rem < 4)
             {
-              UNPACK_ERROR ("too short after 32bit wiretype at offset %u",
-                             (unsigned)(at-data));
+              UNPACK_ERROR (("too short after 32bit wiretype at offset %u",
+                             (unsigned)(at-data)));
               goto error_cleanup_during_scan;
             }
           tmp.len = 4;
           break;
         default:
-          UNPACK_ERROR ("unsupported tag %u at offset %u",
-                         wire_type, (unsigned)(at-data));
+          UNPACK_ERROR (("unsupported tag %u at offset %u",
+                         wire_type, (unsigned)(at-data))); 
           goto error_cleanup_during_scan;
         }
       if (in_slab_index == (1U<<(which_slab+FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)))
@@ -2426,7 +2402,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
           in_slab_index = 0;
           if (which_slab == MAX_SCANNED_MEMBER_SLAB)
             {
-              UNPACK_ERROR ("too many fields");
+              UNPACK_ERROR (("too many fields"));
               goto error_cleanup_during_scan;
             }
           which_slab++;
@@ -2448,10 +2424,9 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
               if (!count_packed_elements (field->type,
                                           tmp.len - tmp.length_prefix_len,
                                           tmp.data + tmp.length_prefix_len,
-                                          &count,
-                                          allocator->error_handler))
+                                          &count))
                 {
-                  UNPACK_ERROR ("counting packed elements");
+                  UNPACK_ERROR (("counting packed elements"));
                   goto error_cleanup_during_scan;
                 }
               *n += count;
@@ -2495,7 +2470,7 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
            && !REQUIRED_FIELD_BITMAP_IS_SET (f))
             {
               CLEAR_REMAINING_N_PTRS ();
-              UNPACK_ERROR ("message '%s': missing required field '%s'", desc->name, field->name);
+              UNPACK_ERROR (("message '%s': missing required field '%s'", desc->name, field->name));
               goto error_cleanup;
             }
         }
@@ -2520,8 +2495,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
         {
           if (!parse_member (slab + j, rv, allocator))
             {
-              UNPACK_ERROR ("error parsing member %s of %s",
-                             slab->field ? slab->field->name : "*unknown-field*", desc->name);
+              UNPACK_ERROR (("error parsing member %s of %s",
+                             slab->field ? slab->field->name : "*unknown-field*", desc->name));
               goto error_cleanup;
             }
         }
