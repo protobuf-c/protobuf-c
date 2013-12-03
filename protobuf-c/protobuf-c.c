@@ -50,7 +50,7 @@
 #include <string.h>                     /* for strlen(), memcpy(), memmove() */
 
 #ifndef PRINT_UNPACK_ERRORS
-#define PRINT_UNPACK_ERRORS              1
+#define PRINT_UNPACK_ERRORS              0
 #endif
 
 #include "protobuf-c.h"
