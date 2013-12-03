@@ -60,41 +60,29 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#ifndef GOOGLE_PROTOBUF_COMPILER_C_OPTIONS_H__
+#define GOOGLE_PROTOBUF_COMPILER_C_OPTIONS_H__
 
-#include <map>
 #include <string>
-#include <protoc-c/c_field.h>
 
+#include <google/protobuf/stubs/common.h>
 namespace google {
 namespace protobuf {
 namespace compiler {
 namespace c {
 
-class StringFieldGenerator : public FieldGenerator {
- public:
-  explicit StringFieldGenerator(const FieldDescriptor* descriptor, const Options& options);
-  ~StringFieldGenerator();
-
-  // implements FieldGenerator ---------------------------------------
-  void GenerateStructMembers(io::Printer* printer) const;
-  void GenerateDescriptorInitializer(io::Printer* printer) const;
-  void GenerateDefaultValueDeclarations(io::Printer* printer) const;
-  void GenerateDefaultValueImplementations(io::Printer* printer) const;
-  string GetDefaultValue(void) const;
-  void GenerateStaticInit(io::Printer* printer) const;
-
- private:
-  map<string, string> variables_;
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StringFieldGenerator);
+// Generator options:
+struct Options {
+  Options() : no_name_mangling(false) {
+  }
+  string dllexport_decl;
+  bool no_name_mangling;
 };
-
 
 }  // namespace c
 }  // namespace compiler
 }  // namespace protobuf
 
+
 }  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#endif  // GOOGLE_PROTOBUF_COMPILER_C_OPTIONS_H__

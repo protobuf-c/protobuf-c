@@ -74,7 +74,7 @@ namespace c {
 
 class MessageFieldGenerator : public FieldGenerator {
  public:
-  explicit MessageFieldGenerator(const FieldDescriptor* descriptor);
+  explicit MessageFieldGenerator(const FieldDescriptor* descriptor, const Options& options);
   ~MessageFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -85,6 +85,7 @@ class MessageFieldGenerator : public FieldGenerator {
 
  private:
 
+  Options options_;
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(MessageFieldGenerator);
 };
 

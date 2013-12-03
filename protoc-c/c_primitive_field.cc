@@ -71,8 +71,8 @@ namespace compiler {
 namespace c {
 
 PrimitiveFieldGenerator::
-PrimitiveFieldGenerator(const FieldDescriptor* descriptor)
-  : FieldGenerator(descriptor) {
+PrimitiveFieldGenerator(const FieldDescriptor* descriptor, const Options& options)
+  : FieldGenerator(descriptor, options), options_(options) {
 }
 
 PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {}
@@ -105,7 +105,14 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
     // types are added.
   }
   vars["c_type"] = c_type;
-  vars["name"] = FieldName(descriptor_);
+  if (options_.no_name_mangling)
+  {
+     vars["name"] = descriptor_->name();
+  }
+  else
+  {
+     vars["name"] = FieldName(descriptor_);
+  }
   vars["deprecated"] = FieldDeprecated(descriptor_);
 
   switch (descriptor_->label()) {

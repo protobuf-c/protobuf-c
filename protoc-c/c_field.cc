@@ -109,8 +109,16 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   map<string, string> variables;
   variables["LABEL"] = CamelToUpper(GetLabelName(descriptor_->label()));
   variables["TYPE"] = type_macro;
-  variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
-  variables["name"] = FieldName(descriptor_);
+  if (options_.no_name_mangling)
+  {
+     variables["classname"] = FieldScope(descriptor_)->full_name();
+     variables["name"] = descriptor_->name();
+  }
+  else
+  {
+     variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
+     variables["name"] = FieldName(descriptor_);
+  }
   variables["proto_name"] = descriptor_->name();
   variables["descriptor_addr"] = descriptor_addr;
   variables["value"] = SimpleItoa(descriptor_->number());
@@ -160,30 +168,32 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   printer->Print("},\n");
 }
 
-FieldGeneratorMap::FieldGeneratorMap(const Descriptor* descriptor)
+FieldGeneratorMap::FieldGeneratorMap(const Descriptor* descriptor,
+                                     const Options& options)
   : descriptor_(descriptor),
     field_generators_(
       new scoped_ptr<FieldGenerator>[descriptor->field_count()]) {
   // Construct all the FieldGenerators.
   for (int i = 0; i < descriptor->field_count(); i++) {
-    field_generators_[i].reset(MakeGenerator(descriptor->field(i)));
+    field_generators_[i].reset(MakeGenerator(descriptor->field(i), options));
   }
 }
 
-FieldGenerator* FieldGeneratorMap::MakeGenerator(const FieldDescriptor* field) {
+FieldGenerator* FieldGeneratorMap::MakeGenerator(const FieldDescriptor* field,
+                                                 const Options& options) {
   switch (field->type()) {
     case FieldDescriptor::TYPE_MESSAGE:
-      return new MessageFieldGenerator(field);
+      return new MessageFieldGenerator(field, options);
     case FieldDescriptor::TYPE_STRING:
-      return new StringFieldGenerator(field);
+      return new StringFieldGenerator(field, options);
     case FieldDescriptor::TYPE_BYTES:
-      return new BytesFieldGenerator(field);
+      return new BytesFieldGenerator(field, options);
     case FieldDescriptor::TYPE_ENUM:
-      return new EnumFieldGenerator(field);
+      return new EnumFieldGenerator(field, options);
     case FieldDescriptor::TYPE_GROUP:
       return 0;			// XXX
     default:
-      return new PrimitiveFieldGenerator(field);
+      return new PrimitiveFieldGenerator(field, options);
   }
 }
 

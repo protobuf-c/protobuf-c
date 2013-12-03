@@ -74,7 +74,7 @@ namespace c {
 
 class EnumFieldGenerator : public FieldGenerator {
  public:
-  explicit EnumFieldGenerator(const FieldDescriptor* descriptor);
+  explicit EnumFieldGenerator(const FieldDescriptor* descriptor, const Options& options);
   ~EnumFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------

@@ -74,7 +74,7 @@ namespace c {
 
 class BytesFieldGenerator : public FieldGenerator {
  public:
-  explicit BytesFieldGenerator(const FieldDescriptor* descriptor);
+  explicit BytesFieldGenerator(const FieldDescriptor* descriptor, const Options& options);
   ~BytesFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------

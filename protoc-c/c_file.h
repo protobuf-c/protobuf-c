@@ -67,6 +67,7 @@
 #include <vector>
 #include <google/protobuf/stubs/common.h>
 #include <protoc-c/c_field.h>
+#include <protoc-c/c_options.h>
 
 namespace google {
 namespace protobuf {
@@ -87,9 +88,8 @@ class ExtensionGenerator;      // extension.h
 
 class FileGenerator {
  public:
-  // See generator.cc for the meaning of dllexport_decl.
   explicit FileGenerator(const FileDescriptor* file,
-                         const string& dllexport_decl);
+                         const Options& options);
   ~FileGenerator();
 
   void GenerateHeader(io::Printer* printer);

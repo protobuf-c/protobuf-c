@@ -70,9 +70,9 @@ namespace compiler {
 namespace c {
 
 ExtensionGenerator::ExtensionGenerator(const FieldDescriptor* descriptor,
-                                       const string& dllexport_decl)
+                                       const Options& options)
   : descriptor_(descriptor),
-    dllexport_decl_(dllexport_decl) {
+    options_(options) {
 }
 
 ExtensionGenerator::~ExtensionGenerator() {}

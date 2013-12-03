@@ -79,10 +79,10 @@ namespace c {
 // ===================================================================
 
 MessageGenerator::MessageGenerator(const Descriptor* descriptor,
-                                   const string& dllexport_decl)
+                                   const Options& options)
   : descriptor_(descriptor),
-    dllexport_decl_(dllexport_decl),
-    field_generators_(descriptor),
+    options_(options),
+    field_generators_(descriptor, options),
     nested_generators_(new scoped_ptr<MessageGenerator>[
       descriptor->nested_type_count()]),
     enum_generators_(new scoped_ptr<EnumGenerator>[
@@ -92,17 +92,17 @@ MessageGenerator::MessageGenerator(const Descriptor* descriptor,
 
   for (int i = 0; i < descriptor->nested_type_count(); i++) {
     nested_generators_[i].reset(
-      new MessageGenerator(descriptor->nested_type(i), dllexport_decl));
+      new MessageGenerator(descriptor->nested_type(i), options));
   }
 
   for (int i = 0; i < descriptor->enum_type_count(); i++) {
     enum_generators_[i].reset(
-      new EnumGenerator(descriptor->enum_type(i), dllexport_decl));
+      new EnumGenerator(descriptor->enum_type(i), options));
   }
 
   for (int i = 0; i < descriptor->extension_count(); i++) {
     extension_generators_[i].reset(
-      new ExtensionGenerator(descriptor->extension(i), dllexport_decl));
+      new ExtensionGenerator(descriptor->extension(i), options));
   }
 }
 
@@ -110,8 +110,16 @@ MessageGenerator::~MessageGenerator() {}
 
 void MessageGenerator::
 GenerateStructTypedef(io::Printer* printer) {
-  printer->Print("typedef struct _$classname$ $classname$;\n",
-                 "classname", FullNameToC(descriptor_->full_name()));
+   if (options_.no_name_mangling)
+   {
+      printer->Print("typedef struct _$classname$ $classname$;\n",
+                     "classname", descriptor_->full_name());
+   }
+   else
+   {
+      printer->Print("typedef struct _$classname$ $classname$;\n",
+                     "classname", FullNameToC(descriptor_->full_name()));
+   }
 
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
     nested_generators_[i]->GenerateStructTypedef(printer);
@@ -137,14 +145,21 @@ GenerateStructDefinition(io::Printer* printer) {
   }
 
   std::map<string, string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
+  if (options_.no_name_mangling)
+  {
+     vars["classname"] = descriptor_->full_name();
+  }
+  else
+  {
+     vars["classname"] = FullNameToC(descriptor_->full_name());
+  }
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
   vars["field_count"] = SimpleItoa(descriptor_->field_count());
-  if (dllexport_decl_.empty()) {
+  if (options_.dllexport_decl.empty()) {
     vars["dllexport"] = "";
   } else {
-    vars["dllexport"] = dllexport_decl_ + " ";
+    vars["dllexport"] = options_.dllexport_decl + " ";
   }
 
   printer->Print(vars,
@@ -188,7 +203,14 @@ GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage)
   }
 
   std::map<string, string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
+  if (options_.no_name_mangling)
+  {
+     vars["classname"] = descriptor_->full_name();
+  }
+  else
+  {
+     vars["classname"] = FullNameToC(descriptor_->full_name());
+  }
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   printer->Print(vars,
 		 "/* $classname$ methods */\n"
@@ -236,7 +258,14 @@ void MessageGenerator::GenerateClosureTypedef(io::Printer* printer)
     nested_generators_[i]->GenerateClosureTypedef(printer);
   }
   std::map<string, string> vars;
-  vars["name"] = FullNameToC(descriptor_->full_name());
+  if (options_.no_name_mangling)
+  {
+     vars["name"] = descriptor_->full_name();
+  }
+  else
+  {
+     vars["name"] = FullNameToC(descriptor_->full_name());
+  }
   printer->Print(vars,
                  "typedef void (*$name$_Closure)\n"
 		 "                 (const $name$ *message,\n"
@@ -261,7 +290,14 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
   }
 
   std::map<string, string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
+  if (options_.no_name_mangling)
+  {
+     vars["classname"] = descriptor_->full_name();
+  }
+  else
+  {
+     vars["classname"] = FullNameToC(descriptor_->full_name());
+  }
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
   printer->Print(vars,
@@ -318,7 +354,14 @@ void MessageGenerator::
 GenerateMessageDescriptor(io::Printer* printer) {
     map<string, string> vars;
     vars["fullname"] = descriptor_->full_name();
-    vars["classname"] = FullNameToC(descriptor_->full_name());
+    if (options_.no_name_mangling)
+    {
+       vars["classname"] = descriptor_->full_name();
+    }
+    else
+    {
+       vars["classname"] = FullNameToC(descriptor_->full_name());
+    }
     vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
     vars["shortname"] = ToCamel(descriptor_->name());
     vars["n_fields"] = SimpleItoa(descriptor_->field_count());
@@ -394,7 +437,14 @@ GenerateMessageDescriptor(io::Printer* printer) {
 	case FieldDescriptor::CPPTYPE_ENUM:
 	  {
 	    const EnumValueDescriptor *vd = fd->default_value_enum();
-	    vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name());
+            if (options_.no_name_mangling)
+            {
+               vars["field_dv_ctype"] = vd->type()->full_name();
+            }
+            else
+            {
+               vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name());
+            }
 	    break;
 	  }
 	default:

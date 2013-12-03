@@ -66,6 +66,7 @@
 #include <string>
 #include <google/protobuf/stubs/common.h>
 #include <protoc-c/c_field.h>
+#include <protoc-c/c_options.h>
 
 namespace google {
 namespace protobuf {
@@ -85,7 +86,7 @@ class MessageGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
   explicit MessageGenerator(const Descriptor* descriptor,
-                            const string& dllexport_decl);
+                            const Options& options);
   ~MessageGenerator();
 
   // Header stuff.
@@ -124,7 +125,7 @@ class MessageGenerator {
   string GetDefaultValueC(const FieldDescriptor *fd);
 
   const Descriptor* descriptor_;
-  string dllexport_decl_;
+  Options options_;
   FieldGeneratorMap field_generators_;
   scoped_array<scoped_ptr<MessageGenerator> > nested_generators_;
   scoped_array<scoped_ptr<EnumGenerator> > enum_generators_;

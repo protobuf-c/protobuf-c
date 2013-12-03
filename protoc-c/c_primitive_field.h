@@ -74,7 +74,7 @@ namespace c {
 
 class PrimitiveFieldGenerator : public FieldGenerator {
  public:
-  explicit PrimitiveFieldGenerator(const FieldDescriptor* descriptor);
+  explicit PrimitiveFieldGenerator(const FieldDescriptor* descriptor, const Options& options);
   ~PrimitiveFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -85,6 +85,7 @@ class PrimitiveFieldGenerator : public FieldGenerator {
 
  private:
 
+  Options options_;
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(PrimitiveFieldGenerator);
 };
 
