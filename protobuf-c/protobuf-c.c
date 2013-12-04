@@ -1723,18 +1723,18 @@ count_packed_elements (ProtobufCType type,
 static inline uint32_t
 parse_uint32 (unsigned len, const uint8_t *data)
 {
-  unsigned rv = data[0] & 0x7f;
+  uint32_t rv = data[0] & 0x7f;
   if (len > 1)
     {
-      rv |= ((data[1] & 0x7f) << 7);
+      rv |= ((uint32_t)(data[1] & 0x7f) << 7);
       if (len > 2)
         {
-          rv |= ((data[2] & 0x7f) << 14);
+          rv |= ((uint32_t)(data[2] & 0x7f) << 14);
           if (len > 3)
             {
-              rv |= ((data[3] & 0x7f) << 21);
+              rv |= ((uint32_t)(data[3] & 0x7f) << 21);
               if (len > 4)
-                rv |= (data[4] << 28);
+                rv |= ((uint32_t)(data[4]) << 28);
             }
         }
     }
@@ -1761,7 +1761,8 @@ parse_fixed_uint32 (const uint8_t *data)
   memcpy (&t, data, 4);
   return t;
 #else
-  return data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
+  return data[0] | ((uint32_t)(data[1]) << 8) | ((uint32_t)(data[2]) << 16)
+         | ((uint32_t)(data[3]) << 24);
 #endif
 }
 static uint64_t
@@ -1771,10 +1772,10 @@ parse_uint64 (unsigned len, const uint8_t *data)
   uint64_t rv;
   if (len < 5)
     return parse_uint32 (len, data);
-  rv = ((data[0] & 0x7f))
-              | ((data[1] & 0x7f)<<7)
-              | ((data[2] & 0x7f)<<14)
-              | ((data[3] & 0x7f)<<21);
+  rv = ((uint64_t)(data[0] & 0x7f))
+              | ((uint64_t)(data[1] & 0x7f)<<7)
+              | ((uint64_t)(data[2] & 0x7f)<<14)
+              | ((uint64_t)(data[3] & 0x7f)<<21);
   shift = 28;
   for (i = 4; i < len; i++)
     {
