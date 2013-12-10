@@ -954,13 +954,14 @@ repeated_field_pack (const ProtobufCFieldDescriptor *field,
           break;
           
         default:
-          assert (0);
+          return 0;
         }
       payload_len = payload_at - (out + header_len);
       actual_length_size = uint32_size (payload_len);
       if (length_size_min != actual_length_size)
         {
-          assert (actual_length_size == length_size_min + 1);
+          if (actual_length_size != length_size_min + 1)
+            return 0;
           memmove (out + header_len + 1, out + header_len, payload_len);
           header_len++;
         }
@@ -1215,7 +1216,7 @@ get_packed_payload_length (const ProtobufCFieldDescriptor *field,
     case PROTOBUF_C_TYPE_BOOL:
       return count;
     default:
-      assert (0);
+      return 0;
     }
   return rv;
 }
@@ -1313,7 +1314,7 @@ pack_buffer_packed_payload (const ProtobufCFieldDescriptor *field,
           }
         return count;
       default:
-        assert(0);
+        return 0;
     }
   return rv;
 
@@ -1341,7 +1342,8 @@ repeated_field_pack_to_buffer (const ProtobufCFieldDescriptor *field,
       rv += uint32_pack (payload_len, scratch + rv);
       buffer->append (buffer, rv, scratch);
       tmp = pack_buffer_packed_payload (field, count, array, buffer);
-      assert (tmp == payload_len);
+      if (tmp != payload_len)
+        return 0;
       return rv + payload_len;
     }
   else
@@ -1598,10 +1600,11 @@ merge_messages (ProtobufCMessage *earlier_msg,
           if (!merge_messages (*em, *lm, allocator))
             return 0;
         }
+        else if (fields[i].label != PROTOBUF_C_LABEL_OPTIONAL)
+           return 0;
         else
         {
           /* Zero copy the optional message */
-          assert (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL);
           *lm = *em;
           *em = NULL;
         }
@@ -2118,7 +2121,7 @@ parse_packed_repeated_member (ScannedMember *scanned_member,
           }
         break;
       default:
-        assert(0);
+        return FALSE;
     }
   *p_n += count;
   return TRUE;
@@ -2451,7 +2454,8 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
             {
               unsigned n = *n_ptr;
               *n_ptr = 0;
-              assert(rv->descriptor != NULL);
+              if (rv->descriptor == NULL)
+                 goto error_cleanup;
 #define CLEAR_REMAINING_N_PTRS()                                              \
               for(f++;f < desc->n_fields; f++)                                \
                 {                                                             \
@@ -2682,7 +2686,8 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
      If this fails, you are likely invoking a newly added
      method on an old service.  (Although other memory corruption
      bugs can cause this assertion too) */
-  PROTOBUF_C_ASSERT (method_index < service->descriptor->n_methods);
+  if (method_index >= service->descriptor->n_methods)
+    return;
 
   /* Get the array of virtual methods (which are enumerated by 
      the generated code) */

@@ -133,7 +133,6 @@ typedef int protobuf_c_boolean;
 #define PROTOBUF_C_OFFSETOF(struct, member) offsetof(struct, member)
 
 #define PROTOBUF_C_ASSERT(condition) assert(condition)
-#define PROTOBUF_C_ASSERT_NOT_REACHED() assert(0)
 
 typedef struct _ProtobufCBinaryData ProtobufCBinaryData;
 struct _ProtobufCBinaryData
