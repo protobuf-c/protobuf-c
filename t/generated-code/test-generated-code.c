@@ -20,7 +20,7 @@ int main()
   size2 = foo__person__pack (&person, packed);
   assert (size == size2);
   foo__person__pack_to_buffer (&person, &bs.base);
-  assert (bs.len == size);
+  assert (bs.base.size == size);
   assert (memcmp (bs.data, packed, size) == 0);
   PROTOBUF_C_BUFFER_SIMPLE_CLEAR (&bs);
   person2 = foo__person__unpack (NULL, size, packed);

@@ -163,7 +163,7 @@ protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,
                                  const uint8_t   *data)
 {
   ProtobufCBufferSimple *simp = (ProtobufCBufferSimple *) buffer;
-  size_t new_len = simp->len + len;
+  size_t new_len = buffer->size + len;
   if (new_len > simp->alloced)
     {
       size_t new_alloced = simp->alloced * 2;
@@ -171,7 +171,7 @@ protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,
       while (new_alloced < new_len)
         new_alloced += new_alloced;
       DO_ALLOC (new_data, &protobuf_c_default_allocator, new_alloced, return);
-      memcpy (new_data, simp->data, simp->len);
+      memcpy (new_data, simp->data, buffer->size);
       if (simp->must_free_data)
         FREE (&protobuf_c_default_allocator, simp->data);
       else
@@ -179,8 +179,8 @@ protobuf_c_buffer_simple_append (ProtobufCBuffer *buffer,
       simp->data = new_data;
       simp->alloced = new_alloced;
     }
-  memcpy (simp->data + simp->len, data, len);
-  simp->len = new_len;
+  memcpy (simp->data + buffer->size, data, len);
+  buffer->size = new_len;
 }
 
 /* === get_packed_size() === */

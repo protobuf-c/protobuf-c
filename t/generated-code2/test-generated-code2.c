@@ -72,7 +72,7 @@ test_compare_pack_methods (ProtobufCMessage *message,
   assert (siz1 == siz3);
   siz2 = protobuf_c_message_pack (message, packed1);
   assert (siz1 == siz2);
-  assert (bs.len == siz1);
+  assert (bs.base.size == siz1);
   assert (memcmp (bs.data, packed1, siz1) == 0);
   rv = protobuf_c_message_unpack (message->descriptor, NULL, siz1, packed1);
   assert (rv != NULL);
