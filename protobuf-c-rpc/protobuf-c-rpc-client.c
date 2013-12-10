@@ -64,8 +64,8 @@ error_handler (ProtobufC_RPC_Error_Code code,
 struct _ProtobufC_RPC_Client
 {
   ProtobufCService base_service;
-  ProtobufCDataBuffer incoming;
-  ProtobufCDataBuffer outgoing;
+  ProtobufCBuffer *incoming;
+  ProtobufCBuffer *outgoing;
   ProtobufCAllocator *allocator;
   ProtobufCDispatch *dispatch;
   ProtobufC_RPC_AddressType address_type;
@@ -76,6 +76,7 @@ struct _ProtobufC_RPC_Client
   ProtobufC_NameLookup_Func resolver;
   ProtobufC_RPC_Error_Func error_handler;
   void *error_handler_data;
+  ProtobufC_RPC_Protocol rpc_protocol;
   ProtobufC_RPC_ClientState state;
   union {
     struct {
@@ -162,8 +163,8 @@ client_failed (ProtobufC_RPC_Client *client,
       protobuf_c_dispatch_close_fd (client->dispatch, client->fd);
       client->fd = -1;
     }
-  protobuf_c_data_buffer_reset (&client->incoming);
-  protobuf_c_data_buffer_reset (&client->outgoing);
+  protobuf_c_data_buffer_reset (client->incoming);
+  protobuf_c_data_buffer_reset (client->outgoing);
 
   /* Compute the message */
   va_start (args, format_str);
@@ -434,7 +435,7 @@ grow_closure_array (ProtobufC_RPC_Client *client)
   client->info.connected.closures = new_closures;
   client->info.connected.closures_alloced = new_size;
 }
-static uint32_t 
+static uint32_t
 uint32_to_le (uint32_t le)
 {
 #if !defined(WORDS_BIGENDIAN)
@@ -454,15 +455,6 @@ enqueue_request (ProtobufC_RPC_Client *client,
                  ProtobufCClosure  closure,
                  void             *closure_data)
 {
-  uint32_t request_id;
-  struct {
-    uint32_t method_index;
-    uint32_t packed_size;
-    uint32_t request_id;
-  } header;
-  size_t packed_size;
-  uint8_t *packed_data;
-  Closure *cl;
   const ProtobufCServiceDescriptor *desc = client->base_service.descriptor;
   const ProtobufCMethodDescriptor *method = desc->methods + method_index;
 
@@ -472,34 +464,41 @@ enqueue_request (ProtobufC_RPC_Client *client,
   //protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_CONNECTED);
   if (client->info.connected.first_free_request_id == 0)
     grow_closure_array (client);
-  request_id = client->info.connected.first_free_request_id;
-  cl = client->info.connected.closures + (request_id - 1);
-  client->info.connected.first_free_request_id = POINTER_TO_UINT (cl->closure_data);
 
-  /* Pack message */
-  packed_size = protobuf_c_message_get_packed_size (input);
-  if (packed_size < client->allocator->max_alloca)
-    packed_data = alloca (packed_size);
-  else
-    packed_data = client->allocator->alloc (client->allocator, packed_size);
-  protobuf_c_message_pack (input, packed_data);
+  uint32_t request_id = client->info.connected.first_free_request_id;
 
-  /* Append to buffer */
-  protobuf_c_assert (sizeof (header) == 12);
-  header.method_index = uint32_to_le (method_index);
-  header.packed_size = uint32_to_le (packed_size);
-  header.request_id = request_id;
-  protobuf_c_data_buffer_append (&client->outgoing, &header, 12);
-  protobuf_c_data_buffer_append (&client->outgoing, packed_data, packed_size);
+  /* Serialize the message */
+  ProtobufC_RPC_Payload payload = {method_index,
+                                   request_id,
+                                   (ProtobufCMessage *)input};
 
-  /* Clean up if not using alloca() */
-  if (packed_size >= client->allocator->max_alloca)
-    client->allocator->free (client->allocator, packed_data);
+  client->rpc_protocol.serialize_func (client->outgoing, payload);
 
   /* Add closure to request-tree */
+  Closure *cl = client->info.connected.closures + (request_id - 1);
+  client->info.connected.first_free_request_id = POINTER_TO_UINT (cl->closure_data);
   cl->response_type = method->output;
   cl->closure = closure;
   cl->closure_data = closure_data;
+}
+
+static const ProtobufCMessageDescriptor *
+get_rcvd_message_descriptor (const ProtobufC_RPC_Payload *payload, void *data)
+{
+   ProtobufC_RPC_Client *client = (ProtobufC_RPC_Client *)data;
+   uint32_t request_id = payload->request_id;
+
+   /* lookup request by id */
+   if (request_id > client->info.connected.closures_alloced
+         || request_id == 0
+         || client->info.connected.closures[request_id-1].response_type == NULL)
+   {
+      client_failed (client, "bad request-id in response from server");
+      return NULL;
+   }
+
+   Closure *closure = client->info.connected.closures + (request_id - 1);
+   return closure->response_type;
 }
 
 static void
@@ -511,7 +510,7 @@ handle_client_fd_events (int                fd,
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_CONNECTED);
   if (events & PROTOBUF_C_EVENT_WRITABLE)
     {
-      int write_rv = protobuf_c_data_buffer_writev (&client->outgoing,
+      int write_rv = protobuf_c_data_buffer_writev (client->outgoing,
                                                     client->fd);
       if (write_rv < 0 && !errno_is_ignorable (errno))
         {
@@ -521,7 +520,7 @@ handle_client_fd_events (int                fd,
           return;
         }
 
-      if (client->outgoing.size == 0)
+      if (client->outgoing->size == 0)
         protobuf_c_dispatch_watch_fd (client->dispatch, client->fd,
                                       PROTOBUF_C_EVENT_READABLE,
                                       handle_client_fd_events, client);
@@ -529,7 +528,7 @@ handle_client_fd_events (int                fd,
   if (events & PROTOBUF_C_EVENT_READABLE)
     {
       /* do read */
-      int read_rv = protobuf_c_data_buffer_read_in_fd (&client->incoming,
+      int read_rv = protobuf_c_data_buffer_read_in_fd (client->incoming,
                                                        client->fd);
       if (read_rv < 0)
         {
@@ -545,80 +544,148 @@ handle_client_fd_events (int                fd,
           /* handle eof */
           client_failed (client,
                          "got end-of-file from server [%u bytes incoming, %u bytes outgoing]",
-                         client->incoming.size, client->outgoing.size);
+                         client->incoming->size, client->outgoing->size);
         }
       else
         {
           /* try processing buffer */
-          while (client->incoming.size >= 16)
+          while (client->incoming->size > 0)
             {
-              uint32_t header[4];
-              unsigned status_code, method_index, message_length, request_id;
-              Closure *closure;
-              ProtobufCMessage *msg;
-              protobuf_c_data_buffer_peek (&client->incoming, header, sizeof (header));
-              status_code = uint32_from_le (header[0]);
-              method_index = uint32_from_le (header[1]);
-              message_length = uint32_from_le (header[2]);
-              request_id = header[3];           /* already native-endian */
+              /* Deserialize the buffer */
+              ProtobufC_RPC_Payload payload = {0};
+              ProtobufC_RPC_ProtocolStatus status =
+                client->rpc_protocol.deserialize_func (client->allocator,
+                                                       client->incoming,
+                                                       &payload,
+                                                       get_rcvd_message_descriptor,
+                                                       (void *) client);
 
-              if (16 + message_length > client->incoming.size)
+              if (status == PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER)
                 break;
 
-              /* lookup request by id */
-              if (request_id > client->info.connected.closures_alloced
-               || request_id == 0
-               || client->info.connected.closures[request_id-1].response_type == NULL)
-                {
-                  client_failed (client, "bad request-id in response from server");
-                  return;
-                }
-              closure = client->info.connected.closures + (request_id - 1);
-
-              /* Discard the RPC header */
-              protobuf_c_data_buffer_discard (&client->incoming, 16);
-
-              if (status_code == PROTOBUF_C_STATUS_CODE_SUCCESS)
+              if (status == PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED)
               {
-                 /* read message and unpack */
-                 uint8_t *packed_data =
-                    client->allocator->alloc (client->allocator, message_length);
-                 protobuf_c_data_buffer_read (&client->incoming, packed_data, message_length);
-
-                 /* TODO: use fast temporary allocator */
-                 msg = protobuf_c_message_unpack (closure->response_type,
-                       client->allocator,
-                       message_length,
-                       packed_data);
-
-                 client->allocator->free (client->allocator, packed_data);
-                 if (msg == NULL)
-                 {
-                    fprintf(stderr, "unable to unpack msg of length %u", message_length);
-                    client_failed (client, "failed to unpack message");
-                    return;
-                 }
-              }
-              else
-              {
-                 /* Server did not send a response message */
-                 protobuf_c_assert (message_length == 0);
-                 msg = NULL;
+                client_failed (client, "error deserialing server response");
+                return;
               }
 
               /* invoke closure */
-              closure->closure (msg, closure->closure_data);
+              Closure *closure = client->info.connected.closures + (payload.request_id - 1);
+              closure->closure (payload.message, closure->closure_data);
               closure->response_type = NULL;
               closure->closure = NULL;
               closure->closure_data = UINT_TO_POINTER (client->info.connected.first_free_request_id);
-              client->info.connected.first_free_request_id = request_id;
+              client->info.connected.first_free_request_id = payload.request_id;
 
               /* clean up */
-              if (msg)
-                 protobuf_c_message_free_unpacked (msg, client->allocator);
+              if (payload.message)
+                protobuf_c_message_free_unpacked (payload.message, client->allocator);
             }
         }
     }
+}
+
+/* Default RPC Protocol implementation:
+ *    client issues request with header:
+ *         method_index              32-bit little-endian
+ *         message_length            32-bit little-endian
+ *         request_id                32-bit any-endian
+ *    server responds with header:
+ *         status_code               32-bit little-endian
+ *         method_index              32-bit little-endian
+ *         message_length            32-bit little-endian
+ *         request_id                32-bit any-endian
+ */
+static ProtobufC_RPC_ProtocolStatus client_serialize (ProtobufCBuffer      *out_buffer,
+                                                      ProtobufC_RPC_Payload payload)
+{
+   if (!out_buffer)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   if (!protobuf_c_message_check (payload.message))
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   size_t message_length = protobuf_c_message_get_packed_size (payload.message);
+   uint32_t header[3];
+   header[0] = uint32_to_le (payload.method_index);
+   header[1] = uint32_to_le (message_length);
+   header[2] = payload.request_id;
+   protobuf_c_data_buffer_append (out_buffer, header, sizeof (header));
+
+   if (protobuf_c_message_pack_to_buffer (payload.message, out_buffer)
+         != message_length)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   return PROTOBUF_C_RPC_PROTOCOL_STATUS_SUCCESS;
+}
+
+static ProtobufC_RPC_ProtocolStatus client_deserialize (ProtobufCAllocator    *allocator,
+                                                        ProtobufCBuffer       *in_buffer,
+                                                        ProtobufC_RPC_Payload *payload,
+                                                        ProtobufC_RPC_GetDescriptor get_descriptor,
+                                                        void *get_descriptor_data)
+{
+   if (!allocator || !in_buffer || !payload)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   uint32_t header[4];
+   if (in_buffer->size < sizeof (header))
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER;
+
+   /* try processing buffer */
+   protobuf_c_data_buffer_peek (in_buffer, header, sizeof (header));
+   uint32_t status_code = uint32_from_le (header[0]);
+   payload->method_index = uint32_from_le (header[1]);
+   uint32_t message_length = uint32_from_le (header[2]);
+   payload->request_id = header[3];           /* already native-endian */
+
+   if (sizeof (header) + message_length > in_buffer->size)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER;
+
+   /* Discard the RPC header */
+   protobuf_c_data_buffer_discard (in_buffer, sizeof (header));
+
+   ProtobufCMessage *msg;
+   if (status_code == PROTOBUF_C_STATUS_CODE_SUCCESS)
+   {
+      /* read message and unpack */
+      const ProtobufCMessageDescriptor *desc = get_descriptor (payload, get_descriptor_data);
+      if (!desc)
+         return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+      uint8_t *packed_data = allocator->alloc (allocator, message_length);
+
+      if (!packed_data && message_length > 0)
+         return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+      if (message_length !=
+          protobuf_c_data_buffer_read (in_buffer, packed_data, message_length))
+      {
+         if (packed_data)
+            allocator->free (allocator, packed_data);
+         return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+      }
+
+      /* TODO: use fast temporary allocator */
+      msg = protobuf_c_message_unpack (desc,
+            allocator,
+            message_length,
+            packed_data);
+
+      if (packed_data)
+         allocator->free (allocator, packed_data);
+      if (msg == NULL)
+         return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+   }
+   else
+   {
+      /* Server did not send a response message */
+      protobuf_c_assert (message_length == 0);
+      msg = NULL;
+   }
+   payload->message = msg;
+
+   return PROTOBUF_C_RPC_PROTOCOL_STATUS_SUCCESS;
 }
 
 static void
@@ -627,7 +694,7 @@ update_connected_client_watch (ProtobufC_RPC_Client *client)
   unsigned events = PROTOBUF_C_EVENT_READABLE;
   protobuf_c_assert (client->state == PROTOBUF_C_CLIENT_STATE_CONNECTED);
   protobuf_c_assert (client->fd >= 0);
-  if (client->outgoing.size > 0)
+  if (client->outgoing->size > 0)
     events |= PROTOBUF_C_EVENT_WRITABLE;
   protobuf_c_dispatch_watch_fd (client->dispatch,
                                 client->fd,
@@ -651,10 +718,10 @@ invoke_client_rpc (ProtobufCService *service,
     case PROTOBUF_C_CLIENT_STATE_CONNECTING:
       enqueue_request (client, method_index, input, closure, closure_data);
       break;
-      
+
     case PROTOBUF_C_CLIENT_STATE_CONNECTED:
       {
-        int had_outgoing = (client->outgoing.size > 0);
+        int had_outgoing = (client->outgoing->size > 0);
         enqueue_request (client, method_index, input, closure, closure_data);
         if (!had_outgoing)
           update_connected_client_watch (client);
@@ -712,8 +779,8 @@ destroy_client_rpc (ProtobufCService *service)
       protobuf_c_dispatch_close_fd (client->dispatch, client->fd);
       client->fd = -1;
     }
-  protobuf_c_data_buffer_clear (&client->incoming);
-  protobuf_c_data_buffer_clear (&client->outgoing);
+  protobuf_c_data_buffer_destruct (client->incoming);
+  protobuf_c_data_buffer_destruct (client->outgoing);
   client->state = PROTOBUF_C_CLIENT_STATE_DESTROYED;
   client->allocator->free (client->allocator, client->name);
 
@@ -753,8 +820,8 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
   rv->base_service.descriptor = descriptor;
   rv->base_service.invoke = invoke_client_rpc;
   rv->base_service.destroy = destroy_client_rpc;
-  protobuf_c_data_buffer_init (&rv->incoming, allocator);
-  protobuf_c_data_buffer_init (&rv->outgoing, allocator);
+  rv->incoming = protobuf_c_data_buffer_create (allocator);
+  rv->outgoing = protobuf_c_data_buffer_create (allocator);
   rv->allocator = allocator;
   rv->dispatch = dispatch;
   rv->address_type = type;
@@ -767,6 +834,8 @@ ProtobufCService *protobuf_c_rpc_client_new (ProtobufC_RPC_AddressType type,
   rv->error_handler = error_handler;
   rv->error_handler_data = "protobuf-c rpc client";
   rv->info.init.idle = protobuf_c_dispatch_add_idle (dispatch, handle_init_idle, rv);
+  ProtobufC_RPC_Protocol default_rpc_protocol = {client_serialize, client_deserialize};
+  rv->rpc_protocol = default_rpc_protocol;
   return &rv->base_service;
 }
 
@@ -798,4 +867,11 @@ void
 protobuf_c_rpc_client_disable_autoreconnect (ProtobufC_RPC_Client *client)
 {
   client->autoreconnect = 0;
+}
+
+void
+protobuf_c_rpc_client_set_rpc_protocol (ProtobufC_RPC_Client *client,
+                                        ProtobufC_RPC_Protocol protocol)
+{
+   client->rpc_protocol = protocol;
 }

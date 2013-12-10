@@ -45,7 +45,7 @@ struct _ServerRequest
 struct _ServerConnection
 {
   int fd;
-  ProtobufCDataBuffer incoming, outgoing;
+  ProtobufCBuffer *incoming, *outgoing;
 
   ProtobufC_RPC_Server *server;
   ServerConnection *prev, *next;
@@ -87,6 +87,8 @@ struct _ProtobufC_RPC_Server
 
   ProtobufC_RPC_Error_Func error_handler;
   void *error_handler_data;
+
+  ProtobufC_RPC_Protocol rpc_protocol;
 
   /* configuration */
   unsigned max_pending_requests_per_connection;
@@ -133,8 +135,8 @@ server_connection_close (ServerConnection *conn)
   /* general cleanup */
   protobuf_c_dispatch_close_fd (conn->server->dispatch, conn->fd);
   conn->fd = -1;
-  protobuf_c_data_buffer_clear (&conn->incoming);
-  protobuf_c_data_buffer_clear (&conn->outgoing);
+  protobuf_c_data_buffer_destruct (conn->incoming);
+  protobuf_c_data_buffer_destruct (conn->outgoing);
 
   /* remove this connection from the server's list */
   GSK_LIST_REMOVE (GET_CONNECTION_LIST (conn->server), conn);
@@ -275,7 +277,7 @@ free_server_request (ProtobufC_RPC_Server *server,
 #endif
 }
 
-static uint32_t 
+static uint32_t
 uint32_to_le (uint32_t le)
 {
 #if !defined(WORDS_BIGENDIAN)
@@ -309,39 +311,27 @@ server_connection_response_closure (const ProtobufCMessage *message,
 
   uint8_t buffer_slab[512];
   ProtobufCBufferSimple buffer_simple = PROTOBUF_C_BUFFER_SIMPLE_INIT (buffer_slab);
-  if (!protobuf_c_message_check (message))
+
+  ProtobufC_RPC_Payload payload = { request->method_index,
+                                    request->request_id,
+                                    (ProtobufCMessage *)message };
+  ProtobufC_RPC_ProtocolStatus status =
+    server->rpc_protocol.serialize_func (&buffer_simple.base, payload);
+
+  if (status != PROTOBUF_C_RPC_PROTOCOL_STATUS_SUCCESS)
     {
-      /* send failed status */
-      uint32_t header[4];
-      header[0] = uint32_to_le (PROTOBUF_C_STATUS_CODE_SERVICE_FAILED);
-      header[1] = uint32_to_le (request->method_index);
-      header[2] = 0;            /* no message */
-      header[3] = request->request_id;
-      protobuf_c_buffer_simple_append (&buffer_simple.base,
-                                       16, (uint8_t *) header);
       server_failed_literal (server, PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
-            "response message was malformed, sending failed status to client");
-    }
-  else
-    {
-      /* send success response */
-      uint32_t header[4];
-      header[0] = uint32_to_le (PROTOBUF_C_STATUS_CODE_SUCCESS);
-      header[1] = uint32_to_le (request->method_index);
-      header[3] = request->request_id;
-      protobuf_c_buffer_simple_append (&buffer_simple.base,
-                                       16, (uint8_t *) header);
-      protobuf_c_message_pack_to_buffer (message, &buffer_simple.base);
-      ((uint32_t *)buffer_simple.data)[2] = uint32_to_le (buffer_simple.len - 16);
+                             "error serializing the response");
+      return;
     }
 
   if (must_proxy)
     {
-      ProxyResponse *pr = allocator->alloc (allocator, sizeof (ProxyResponse) + buffer_simple.len);
+      ProxyResponse *pr = allocator->alloc (allocator, sizeof (ProxyResponse) + buffer_simple.base.size);
       int rv;
       pr->request = request;
-      pr->len = buffer_simple.len;
-      memcpy (pr + 1, buffer_simple.data, buffer_simple.len);
+      pr->len = buffer_simple.base.size;
+      memcpy (pr + 1, buffer_simple.data, buffer_simple.base.size);
 
       /* write pointer to proxy pipe */
 retry_write:
@@ -370,8 +360,8 @@ retry_write:
   else
     {
       ServerConnection *conn = request->conn;
-      protobuf_c_boolean must_set_output_watch = (conn->outgoing.size == 0);
-      protobuf_c_data_buffer_append (&conn->outgoing, buffer_simple.data, buffer_simple.len);
+      protobuf_c_boolean must_set_output_watch = (conn->outgoing->size == 0);
+      protobuf_c_data_buffer_append (conn->outgoing, buffer_simple.data, buffer_simple.base.size);
       if (must_set_output_watch)
         protobuf_c_dispatch_watch_fd (conn->server->dispatch,
                                       conn->fd,
@@ -386,6 +376,24 @@ retry_write:
   PROTOBUF_C_BUFFER_SIMPLE_CLEAR (&buffer_simple);
 }
 
+static const ProtobufCMessageDescriptor *
+get_rcvd_message_descriptor (const ProtobufC_RPC_Payload *payload, void *data)
+{
+   ServerConnection *conn = data;
+   ProtobufCService *service = conn->server->underlying;
+   uint32_t method_index = payload->method_index;
+
+   if (method_index >= service->descriptor->n_methods)
+   {
+      server_connection_failed (conn,
+            PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
+            "bad method_index %u", method_index);
+      return NULL;
+   }
+
+   return service->descriptor->methods[method_index].input;
+}
+
 static void
 handle_server_connection_events (int fd,
                                  unsigned events,
@@ -396,7 +404,7 @@ handle_server_connection_events (int fd,
   ProtobufCAllocator *allocator = conn->server->allocator;
   if (events & PROTOBUF_C_EVENT_READABLE)
     {
-      int read_rv = protobuf_c_data_buffer_read_in_fd (&conn->incoming, fd);
+      int read_rv = protobuf_c_data_buffer_read_in_fd (conn->incoming, fd);
       if (read_rv < 0)
         {
           if (!errno_is_ignorable (errno))
@@ -419,57 +427,43 @@ handle_server_connection_events (int fd,
           return;
         }
       else
-        while (conn->incoming.size >= 12)
+        while (conn->incoming->size > 0)
           {
-            uint32_t header[3];
-            uint32_t method_index, message_length, request_id;
-            uint8_t *packed_data;
-            ProtobufCMessage *message;
-            ServerRequest *server_request;
-            protobuf_c_data_buffer_peek (&conn->incoming, header, 12);
-            method_index = uint32_from_le (header[0]);
-            message_length = uint32_from_le (header[1]);
-            request_id = header[2];             /* store in whatever endianness it comes in */
-
-            if (conn->incoming.size < 12 + message_length)
+            /* Deserialize the buffer */
+            ProtobufC_RPC_Payload payload = {0};
+            ProtobufC_RPC_ProtocolStatus status =
+              conn->server->rpc_protocol.deserialize_func (allocator,
+                                                           conn->incoming,
+                                                           &payload,
+                                                           get_rcvd_message_descriptor,
+                                                           data);
+            if (status == PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER)
               break;
 
-            if (method_index >= conn->server->underlying->descriptor->n_methods)
-              {
-                server_connection_failed (conn,
-                                          PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
-                                          "bad method_index %u", method_index);
-                return;
-              }
-
-            /* Read message */
-            protobuf_c_data_buffer_discard (&conn->incoming, 12);
-            packed_data = allocator->alloc (allocator, message_length);
-            protobuf_c_data_buffer_read (&conn->incoming, packed_data, message_length);
-
-            /* Unpack message */
-            message = protobuf_c_message_unpack (service->descriptor->methods[method_index].input,
-                                                 allocator, message_length, packed_data);
-            allocator->free (allocator, packed_data);
-            if (message == NULL)
-              {
-                server_connection_failed (conn,
-                                          PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
-                                          "error unpacking message");
-                return;
-              }
+            if (status == PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED)
+            {
+              server_connection_failed (conn,
+                                        PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
+                                        "error deserializing client request");
+              return;
+            }
 
             /* Invoke service (note that it may call back immediately) */
-            server_request = create_server_request (conn, request_id, method_index);
-            service->invoke (service, method_index, message,
+            ServerRequest *server_request = create_server_request (conn,
+                                                                   payload.request_id,
+                                                                   payload.method_index);
+            service->invoke (service, payload.method_index, payload.message,
                              server_connection_response_closure, server_request);
-            protobuf_c_message_free_unpacked (message, allocator);
+
+            /* clean up */
+            if (payload.message)
+              protobuf_c_message_free_unpacked (payload.message, allocator);
           }
     }
   if ((events & PROTOBUF_C_EVENT_WRITABLE) != 0
-    && conn->outgoing.size > 0)
+    && conn->outgoing->size > 0)
     {
-      int write_rv = protobuf_c_data_buffer_writev (&conn->outgoing, fd);
+      int write_rv = protobuf_c_data_buffer_writev (conn->outgoing, fd);
       if (write_rv < 0)
         {
           if (!errno_is_ignorable (errno))
@@ -481,11 +475,105 @@ handle_server_connection_events (int fd,
               return;
             }
         }
-      if (conn->outgoing.size == 0)
+      if (conn->outgoing->size == 0)
         protobuf_c_dispatch_watch_fd (conn->server->dispatch, conn->fd, PROTOBUF_C_EVENT_READABLE,
                                       handle_server_connection_events, conn);
     }
 }
+
+/* Default RPC Protocol implementation:
+ *    client issues request with header:
+ *         method_index              32-bit little-endian
+ *         message_length            32-bit little-endian
+ *         request_id                32-bit any-endian
+ *    server responds with header:
+ *         status_code               32-bit little-endian
+ *         method_index              32-bit little-endian
+ *         message_length            32-bit little-endian
+ *         request_id                32-bit any-endian
+ */
+static ProtobufC_RPC_ProtocolStatus
+server_serialize (ProtobufCBuffer      *out_buffer,
+                  ProtobufC_RPC_Payload payload)
+{
+   if (!out_buffer)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   uint32_t header[4];
+   if (!protobuf_c_message_check (payload.message))
+   {
+      /* send failed response */
+      header[0] = uint32_to_le (PROTOBUF_C_STATUS_CODE_SERVICE_FAILED);
+      header[1] = uint32_to_le (payload.method_index);
+      header[2] = 0;            /* no message */
+      header[3] = payload.request_id;
+      out_buffer->append (out_buffer, sizeof (header), (uint8_t *)header);
+   }
+   else
+   {
+      /* send success response */
+      size_t message_length = protobuf_c_message_get_packed_size (payload.message);
+      header[0] = uint32_to_le (PROTOBUF_C_STATUS_CODE_SUCCESS);
+      header[1] = uint32_to_le (payload.method_index);
+      header[2] = uint32_to_le (message_length);
+      header[3] = payload.request_id;
+
+      out_buffer->append (out_buffer, sizeof (header), (uint8_t *)header);
+      if (protobuf_c_message_pack_to_buffer (payload.message, out_buffer)
+            != message_length)
+         return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+   }
+   return PROTOBUF_C_RPC_PROTOCOL_STATUS_SUCCESS;
+}
+
+static ProtobufC_RPC_ProtocolStatus
+server_deserialize (ProtobufCAllocator    *allocator,
+                    ProtobufCBuffer       *in_buffer,
+                    ProtobufC_RPC_Payload *payload,
+                    ProtobufC_RPC_GetDescriptor get_descriptor,
+                    void *get_descriptor_data)
+{
+   if (!allocator || !in_buffer || !payload)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   uint32_t header[3];
+   if (in_buffer->size < sizeof (header))
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER;
+
+   uint32_t message_length;
+   uint8_t *packed_data;
+   ProtobufCMessage *message;
+
+   protobuf_c_data_buffer_peek (in_buffer, header, sizeof (header));
+   payload->method_index = uint32_from_le (header[0]);
+   message_length = uint32_from_le (header[1]);
+   /* store request_id in whatever endianness it comes in */
+   payload->request_id = header[2];
+
+   if (in_buffer->size < sizeof (header) + message_length)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER;
+
+   const ProtobufCMessageDescriptor *desc =
+      get_descriptor (payload, get_descriptor_data);
+   if (!desc)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   /* Read message */
+   protobuf_c_data_buffer_discard (in_buffer, sizeof (header));
+   packed_data = allocator->alloc (allocator, message_length);
+   protobuf_c_data_buffer_read (in_buffer, packed_data, message_length);
+
+   /* Unpack message */
+   message = protobuf_c_message_unpack (desc, allocator, message_length, packed_data);
+   allocator->free (allocator, packed_data);
+   if (message == NULL)
+      return PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED;
+
+   payload->message = message;
+
+   return PROTOBUF_C_RPC_PROTOCOL_STATUS_SUCCESS;
+}
+
 
 static void
 handle_server_listener_readable (int fd,
@@ -508,8 +596,8 @@ handle_server_listener_readable (int fd,
     }
   conn = allocator->alloc (allocator, sizeof (ServerConnection));
   conn->fd = new_fd;
-  protobuf_c_data_buffer_init (&conn->incoming, server->allocator);
-  protobuf_c_data_buffer_init (&conn->outgoing, server->allocator);
+  conn->incoming = protobuf_c_data_buffer_create (server->allocator);
+  conn->outgoing = protobuf_c_data_buffer_create (server->allocator);
   conn->n_pending_requests = 0;
   conn->first_pending_request = conn->last_pending_request = NULL;
   conn->server = server;
@@ -543,14 +631,16 @@ server_new_from_fd (ProtobufC_FD              listening_fd,
   server->is_rpc_thread_data = NULL;
   server->proxy_pipe[0] = server->proxy_pipe[1] = -1;
   server->proxy_extra_data_len = 0;
+  ProtobufC_RPC_Protocol default_rpc_protocol = {server_serialize, server_deserialize};
+  server->rpc_protocol = default_rpc_protocol;
   strcpy (server->bind_name, bind_name);
   set_fd_nonblocking (listening_fd);
-  protobuf_c_dispatch_watch_fd (dispatch, listening_fd, PROTOBUF_C_EVENT_READABLE, 
+  protobuf_c_dispatch_watch_fd (dispatch, listening_fd, PROTOBUF_C_EVENT_READABLE,
                                 handle_server_listener_readable, server);
   return server;
 }
 
-/* this function is for handling the common problem 
+/* this function is for handling the common problem
    that we bind over-and-over again to the same
    unix path.
 
@@ -727,8 +817,8 @@ handle_proxy_pipe_readable (ProtobufC_FD   fd,
       else
         {
           ServerConnection *conn = request->conn;
-          protobuf_c_boolean must_set_output_watch = (conn->outgoing.size == 0);
-          protobuf_c_data_buffer_append (&conn->outgoing, (uint8_t*)(pr+1), pr->len);
+          protobuf_c_boolean must_set_output_watch = (conn->outgoing->size == 0);
+          protobuf_c_data_buffer_append (conn->outgoing, (pr+1), pr->len);
           if (must_set_output_watch)
             protobuf_c_dispatch_watch_fd (conn->server->dispatch,
                                           conn->fd,
@@ -778,4 +868,11 @@ protobuf_c_rpc_server_set_error_handler (ProtobufC_RPC_Server *server,
 {
   server->error_handler = func;
   server->error_handler_data = error_func_data;
+}
+
+void
+protobuf_c_rpc_server_set_rpc_protocol (ProtobufC_RPC_Server *server,
+                                        ProtobufC_RPC_Protocol protocol)
+{
+   server->rpc_protocol = protocol;
 }
