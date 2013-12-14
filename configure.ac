@@ -12,7 +12,7 @@ AM_SILENT_RULES([yes])
 LT_INIT
 
 AC_CONFIG_HEADERS(config.h)
-AC_CONFIG_FILES([Makefile protobuf-c/libprotobuf-c.pc protobuf-c-rpc/libprotobuf-c-rpc.pc])
+AC_CONFIG_FILES([Makefile protobuf-c/libprotobuf-c.pc])
 
 AC_CHECK_HEADERS(alloca.h)
 AC_CHECK_HEADERS(inttypes.h)
@@ -39,12 +39,6 @@ fi
 PKG_CHECK_MODULES([protobuf], [protobuf])
 AC_LANG_PUSH([C++])
 AC_PATH_PROG(PROTOC, protoc)
-
-AC_ARG_ENABLE(
-    [rpc],
-    AS_HELP_STRING([--enable-rpc], [Enable building the protobuf-c rpc library])
-)
-AM_CONDITIONAL([BUILD_RPC], [test "x$enable_rpc" = "xyes"])
 
 AC_C_BIGENDIAN
 
