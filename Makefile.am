@@ -49,42 +49,6 @@ CLEANFILES += protobuf-c/libprotobuf-c.pc
 EXTRA_DIST += protobuf-c/libprotobuf-c.pc.in
 
 #
-# libprotobuf-c-rpc
-#
-
-if BUILD_RPC
-
-LIBPROTOBUF_C_RPC_CURRENT=0
-LIBPROTOBUF_C_RPC_REVISION=0
-LIBPROTOBUF_C_RPC_AGE=0
-
-lib_LTLIBRARIES += \
-	protobuf-c-rpc/libprotobuf-c-rpc.la
-
-nobase_include_HEADERS += \
-	protobuf-c-rpc/protobuf-c-data-buffer.h \
-	protobuf-c-rpc/protobuf-c-dispatch.h \
-	protobuf-c-rpc/protobuf-c-rpc.h
-
-protobuf_c_rpc_libprotobuf_c_rpc_la_SOURCES = \
-	protobuf-c-rpc/gsklistmacros.h \
-	protobuf-c-rpc/gskrbtreemacros.h \
-	protobuf-c-rpc/protobuf-c-data-buffer.c \
-	protobuf-c-rpc/protobuf-c-dispatch.c \
-	protobuf-c-rpc/protobuf-c-rpc.c
-
-protobuf_c_rpc_libprotobuf_c_rpc_la_LDFLAGS = $(AM_LDFLAGS) \
-	-version-info $(LIBPROTOBUF_C_RPC_CURRENT):$(LIBPROTOBUF_C_RPC_REVISION):$(LIBPROTOBUF_C_RPC_AGE) \
-	-export-symbols-regex "^(protobuf_c_[a-z].*)" \
-	-no-undefined
-
-pkgconfig_DATA += protobuf-c-rpc/libprotobuf-c-rpc.pc
-CLEANFILES += protobuf-c-rpc/libprotobuf-c-rpc.pc
-EXTRA_DIST += protobuf-c-rpc/libprotobuf-c-rpc.pc.in
-
-endif
-
-#
 # protoc-c
 #
 
@@ -183,27 +147,6 @@ EXTRA_DIST += \
 	t/test.proto \
 	t/test-full.proto \
 	t/generated-code2/common-test-arrays.h
-
-#
-# protobuf-c-rpc tests
-#
-
-if BUILD_RPC
-
-check_PROGRAMS += \
-	protobuf-c-rpc/t/test-rpc
-
-TESTS += \
-	protobuf-c-rpc/t/test-rpc
-
-protobuf_c_rpc_t_test_rpc_SOURCES = \
-	protobuf-c-rpc/t/test-rpc.c \
-	t/test.pb-c.c
-protobuf_c_rpc_t_test_rpc_LDADD = \
-	protobuf-c/libprotobuf-c.la \
-	protobuf-c-rpc/libprotobuf-c-rpc.la
-
-endif
 
 #
 #
