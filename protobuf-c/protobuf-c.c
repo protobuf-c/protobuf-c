@@ -2248,7 +2248,7 @@ protobuf_c_message_init_generic (const ProtobufCMessageDescriptor *desc,
    choose the number so that we would overflow if we needed
    a slab larger than provided. */
 #define MAX_SCANNED_MEMBER_SLAB                          \
-  (sizeof(void*)*8 - 1                                   \
+  (sizeof(unsigned int)*8 - 1                                   \
    - BOUND_SIZEOF_SCANNED_MEMBER_LOG2                    \
    - FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)
 
