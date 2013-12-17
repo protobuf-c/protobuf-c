@@ -136,7 +136,6 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
     "  $value$,\n"
     "  PROTOBUF_C_LABEL_$LABEL$,\n"
     "  PROTOBUF_C_TYPE_$TYPE$,\n");
-  bool packed = false;
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables, "  0,   /* quantifier_offset */\n");

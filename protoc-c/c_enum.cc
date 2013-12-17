@@ -223,8 +223,8 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   if (descriptor_->value_count() > 0) {
     unsigned range_start = 0;
     unsigned range_len = 1;
-    unsigned range_start_value = value_index[0].value;
-    unsigned last_value = range_start_value;
+    int range_start_value = value_index[0].value;
+    int last_value = range_start_value;
     for (int j = 1; j < descriptor_->value_count(); j++) {
       if (value_index[j-1].value != value_index[j].value) {
 	if (last_value + 1 == value_index[j].value) {

@@ -1592,6 +1592,7 @@ merge_messages (ProtobufCMessage *earlier_msg,
       ProtobufCMessage **lm =
         STRUCT_MEMBER_PTR (ProtobufCMessage *, latter_msg, fields[i].offset);
       if (*em != NULL)
+      {
         if (*lm != NULL)
         {
           if (!merge_messages (*em, *lm, allocator))
@@ -1604,6 +1605,7 @@ merge_messages (ProtobufCMessage *earlier_msg,
           *lm = *em;
           *em = NULL;
         }
+      }
     }
     else if (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL)
     {
@@ -2274,7 +2276,6 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
   unsigned i_slab;
   unsigned last_field_index = 0;
   unsigned char required_fields_bitmap[MAX_MEMBERS_FOR_HASH_SIZE/8] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,};
-  static const unsigned word_bits = sizeof(long) * 8;
 
   ASSERT_IS_MESSAGE_DESCRIPTOR (desc);
 
@@ -2283,9 +2284,9 @@ protobuf_c_message_unpack         (const ProtobufCMessageDescriptor *desc,
 
   /* We treat all fields % (16*8), which should be good enough. */
 #define REQUIRED_FIELD_BITMAP_SET(index)   \
-  required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] |= (1<<((index)%8))
+  (required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] |= (1<<((index)%8)))
 #define REQUIRED_FIELD_BITMAP_IS_SET(index)   \
-  required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] & (1<<((index)%8))
+  (required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] & (1<<((index)%8)))
 
   DO_ALLOC (rv, allocator, desc->sizeof_message, return NULL);
   scanned_member_slabs[0] = first_member_slab;
