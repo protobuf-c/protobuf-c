@@ -261,7 +261,8 @@ void
 protobuf_c_data_buffer_append_string(ProtobufCDataBuffer  *buffer,
                          const char *string)
 {
-  assert (string != NULL);
+  if (string == NULL)
+     return;
   protobuf_c_data_buffer_append (buffer, string, strlen (string));
 }
 
@@ -339,7 +340,8 @@ protobuf_c_data_buffer_read(ProtobufCDataBuffer    *buffer,
 	}
     }
   buffer->size -= rv;
-  assert (rv == orig_max_length || buffer->size == 0);
+  if (rv != orig_max_length && buffer->size != 0)
+     return 0;
   CHECK_INTEGRITY (buffer);
   return rv;
 }
