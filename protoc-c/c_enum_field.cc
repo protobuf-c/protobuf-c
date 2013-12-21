@@ -75,14 +75,29 @@ using internal::WireFormat;
 // TODO(kenton):  Factor out a "SetCommonFieldVariables()" to get rid of
 //   repeat code between this and the other field types.
 void SetEnumVariables(const FieldDescriptor* descriptor,
-                      map<string, string>* variables) {
-
-  (*variables)["name"] = FieldName(descriptor);
-  (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name());
+                        map<string, string>* variables,
+                        const Options& options) {
+   if (options.no_name_mangling)
+   {
+      (*variables)["name"] = descriptor->name();
+      (*variables)["type"] = descriptor->enum_type()->full_name();
+   }
+   else
+   {
+      (*variables)["name"] = FieldName(descriptor);
+      (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name());
+   }
   if (descriptor->has_default_value()) {
     const EnumValueDescriptor* default_value = descriptor->default_value_enum();
-    (*variables)["default"] = FullNameToUpper(default_value->type()->full_name())
-			    + "__" + ToUpper(default_value->name());
+    if (options.no_name_mangling)
+    {
+       (*variables)["default"] = ToUpper(default_value->name());
+    }
+    else
+    {
+       (*variables)["default"] = FullNameToUpper(default_value->type()->full_name())
+          + "__" + ToUpper(default_value->name());
+    }
   } else
     (*variables)["default"] = "0";
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
@@ -91,10 +106,10 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
 // ===================================================================
 
 EnumFieldGenerator::
-EnumFieldGenerator(const FieldDescriptor* descriptor)
-  : FieldGenerator(descriptor)
+EnumFieldGenerator(const FieldDescriptor* descriptor, const Options& options)
+  : FieldGenerator(descriptor, options)
 {
-  SetEnumVariables(descriptor, &variables_);
+  SetEnumVariables(descriptor, &variables_, options);
 }
 
 EnumFieldGenerator::~EnumFieldGenerator() {}

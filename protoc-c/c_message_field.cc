@@ -75,8 +75,8 @@ using internal::WireFormat;
 // ===================================================================
 
 MessageFieldGenerator::
-MessageFieldGenerator(const FieldDescriptor* descriptor)
-  : FieldGenerator(descriptor) {
+MessageFieldGenerator(const FieldDescriptor* descriptor, const Options& options)
+  : FieldGenerator(descriptor, options), options_(options) {
 }
 
 MessageFieldGenerator::~MessageFieldGenerator() {}
@@ -84,8 +84,16 @@ MessageFieldGenerator::~MessageFieldGenerator() {}
 void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
   map<string, string> vars;
-  vars["name"] = FieldName(descriptor_);
-  vars["type"] = FullNameToC(descriptor_->message_type()->full_name());
+  if (options_.no_name_mangling)
+  {
+     vars["name"] = descriptor_->name();
+     vars["type"] = descriptor_->message_type()->full_name();
+  }
+  else
+  {
+     vars["name"] = FieldName(descriptor_);
+     vars["type"] = FullNameToC(descriptor_->message_type()->full_name());
+  }
   vars["deprecated"] = FieldDeprecated(descriptor_);
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:

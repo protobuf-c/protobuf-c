@@ -74,8 +74,16 @@ namespace c {
 using internal::WireFormat;
 
 void SetBytesVariables(const FieldDescriptor* descriptor,
-                        map<string, string>* variables) {
-  (*variables)["name"] = FieldName(descriptor);
+                        map<string, string>* variables,
+                        const Options& options) {
+   if (options.no_name_mangling)
+   {
+      (*variables)["name"] = descriptor->name();
+   }
+   else
+   {
+      (*variables)["name"] = FieldName(descriptor);
+   }
   (*variables)["default"] =
     "\"" + CEscape(descriptor->default_value_string()) + "\"";
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
@@ -84,9 +92,9 @@ void SetBytesVariables(const FieldDescriptor* descriptor,
 // ===================================================================
 
 BytesFieldGenerator::
-BytesFieldGenerator(const FieldDescriptor* descriptor)
-  : FieldGenerator(descriptor) {
-  SetBytesVariables(descriptor, &variables_);
+BytesFieldGenerator(const FieldDescriptor* descriptor, const Options& options)
+  : FieldGenerator(descriptor, options) {
+  SetBytesVariables(descriptor, &variables_, options);
   variables_["default_value"] = descriptor->has_default_value()
                               ? GetDefaultValue() 
 			      : string("{0,NULL}");

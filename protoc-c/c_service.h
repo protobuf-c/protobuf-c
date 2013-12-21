@@ -66,6 +66,7 @@
 #include <map>
 #include <string>
 #include <google/protobuf/descriptor.h>
+#include <protoc-c/c_options.h>
 
 namespace google {
 namespace protobuf {
@@ -82,7 +83,7 @@ class ServiceGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
   explicit ServiceGenerator(const ServiceDescriptor* descriptor,
-                            const string& dllexport_decl);
+                            const Options& options);
   ~ServiceGenerator();
 
   // Header stuff.
@@ -99,6 +100,7 @@ class ServiceGenerator {
   void GenerateCallersImplementations(io::Printer* printer);
 
   const ServiceDescriptor* descriptor_;
+  Options options_;
   map<string, string> vars_;
 
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ServiceGenerator);

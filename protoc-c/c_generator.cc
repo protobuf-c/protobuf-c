@@ -105,8 +105,8 @@ bool CGenerator::Generate(const FileDescriptor* file,
                             const string& parameter,
                             OutputDirectory* output_directory,
                             string* error) const {
-  vector<pair<string, string> > options;
-  ParseOptions(parameter, &options);
+  vector<pair<string, string> > parsed_options;
+  ParseOptions(parameter, &parsed_options);
 
   // -----------------------------------------------------------------
   // parse generator options
@@ -128,13 +128,15 @@ bool CGenerator::Generate(const FileDescriptor* file,
   //   }
   // FOO_EXPORT is a macro which should expand to __declspec(dllexport) or
   // __declspec(dllimport) depending on what is being compiled.
-  string dllexport_decl;
+  Options options;
 
-  for (unsigned i = 0; i < options.size(); i++) {
-    if (options[i].first == "dllexport_decl") {
-      dllexport_decl = options[i].second;
+  for (unsigned i = 0; i < parsed_options.size(); i++) {
+    if (parsed_options[i].first == "dllexport_decl") {
+      options.dllexport_decl = parsed_options[i].second;
+    } else if (parsed_options[i].first == "no_name_mangling") {
+      options.no_name_mangling = true;
     } else {
-      *error = "Unknown generator option: " + options[i].first;
+      *error = "Unknown generator option: " + parsed_options[i].first;
       return false;
     }
   }
@@ -145,7 +147,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
   string basename = StripProto(file->name());
   basename.append(".pb-c");
 
-  FileGenerator file_generator(file, dllexport_decl);
+  FileGenerator file_generator(file, options);
 
   // Generate header.
   {

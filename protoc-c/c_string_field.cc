@@ -74,19 +74,28 @@ namespace c {
 using internal::WireFormat;
 
 void SetStringVariables(const FieldDescriptor* descriptor,
-                        map<string, string>* variables) {
-  (*variables)["name"] = FieldName(descriptor);
-  (*variables)["default"] = FullNameToLower(descriptor->full_name())
-	+ "__default_value";
+                        map<string, string>* variables,
+                        const Options& options) {
+   if (options.no_name_mangling)
+   {
+      (*variables)["name"] = descriptor->name();
+      (*variables)["default"] = descriptor->full_name() + "__default_value";
+   }
+   else
+   {
+      (*variables)["name"] = FieldName(descriptor);
+      (*variables)["default"] = FullNameToLower(descriptor->full_name())
+         + "__default_value";
+   }
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
 }
 
 // ===================================================================
 
 StringFieldGenerator::
-StringFieldGenerator(const FieldDescriptor* descriptor)
-  : FieldGenerator(descriptor) {
-  SetStringVariables(descriptor, &variables_);
+StringFieldGenerator(const FieldDescriptor* descriptor, const Options& options)
+  : FieldGenerator(descriptor, options) {
+  SetStringVariables(descriptor, &variables_, options);
 }
 
 StringFieldGenerator::~StringFieldGenerator() {}

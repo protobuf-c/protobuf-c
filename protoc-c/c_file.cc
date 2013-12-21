@@ -77,7 +77,7 @@ namespace c {
 // ===================================================================
 
 FileGenerator::FileGenerator(const FileDescriptor* file,
-                             const string& dllexport_decl)
+                             const Options& options)
   : file_(file),
     message_generators_(
       new scoped_ptr<MessageGenerator>[file->message_type_count()]),
@@ -90,22 +90,22 @@ FileGenerator::FileGenerator(const FileDescriptor* file,
 
   for (int i = 0; i < file->message_type_count(); i++) {
     message_generators_[i].reset(
-      new MessageGenerator(file->message_type(i), dllexport_decl));
+      new MessageGenerator(file->message_type(i), options));
   }
 
   for (int i = 0; i < file->enum_type_count(); i++) {
     enum_generators_[i].reset(
-      new EnumGenerator(file->enum_type(i), dllexport_decl));
+      new EnumGenerator(file->enum_type(i), options));
   }
 
   for (int i = 0; i < file->service_count(); i++) {
     service_generators_[i].reset(
-      new ServiceGenerator(file->service(i), dllexport_decl));
+      new ServiceGenerator(file->service(i), options));
   }
 
   for (int i = 0; i < file->extension_count(); i++) {
     extension_generators_[i].reset(
-      new ExtensionGenerator(file->extension(i), dllexport_decl));
+      new ExtensionGenerator(file->extension(i), options));
   }
 
   SplitStringUsing(file_->package(), ".", &package_parts_);

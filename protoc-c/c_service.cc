@@ -70,19 +70,28 @@ namespace compiler {
 namespace c {
 
 ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
-                                   const string& dllexport_decl)
-  : descriptor_(descriptor) {
+                                   const Options& options)
+  : descriptor_(descriptor),
+    options_(options)
+{
   vars_["name"] = descriptor_->name();
   vars_["fullname"] = descriptor_->full_name();
-  vars_["cname"] = FullNameToC(descriptor_->full_name());
+  if (options.no_name_mangling)
+  {
+     vars_["cname"] = descriptor_->full_name();
+  }
+  else
+  {
+     vars_["cname"] = FullNameToC(descriptor_->full_name());
+  }
   vars_["lcfullname"] = FullNameToLower(descriptor_->full_name());
   vars_["ucfullname"] = FullNameToUpper(descriptor_->full_name());
   vars_["lcfullpadd"] = ConvertToSpaces(vars_["lcfullname"]);
   vars_["package"] = descriptor_->file()->package();
-  if (dllexport_decl.empty()) {
+  if (options.dllexport_decl.empty()) {
     vars_["dllexport"] = "";
   } else {
-    vars_["dllexport"] = dllexport_decl + " ";
+    vars_["dllexport"] = options.dllexport_decl + " ";
   }
 }
 
@@ -107,8 +116,16 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
     string lcname = CamelToLower(method->name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
-    vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
-    vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    if (options_.no_name_mangling)
+    {
+       vars_["input_typename"] = method->input_type()->full_name();
+       vars_["output_typename"] = method->output_type()->full_name();
+    }
+    else
+    {
+       vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
+       vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    }
     printer->Print(vars_,
                    "  void (*$method$)($cname$_Service *service,\n"
                    "         $metpad$  const $input_typename$ *input,\n"
@@ -148,8 +165,16 @@ void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
     string lcfullname = FullNameToLower(descriptor_->full_name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
-    vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
-    vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    if (options_.no_name_mangling)
+    {
+       vars_["input_typename"] = method->input_type()->full_name();
+       vars_["output_typename"] = method->output_type()->full_name();
+    }
+    else
+    {
+       vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
+       vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    }
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     printer->Print(vars_,
                    "void $lcfullname$__$method$(ProtobufCService *service,\n"
@@ -245,8 +270,16 @@ void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
     string lcfullname = FullNameToLower(descriptor_->full_name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
-    vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
-    vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    if (options_.no_name_mangling)
+    {
+       vars_["input_typename"] = method->input_type()->full_name();
+       vars_["output_typename"] = method->output_type()->full_name();
+    }
+    else
+    {
+       vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
+       vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    }
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     vars_["index"] = SimpleItoa(i);
      

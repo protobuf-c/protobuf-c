@@ -65,6 +65,7 @@
 
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/descriptor.h>
+#include <protoc-c/c_options.h>
 
 namespace google {
 namespace protobuf {
@@ -79,7 +80,8 @@ namespace c {
 
 class FieldGenerator {
  public:
-  explicit FieldGenerator(const FieldDescriptor *descriptor) : descriptor_(descriptor) {}
+  explicit FieldGenerator(const FieldDescriptor *descriptor, const Options& options)
+     : descriptor_(descriptor), options_(options) {}
   virtual ~FieldGenerator();
 
   // Generate definitions to be included in the structure.
@@ -104,13 +106,14 @@ class FieldGenerator {
   const FieldDescriptor *descriptor_;
 
  private:
+  Options options_;
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGenerator);
 };
 
 // Convenience class which constructs FieldGenerators for a Descriptor.
 class FieldGeneratorMap {
  public:
-  explicit FieldGeneratorMap(const Descriptor* descriptor);
+  explicit FieldGeneratorMap(const Descriptor* descriptor, const Options& options);
   ~FieldGeneratorMap();
 
   const FieldGenerator& get(const FieldDescriptor* field) const;
@@ -119,7 +122,7 @@ class FieldGeneratorMap {
   const Descriptor* descriptor_;
   scoped_array<scoped_ptr<FieldGenerator> > field_generators_;
 
-  static FieldGenerator* MakeGenerator(const FieldDescriptor* field);
+  static FieldGenerator* MakeGenerator(const FieldDescriptor* field, const Options& options);
 
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGeneratorMap);
 };

@@ -73,16 +73,23 @@ namespace compiler {
 namespace c {
 
 EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor,
-                             const string& dllexport_decl)
+                             const Options& options)
   : descriptor_(descriptor),
-    dllexport_decl_(dllexport_decl) {
+    options_(options) {
 }
 
 EnumGenerator::~EnumGenerator() {}
 
 void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   map<string, string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
+  if (options_.no_name_mangling)
+  {
+    vars["classname"] = descriptor_->full_name();
+  }
+  else
+  {
+    vars["classname"] = FullNameToC(descriptor_->full_name());
+  }
   vars["shortname"] = descriptor_->name();
   vars["uc_name"] = FullNameToUpper(descriptor_->full_name());
 
@@ -94,10 +101,17 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
 
 
   vars["opt_comma"] = ",";
-  vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
   for (int i = 0; i < descriptor_->value_count(); i++) {
     vars["name"] = descriptor_->value(i)->name();
     vars["number"] = SimpleItoa(descriptor_->value(i)->number());
+    if (options_.no_name_mangling)
+    {
+       vars["prefix"] = "";
+    }
+    else
+    {
+       vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
+    }
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
 
@@ -118,10 +132,10 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
 
 void EnumGenerator::GenerateDescriptorDeclarations(io::Printer* printer) {
   map<string, string> vars;
-  if (dllexport_decl_.empty()) {
+  if (options_.dllexport_decl.empty()) {
     vars["dllexport"] = "";
   } else {
-    vars["dllexport"] = dllexport_decl_ + " ";
+    vars["dllexport"] = options_.dllexport_decl + " ";
   }
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
@@ -142,7 +156,15 @@ void EnumGenerator::GenerateValueInitializer(io::Printer *printer, int index)
   const EnumValueDescriptor *vd = descriptor_->value(index);
   map<string, string> vars;
   vars["enum_value_name"] = vd->name();
-  vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name()) + "__" + ToUpper(vd->name());
+  if (options_.no_name_mangling)
+  {
+     vars["c_enum_value_name"] = ToUpper(vd->name());
+  }
+  else
+  {
+     vars["c_enum_value_name"] =
+        FullNameToUpper(descriptor_->full_name()) + "__" + ToUpper(vd->name());
+  }
   vars["value"] = SimpleItoa(vd->number());
   printer->Print(vars,
    "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$ },\n");
@@ -170,7 +192,14 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   map<string, string> vars;
   vars["fullname"] = descriptor_->full_name();
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
-  vars["cname"] = FullNameToC(descriptor_->full_name());
+  if (options_.no_name_mangling)
+  {
+     vars["cname"] = descriptor_->full_name();
+  }
+  else
+  {
+     vars["cname"] = FullNameToC(descriptor_->full_name());
+  }
   vars["shortname"] = descriptor_->name();
   vars["packagename"] = descriptor_->file()->package();
   vars["value_count"] = SimpleItoa(descriptor_->value_count());
