@@ -49,6 +49,21 @@ protobuf-c (0.16) UNRELEASED
   * For embedded submessage fields, merge multiple instances of the same
     field, per the protobuf documentation (Issue #91).
 
+  * Make buffer length a part of the ProtobufCBuffer structure. Change simple
+    buffer code slightly to support this.
+
+  * rpc:
+     - Split the RPC code into client and server parts for clarity.
+
+     - Implement custom RPC protocol API. Use
+       protobuf_c_rpc_client_set_rpc_protocol and
+       protobuf_c_rpc_server_set_rpc_protocol to set the custom (de)serializers.
+       The default RPC protocol is the same as before.
+
+     - Begin making data buffers more generic (ProtobufCDataBuffer type now has
+       ProtobufCBuffer type as its base). Hide ProtobufCDataBuffer type.
+
+
   [ Robert Edmonds ]
   * Remove CMake (Issue #87).
 

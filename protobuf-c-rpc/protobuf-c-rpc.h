@@ -1,17 +1,34 @@
+/*
+ * Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef __PROTOBUF_C_RPC_H_
 #define __PROTOBUF_C_RPC_H_
 
-/* Protocol is:
- *    client issues request with header:
- *         method_index              32-bit little-endian
- *         message_length            32-bit little-endian
- *         request_id                32-bit any-endian
- *    server responds with header:
- *         status_code               32-bit little-endian
- *         method_index              32-bit little-endian
- *         message_length            32-bit little-endian
- *         request_id                32-bit any-endian
- */
 #include "protobuf-c-dispatch.h"
 
 typedef enum
@@ -29,6 +46,10 @@ typedef enum
   PROTOBUF_C_ERROR_CODE_PROXY_PROBLEM
 } ProtobufC_RPC_Error_Code;
 
+typedef void (*ProtobufC_RPC_Error_Func)   (ProtobufC_RPC_Error_Code code,
+                                            const char              *message,
+                                            void                    *error_func_data);
+
 typedef enum
 {
   PROTOBUF_C_STATUS_CODE_SUCCESS,
@@ -36,9 +57,54 @@ typedef enum
   PROTOBUF_C_STATUS_CODE_TOO_MANY_PENDING
 } ProtobufC_RPC_Status_Code;
 
-typedef void (*ProtobufC_RPC_Error_Func)   (ProtobufC_RPC_Error_Code code,
-                                            const char              *message,
-                                            void                    *error_func_data);
+/* Default RPC Protocol is:
+ *    client issues request with header:
+ *         method_index              32-bit little-endian
+ *         message_length            32-bit little-endian
+ *         request_id                32-bit any-endian
+ *    server responds with header:
+ *         status_code               32-bit little-endian
+ *         method_index              32-bit little-endian
+ *         message_length            32-bit little-endian
+ *         request_id                32-bit any-endian
+ */
+
+/* --- Custom RPC Protocol API --- */
+typedef struct
+{
+   uint32_t method_index;
+   uint32_t request_id;
+   ProtobufCMessage *message;
+} ProtobufC_RPC_Payload;
+
+typedef enum
+{
+   PROTOBUF_C_RPC_PROTOCOL_STATUS_SUCCESS,
+   PROTOBUF_C_RPC_PROTOCOL_STATUS_FAILED,
+   /* INCOMPLETE_BUFFER status indicates that the caller must read more data into
+    * the buffer before it can be deserialized. */
+   PROTOBUF_C_RPC_PROTOCOL_STATUS_INCOMPLETE_BUFFER
+} ProtobufC_RPC_ProtocolStatus;
+
+/* This function needs to be called by the deserializer with
+ * the received payload (without the message) to get the descriptor
+ * for the message to be unpacked */
+typedef const ProtobufCMessageDescriptor* (*ProtobufC_RPC_GetDescriptor)
+                                          (const ProtobufC_RPC_Payload* payload,
+                                           void *data);
+typedef struct
+{
+/* Serializes the payload into the provided buffer */
+ProtobufC_RPC_ProtocolStatus (*serialize_func) (ProtobufCBuffer      *out_buffer,
+                                                ProtobufC_RPC_Payload payload);
+/* Deserializes the incoming buffer into a provided payload structure.
+ * The unpacked message will be freed by the protobuf-c-rpc library. */
+ProtobufC_RPC_ProtocolStatus (*deserialize_func) (ProtobufCAllocator    *allocator,
+                                                  ProtobufCBuffer       *in_buffer,
+                                                  ProtobufC_RPC_Payload *payload,
+                                                  ProtobufC_RPC_GetDescriptor get_descriptor,
+                                                  void *get_descriptor_data);
+} ProtobufC_RPC_Protocol;
 
 /* --- Client API --- */
 typedef struct _ProtobufC_RPC_Client ProtobufC_RPC_Client;
@@ -63,6 +129,9 @@ protobuf_c_rpc_client_connect (ProtobufC_RPC_Client *client);
 
 /* --- configuring the client */
 
+/* Custom RPC protocol */
+void protobuf_c_rpc_client_set_rpc_protocol (ProtobufC_RPC_Client *client,
+                                             ProtobufC_RPC_Protocol protocol);
 
 /* Pluginable async dns hooks */
 /* TODO: use adns library or port evdns? ugh */
@@ -119,6 +188,10 @@ ProtobufCService *
 void protobuf_c_rpc_server_disable_autotimeout(ProtobufC_RPC_Server *server);
 void protobuf_c_rpc_server_set_autotimeout (ProtobufC_RPC_Server *server,
                                             unsigned              timeout_millis);
+
+/* Custom RPC protocol */
+void protobuf_c_rpc_server_set_rpc_protocol (ProtobufC_RPC_Server *server,
+                                             ProtobufC_RPC_Protocol protocol);
 
 typedef protobuf_c_boolean
           (*ProtobufC_RPC_IsRpcThreadFunc) (ProtobufC_RPC_Server *server,

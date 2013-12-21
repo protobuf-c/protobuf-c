@@ -176,6 +176,9 @@ struct _ProtobufCBuffer
   void (*append)(ProtobufCBuffer     *buffer,
                  size_t               len,
                  const uint8_t       *data);
+
+  /* Number of bytes currently in the buffer */
+  size_t            size;
 };
 /* --- enums --- */
 typedef struct _ProtobufCEnumValue ProtobufCEnumValue;
@@ -468,13 +471,12 @@ struct _ProtobufCBufferSimple
 {
   ProtobufCBuffer base;
   size_t alloced;
-  size_t len;
   uint8_t *data;
   protobuf_c_boolean must_free_data;
 };
 #define PROTOBUF_C_BUFFER_SIMPLE_INIT(array_of_bytes) \
-{ { protobuf_c_buffer_simple_append }, \
-  sizeof(array_of_bytes), 0, (array_of_bytes), 0 }
+{ { protobuf_c_buffer_simple_append, 0 }, \
+  sizeof (array_of_bytes), (array_of_bytes), 0 }
 #define PROTOBUF_C_BUFFER_SIMPLE_CLEAR(simp_buf) \
   do { if ((simp_buf)->must_free_data) \
          protobuf_c_default_allocator.free (&protobuf_c_default_allocator.allocator_data, (simp_buf)->data); } while (0)
