@@ -39,6 +39,9 @@ fi
 PKG_CHECK_MODULES([protobuf], [protobuf])
 AC_LANG_PUSH([C++])
 AC_PATH_PROG(PROTOC, protoc)
+if test -z "$PROTOC"; then
+    AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
+fi
 
 AC_C_BIGENDIAN
 
