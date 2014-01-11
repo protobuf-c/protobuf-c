@@ -439,6 +439,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
     printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
   }
   printer->Print("};\n");
+  delete[] field_indices;
 
   // create range initializers
   int *values = new int[descriptor_->field_count()];
