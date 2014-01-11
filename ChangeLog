@@ -77,6 +77,10 @@ protobuf-c (0.16) UNRELEASED
     built by default. Specify --enable-rpc to configure to build the RPC
     library.
 
+  * Fix a potential use of an unitialized value in protobuf_c_message_unpack()
+    and several memory leaks in protoc-c, discovered by a commercial static code
+    analysis tool.
+
   * Bump the libprotobuf-c SONAME.
 
   * Update copyright and license statements throughout. The original
