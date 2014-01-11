@@ -235,6 +235,8 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
 		       "  $lcfullname$__method_descriptors,\n"
 		       "  $lcfullname$__method_indices_by_name\n"
 		       "};\n");
+
+  delete[] mi_array;
 }
 
 void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
