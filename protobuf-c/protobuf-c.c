@@ -2495,11 +2495,9 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 				size_t count;
 				if (!count_packed_elements(field->type,
 							   tmp.len -
-							   tmp.
-							   length_prefix_len,
+							   tmp.length_prefix_len,
 							   tmp.data +
-							   tmp.
-							   length_prefix_len,
+							   tmp.length_prefix_len,
 							   &count))
 				{
 					UNPACK_ERROR(("counting packed elements"));
