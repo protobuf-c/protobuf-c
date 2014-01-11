@@ -2411,6 +2411,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 		tmp.wire_type = wire_type;
 		tmp.field = field;
 		tmp.data = at;
+		tmp.length_prefix_len = 0;
 
 		switch (wire_type) {
 		case PROTOBUF_C_WIRE_TYPE_VARINT: {
