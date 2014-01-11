@@ -286,6 +286,7 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
     "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
     "};\n");
 
+  delete[] value_index;
   delete[] name_index;
 }
 
