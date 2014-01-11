@@ -285,6 +285,8 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
     "  $lcclassname$__value_ranges,\n"
     "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
     "};\n");
+
+  delete[] name_index;
 }
 
 
