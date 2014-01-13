@@ -31,8 +31,9 @@
 #ifndef __PROTOBUF_C_RUNTIME_H_
 #define __PROTOBUF_C_RUNTIME_H_
 
-#include <stddef.h>
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <limits.h>
 
 #ifdef __cplusplus
@@ -63,32 +64,6 @@
 /* The version of protobuf-c you are linking against. */
 extern unsigned protobuf_c_major;
 extern unsigned protobuf_c_minor;
-
-/*
- * Define int32_t, int64_t, uint32_t, uint64_t, uint8_t.
- *
- * Usually, just include <inttypes.h> to do the work.
- * XXX: should we use stdint.h?
- */
-#ifndef PROTOBUF_C_SKIP_INTTYPES_H
-# if defined(_MSC_VER) /* For MS Visual Studio, define the types ourselves */
-#  define int32_t	signed __int32
-#  define INT32_MIN	_I32_MIN
-#  define INT32_MAX	_I32_MAX
-#  define uint32_t	unsigned __int32
-#  define UINT32_MIN	_UI32_MIN
-#  define UINT32_MAX	_UI32_MAX
-#  define int64_t	signed __int64
-#  define INT64_MIN	_I64_MIN
-#  define INT64_MAX	_I64_MAX
-#  define uint64_t	unsigned __int64
-#  define UINT64_MIN	_UI64_MIN
-#  define UINT64_MAX	_UI64_MAX
-#  define uint8_t	unsigned char
-# else /* Use the system inttypes.h */
-#  include <inttypes.h>
-# endif
-#endif
 
 #if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
 # ifdef PROTOBUF_C_EXPORT
