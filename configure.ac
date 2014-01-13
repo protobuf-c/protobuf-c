@@ -14,16 +14,6 @@ LT_INIT
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([Makefile protobuf-c/libprotobuf-c.pc])
 
-AC_CHECK_HEADERS(alloca.h)
-AC_CHECK_HEADERS(inttypes.h)
-AC_CHECK_HEADERS(io.h)
-AC_CHECK_HEADERS(malloc.h)
-AC_CHECK_HEADERS(sys/poll.h)
-AC_CHECK_HEADERS(sys/select.h)
-AC_CHECK_HEADERS(sys/uio.h)
-AC_CHECK_HEADERS(unistd.h)
-AC_CHECK_HEADERS(winsock.h)
-
 PKG_PROG_PKG_CONFIG
 if test -n "$PKG_CONFIG"; then
     # Horrible hack for systems where the pkg-config install directory is simply wrong!
