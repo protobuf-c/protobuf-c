@@ -494,34 +494,6 @@ do {									\
 	}								\
 } while (0)
 
-#ifdef PROTOBUF_C_PLEASE_INCLUDE_CTYPE
-// This type is meant to reduce duplicated logic between
-// various iterators.  It tells what type to expect at
-// the "offset" within the message (or, for repeated fields,
-// the contents of the buffer.)
-//
-// Because the names are confusing, and because this mechanism tends to be
-// seldom used, you have to specifically request
-// this API via #define PROTOBUF_C_PLEASE_INCLUDE_CTYPE.
-typedef enum {
-	PROTOBUF_C_CTYPE_INT32,
-	PROTOBUF_C_CTYPE_UINT32,
-	PROTOBUF_C_CTYPE_INT64,
-	PROTOBUF_C_CTYPE_UINT64,
-	PROTOBUF_C_CTYPE_FLOAT,
-	PROTOBUF_C_CTYPE_DOUBLE,
-	PROTOBUF_C_CTYPE_BOOL,
-	PROTOBUF_C_CTYPE_ENUM,
-	PROTOBUF_C_CTYPE_STRING,
-	PROTOBUF_C_CTYPE_BYTES,
-	PROTOBUF_C_CTYPE_MESSAGE,
-} ProtobufC_CType;
-
-extern ProtobufC_CType protobuf_c_type_to_ctype(ProtobufCType type);
-#define protobuf_c_type_to_ctype(type) \
-	((ProtobufC_CType)(protobuf_c_type_to_ctype_array[(type)]))
-#endif
-
 /* ====== private ====== */
 #include "protobuf-c-private.h"
 
