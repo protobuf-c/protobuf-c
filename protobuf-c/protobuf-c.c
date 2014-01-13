@@ -51,8 +51,8 @@
 
 #include "protobuf-c.h"
 
-#define TRUE 1
-#define FALSE 0
+#define TRUE				1
+#define FALSE				0
 
 #ifndef PRINT_UNPACK_ERRORS
 #define PRINT_UNPACK_ERRORS		0
