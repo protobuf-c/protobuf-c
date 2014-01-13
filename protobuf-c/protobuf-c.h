@@ -158,13 +158,6 @@ struct _ProtobufCAllocator
  */
 extern PROTOBUF_C_API ProtobufCAllocator protobuf_c_default_allocator; /* settable */
 
-/*
- * This is the function that our default allocators call when they run
- * out-of-memory. The default behavior of this function is to terminate your
- * program.
- */
-extern PROTOBUF_C_API void (*protobuf_c_out_of_memory)(void);
-
 /* --- append-only data buffer --- */
 typedef struct _ProtobufCBuffer ProtobufCBuffer;
 struct _ProtobufCBuffer {

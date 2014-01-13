@@ -81,7 +81,6 @@ do {									\
 	} else if ((dst=((allocator)->alloc((allocator)->allocator_data,\
 			da__allocation_size))) == NULL)			\
 	{								\
-		alloc_failed_warning(da__allocation_size, __FILE__, __LINE__);\
 		fail_code;						\
 	}								\
 } while (0)
@@ -118,24 +117,7 @@ do {									\
 unsigned protobuf_c_major = PROTOBUF_C_MAJOR;
 unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
 
-static void
-alloc_failed_warning(unsigned size, const char *filename, unsigned line)
-{
-	fprintf(stderr,
-		"WARNING: out-of-memory allocating a block of size %u (%s:%u)\n",
-		size, filename, line);
-}
-
 /* --- allocator --- */
-
-static void
-protobuf_c_out_of_memory_default(void)
-{
-	fprintf(stderr, "Out Of Memory!!!\n");
-	abort();
-}
-
-void (*protobuf_c_out_of_memory)(void) = protobuf_c_out_of_memory_default;
 
 static void *
 system_alloc(void *allocator_data, size_t size)
@@ -146,8 +128,6 @@ system_alloc(void *allocator_data, size_t size)
 	if (size == 0)
 		return NULL;
 	rv = malloc(size);
-	if (rv == NULL)
-		protobuf_c_out_of_memory();
 	return rv;
 }
 
