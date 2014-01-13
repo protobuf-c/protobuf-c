@@ -145,8 +145,6 @@ struct _ProtobufCAllocator
 {
 	void		*(*alloc)(void *allocator_data, size_t size);
 	void		(*free)(void *allocator_data, void *pointer);
-	void		*(*tmp_alloc)(void *allocator_data, size_t size);
-	unsigned	max_alloca;
 	void		*allocator_data;
 };
 

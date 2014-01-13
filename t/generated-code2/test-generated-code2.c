@@ -1520,7 +1520,9 @@ static void test_free (void *allocator_data, void *data)
 }
 
 static ProtobufCAllocator test_allocator = {
-  test_alloc, test_free, 0, 0, &test_allocator_data
+  .alloc = test_alloc,
+  .free = test_free,
+  .allocator_data = &test_allocator_data,
 };
 
 #define SETUP_TEST_ALLOC_BUFFER(pbuf, len)					\

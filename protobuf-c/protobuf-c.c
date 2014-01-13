@@ -72,11 +72,6 @@
  */
 #define MAX_MEMBERS_FOR_HASH_SIZE	128
 
-/* Convenience macros. */
-
-#define TMPALLOC(allocator, size) \
-	((allocator)->tmp_alloc((allocator)->allocator_data, (size)))
-
 /* Try to allocate memory, running some special code if it fails. */
 #define DO_ALLOC(dst, allocator, size, fail_code)			\
 do {									\
@@ -173,8 +168,6 @@ system_free(void *allocator_data, void *data)
 ProtobufCAllocator protobuf_c_default_allocator = {
 	.alloc = system_alloc,
 	.free = system_free,
-	.tmp_alloc = NULL,
-	.max_alloca = 8192,
 	.allocator_data = NULL,
 };
 
@@ -2337,6 +2330,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	unsigned in_slab_index = 0; /* number of members in the slab */
 	size_t n_unknown = 0;
 	unsigned f;
+	unsigned j;
 	unsigned i_slab;
 	unsigned last_field_index = 0;
 	unsigned char required_fields_bitmap[MAX_MEMBERS_FOR_HASH_SIZE / 8] =
@@ -2471,14 +2465,9 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			which_slab++;
 			size = sizeof(ScannedMember)
 				<< (which_slab + FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2);
-			if (allocator->tmp_alloc != NULL) {
-				scanned_member_slabs[which_slab] =
-					TMPALLOC(allocator, size);
-			} else {
-				DO_ALLOC(scanned_member_slabs[which_slab],
-					 allocator, size,
-					 goto error_cleanup_during_scan);
-			}
+			DO_ALLOC(scanned_member_slabs[which_slab],
+				 allocator, size,
+				 goto error_cleanup_during_scan);
 		}
 		scanned_member_slabs[which_slab][in_slab_index++] = tmp;
 
@@ -2574,30 +2563,21 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	}
 
 	/* cleanup */
-	if (allocator->tmp_alloc == NULL) {
-		unsigned j;
-		for (j = 1; j <= which_slab; j++)
-			FREE(allocator, scanned_member_slabs[j]);
-	}
+	for (j = 1; j <= which_slab; j++)
+		FREE(allocator, scanned_member_slabs[j]);
 
 	return rv;
 
 error_cleanup:
 	protobuf_c_message_free_unpacked(rv, allocator);
-	if (allocator->tmp_alloc == NULL) {
-		unsigned j;
-		for (j = 1; j <= which_slab; j++)
-			FREE(allocator, scanned_member_slabs[j]);
-	}
+	for (j = 1; j <= which_slab; j++)
+		FREE(allocator, scanned_member_slabs[j]);
 	return NULL;
 
 error_cleanup_during_scan:
 	FREE(allocator, rv);
-	if (allocator->tmp_alloc == NULL) {
-		unsigned j;
-		for (j = 1; j <= which_slab; j++)
-			FREE(allocator, scanned_member_slabs[j]);
-	}
+	for (j = 1; j <= which_slab; j++)
+		FREE(allocator, scanned_member_slabs[j]);
 	return NULL;
 }
 
