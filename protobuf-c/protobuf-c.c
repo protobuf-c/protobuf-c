@@ -167,7 +167,7 @@ system_free(void *allocator_data, void *data)
 
 /*
  * Some users may configure the default allocator; providing your own allocator
- * to unpack() is prefered.  This allocator is still used for packing nested
+ * to unpack() is preferred. This allocator is still used for packing nested
  * messages.
  */
 ProtobufCAllocator protobuf_c_default_allocator = {
