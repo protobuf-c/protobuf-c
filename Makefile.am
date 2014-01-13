@@ -160,3 +160,7 @@ CLEANFILES += $(BUILT_SOURCES)
 
 dist-hook:
 	rm -vf `find $(top_distdir) -name '*.pb-c.[ch]' -o -name '*.pb.cc' -o -name '*.pb.h'`
+
+install-data-hook:
+	mkdir -p $(DESTDIR)$(includedir)/google
+	ln -sf ../protobuf-c $(DESTDIR)$(includedir)/google/
