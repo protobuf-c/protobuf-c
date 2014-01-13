@@ -72,25 +72,6 @@
  */
 #define MAX_MEMBERS_FOR_HASH_SIZE	128
 
-/* Try to allocate memory, running some special code if it fails. */
-#define DO_ALLOC(dst, allocator, size, fail_code)			\
-do {									\
-	size_t da__allocation_size = (size);				\
-	if (da__allocation_size == 0) {					\
-		dst = NULL;						\
-	} else if ((dst=((allocator)->alloc((allocator)->allocator_data,\
-			da__allocation_size))) == NULL)			\
-	{								\
-		fail_code;						\
-	}								\
-} while (0)
-
-#define FREE(allocator, ptr)						\
-do {									\
-	if ((ptr) != NULL)						\
-		((allocator)->free((allocator)->allocator_data, (ptr)));\
-} while (0)
-
 #define STRUCT_MEMBER_P(struct_p, struct_offset) \
     ((void *) ((uint8_t *) (struct_p) + (struct_offset)))
 
@@ -119,25 +100,24 @@ unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
 
 /* --- allocator --- */
 
-static void *
-system_alloc(void *allocator_data, size_t size)
+static inline void *
+do_alloc(ProtobufCAllocator *allocator, size_t size)
 {
-	void *rv;
-	(void) allocator_data;
-
-	if (size == 0)
-		return NULL;
-	rv = malloc(size);
-	return rv;
+	if (allocator != NULL && allocator->alloc != NULL)
+		return allocator->alloc(allocator->allocator_data, size);
+	else
+		return malloc(size);
 }
 
-static void
-system_free(void *allocator_data, void *data)
+static inline void
+do_free(ProtobufCAllocator *allocator, void *data)
 {
-	(void) allocator_data;
-
-	if (data)
-		free(data);
+	if (data) {
+		if (allocator != NULL && allocator->free != NULL)
+			allocator->free(allocator->allocator_data, data);
+		else
+			free(data);
+	}
 }
 
 /*
@@ -146,8 +126,8 @@ system_free(void *allocator_data, void *data)
  * messages.
  */
 ProtobufCAllocator protobuf_c_default_allocator = {
-	.alloc = system_alloc,
-	.free = system_free,
+	.alloc = NULL,
+	.free = NULL,
 	.allocator_data = NULL,
 };
 
@@ -165,11 +145,12 @@ protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
 		uint8_t *new_data;
 		while (new_alloced < new_len)
 			new_alloced += new_alloced;
-		DO_ALLOC(new_data, &protobuf_c_default_allocator,
-			 new_alloced, return);
+		new_data = do_alloc(NULL, new_alloced);
+		if (!new_data)
+			return;
 		memcpy(new_data, simp->data, simp->len);
 		if (simp->must_free_data)
-			FREE(&protobuf_c_default_allocator, simp->data);
+			do_free(NULL, simp->data);
 		else
 			simp->must_free_data = 1;
 		simp->data = new_data;
@@ -1572,10 +1553,10 @@ merge_messages(ProtobufCMessage *earlier_msg,
 						sizeof_elt_in_repeated_array(fields[i].type);
 					uint8_t *new_field;
 
-					DO_ALLOC(new_field, allocator,
-						 (*n_earlier +
-						  *n_latter) * el_size,
-						 return 0);
+					new_field = do_alloc(allocator,
+						(*n_earlier + *n_latter) * el_size);
+					if (!new_field)
+						return 0;
 
 					memcpy(new_field, *p_latter,
 					       *n_latter * el_size);
@@ -1584,8 +1565,8 @@ merge_messages(ProtobufCMessage *earlier_msg,
 					       *p_earlier,
 					       *n_earlier * el_size);
 
-					FREE(allocator, *p_latter);
-					FREE(allocator, *p_earlier);
+					do_free(allocator, *p_latter);
+					do_free(allocator, *p_earlier);
 					*p_latter = new_field;
 					*n_latter = *n_earlier + *n_latter;
 				} else {
@@ -1914,9 +1895,11 @@ parse_required_member(ScannedMember *scanned_member,
 		if (maybe_clear && *pstr != NULL) {
 			const char *def = scanned_member->field->default_value;
 			if (*pstr != NULL && *pstr != def)
-				FREE(allocator, *pstr);
+				do_free(allocator, *pstr);
 		}
-		DO_ALLOC(*pstr, allocator, len - pref_len + 1, return 0);
+		*pstr = do_alloc(allocator, len - pref_len + 1);
+		if (*pstr == NULL)
+			return 0;
 		memcpy(*pstr, data + pref_len, len - pref_len);
 		(*pstr)[len - pref_len] = 0;
 		return 1;
@@ -1934,10 +1917,14 @@ parse_required_member(ScannedMember *scanned_member,
 		    bd->data != NULL &&
 		    (def_bd == NULL || bd->data != def_bd->data))
 		{
-			FREE(allocator, bd->data);
+			do_free(allocator, bd->data);
 		}
-		DO_ALLOC(bd->data, allocator, len - pref_len, return 0);
-		memcpy(bd->data, data + pref_len, len - pref_len);
+		if (len - pref_len > 0) {
+			bd->data = do_alloc(allocator, len - pref_len);
+			if (bd->data == NULL)
+				return 0;
+			memcpy(bd->data, data + pref_len, len - pref_len);
+		}
 		bd->len = len - pref_len;
 		return 1;
 	}
@@ -2177,7 +2164,9 @@ parse_member(ScannedMember *scanned_member,
 		ufield->tag = scanned_member->tag;
 		ufield->wire_type = scanned_member->wire_type;
 		ufield->len = scanned_member->len;
-		DO_ALLOC(ufield->data, allocator, scanned_member->len, return 0);
+		ufield->data = do_alloc(allocator, scanned_member->len);
+		if (ufield->data == NULL)
+			return 0;
 		memcpy(ufield->data, scanned_member->data, ufield->len);
 		return 1;
 	}
@@ -2205,7 +2194,6 @@ parse_member(ScannedMember *scanned_member,
 	PROTOBUF_C_ASSERT_NOT_REACHED();
 	return 0;
 }
-
 
 /*
  * TODO: expose/use this function if desc->message_init == NULL (which occurs
@@ -2327,7 +2315,9 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 #define REQUIRED_FIELD_BITMAP_IS_SET(index) \
   (required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] & (1<<((index)%8)))
 
-	DO_ALLOC(rv, allocator, desc->sizeof_message, return NULL);
+	rv = do_alloc(allocator, desc->sizeof_message);
+	if (!rv)
+		return (NULL);
 	scanned_member_slabs[0] = first_member_slab;
 
 	/*
@@ -2445,9 +2435,9 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			which_slab++;
 			size = sizeof(ScannedMember)
 				<< (which_slab + FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2);
-			DO_ALLOC(scanned_member_slabs[which_slab],
-				 allocator, size,
-				 goto error_cleanup_during_scan);
+			scanned_member_slabs[which_slab] = do_alloc(allocator, size);
+			if (scanned_member_slabs[which_slab] == NULL)
+				goto error_cleanup_during_scan;
 		}
 		scanned_member_slabs[which_slab][in_slab_index++] = tmp;
 
@@ -2498,11 +2488,12 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
                   if (field->label == PROTOBUF_C_LABEL_REPEATED)              \
                     STRUCT_MEMBER (size_t, rv, field->quantifier_offset) = 0; \
                 }
-				DO_ALLOC(STRUCT_MEMBER
-					 (void *, rv, field->offset),
-					 allocator, siz * n,
-					 CLEAR_REMAINING_N_PTRS();
-					 goto error_cleanup);
+				void *a = do_alloc(allocator, siz * n);
+				if (!a) {
+					CLEAR_REMAINING_N_PTRS();
+					goto error_cleanup;
+				}
+				STRUCT_MEMBER(void *, rv, field->offset) = a;
 			}
 		} else if (field->label == PROTOBUF_C_LABEL_REQUIRED) {
 			if (field->default_value == NULL &&
@@ -2519,10 +2510,10 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 
 	/* allocate space for unknown fields */
 	if (n_unknown) {
-		DO_ALLOC(rv->unknown_fields,
-			 allocator,
-			 n_unknown * sizeof(ProtobufCMessageUnknownField),
-			 goto error_cleanup);
+		rv->unknown_fields = do_alloc(allocator,
+					      n_unknown * sizeof(ProtobufCMessageUnknownField));
+		if (rv->unknown_fields == NULL)
+			goto error_cleanup;
 	}
 
 	/* do real parsing */
@@ -2544,20 +2535,20 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 
 	/* cleanup */
 	for (j = 1; j <= which_slab; j++)
-		FREE(allocator, scanned_member_slabs[j]);
+		do_free(allocator, scanned_member_slabs[j]);
 
 	return rv;
 
 error_cleanup:
 	protobuf_c_message_free_unpacked(rv, allocator);
 	for (j = 1; j <= which_slab; j++)
-		FREE(allocator, scanned_member_slabs[j]);
+		do_free(allocator, scanned_member_slabs[j]);
 	return NULL;
 
 error_cleanup_during_scan:
-	FREE(allocator, rv);
+	do_free(allocator, rv);
 	for (j = 1; j <= which_slab; j++)
-		FREE(allocator, scanned_member_slabs[j]);
+		do_free(allocator, scanned_member_slabs[j]);
 	return NULL;
 }
 
@@ -2586,12 +2577,11 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 			if (desc->fields[f].type == PROTOBUF_C_TYPE_STRING) {
 				unsigned i;
 				for (i = 0; i < n; i++)
-					FREE(allocator, ((char **) arr)[i]);
+					do_free(allocator, ((char **) arr)[i]);
 			} else if (desc->fields[f].type == PROTOBUF_C_TYPE_BYTES) {
 				unsigned i;
 				for (i = 0; i < n; i++)
-					FREE(allocator,
-					     ((ProtobufCBinaryData *) arr)[i].data);
+					do_free(allocator, ((ProtobufCBinaryData *) arr)[i].data);
 			} else if (desc->fields[f].type == PROTOBUF_C_TYPE_MESSAGE) {
 				unsigned i;
 				for (i = 0; i < n; i++)
@@ -2601,13 +2591,13 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 					);
 			}
 			if (arr != NULL)
-				FREE(allocator, arr);
+				do_free(allocator, arr);
 		} else if (desc->fields[f].type == PROTOBUF_C_TYPE_STRING) {
 			char *str = STRUCT_MEMBER(char *, message,
 						  desc->fields[f].offset);
 
 			if (str && str != desc->fields[f].default_value)
-				FREE(allocator, str);
+				do_free(allocator, str);
 		} else if (desc->fields[f].type == PROTOBUF_C_TYPE_BYTES) {
 			void *data = STRUCT_MEMBER(ProtobufCBinaryData, message,
 						   desc->fields[f].offset).data;
@@ -2618,7 +2608,7 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 			    (default_bd == NULL ||
 			     default_bd->data != data))
 			{
-				FREE(allocator, data);
+				do_free(allocator, data);
 			}
 		} else if (desc->fields[f].type == PROTOBUF_C_TYPE_MESSAGE) {
 			ProtobufCMessage *sm;
@@ -2631,11 +2621,11 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 	}
 
 	for (f = 0; f < message->n_unknown_fields; f++)
-		FREE(allocator, message->unknown_fields[f].data);
+		do_free(allocator, message->unknown_fields[f].data);
 	if (message->unknown_fields != NULL)
-		FREE(allocator, message->unknown_fields);
+		do_free(allocator, message->unknown_fields);
 
-	FREE(allocator, message);
+	do_free(allocator, message);
 }
 
 void
