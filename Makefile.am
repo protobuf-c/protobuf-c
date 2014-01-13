@@ -31,13 +31,11 @@ lib_LTLIBRARIES += \
 	protobuf-c/libprotobuf-c.la
 
 nobase_include_HEADERS += \
-	protobuf-c/protobuf-c.h \
-	protobuf-c/protobuf-c-private.h
+	protobuf-c/protobuf-c.h
 
 protobuf_c_libprotobuf_c_la_SOURCES = \
 	protobuf-c/protobuf-c.c \
-	protobuf-c/protobuf-c.h \
-	protobuf-c/protobuf-c-private.h
+	protobuf-c/protobuf-c.h
 
 protobuf_c_libprotobuf_c_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBPROTOBUF_C_CURRENT):$(LIBPROTOBUF_C_REVISION):$(LIBPROTOBUF_C_AGE) \
