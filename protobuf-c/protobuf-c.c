@@ -97,9 +97,6 @@ do {									\
 		((allocator)->free((allocator)->allocator_data, (ptr)));\
 } while (0)
 
-#define UNALIGNED_ALLOC(allocator, size) ALLOC(allocator, size)
-#define DO_UNALIGNED_ALLOC  DO_ALLOC
-
 #define STRUCT_MEMBER_P(struct_p, struct_offset) \
     ((void *) ((uint8_t *) (struct_p) + (struct_offset)))
 
@@ -2207,8 +2204,7 @@ parse_member(ScannedMember *scanned_member,
 		ufield->tag = scanned_member->tag;
 		ufield->wire_type = scanned_member->wire_type;
 		ufield->len = scanned_member->len;
-		DO_UNALIGNED_ALLOC(ufield->data, allocator,
-				   scanned_member->len, return 0);
+		DO_ALLOC(ufield->data, allocator, scanned_member->len, return 0);
 		memcpy(ufield->data, scanned_member->data, ufield->len);
 		return 1;
 	}
