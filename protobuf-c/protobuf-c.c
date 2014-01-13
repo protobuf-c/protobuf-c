@@ -45,8 +45,8 @@
  * use size_t consistently.
  */
 
-#include <stdlib.h>	/* for abort(), malloc() etc */
-#include <string.h>	/* for strlen(), memcpy(), memmove() */
+#include <stdlib.h>	/* for malloc, free */
+#include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
 
 #include "protobuf-c.h"
 
