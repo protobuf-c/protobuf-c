@@ -26,12 +26,20 @@ else
     AC_MSG_ERROR([pkg-config is required!])
 fi
 
-PKG_CHECK_MODULES([protobuf], [protobuf])
-AC_LANG_PUSH([C++])
-AC_PATH_PROG(PROTOC, protoc)
-if test -z "$PROTOC"; then
+AC_ARG_ENABLE([protoc],
+  AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
+if test "x$enable_protoc" != "xno"; then
+  PKG_CHECK_MODULES([protobuf], [protobuf])
+  AC_LANG_PUSH([C++])
+  AC_PATH_PROG(PROTOC, protoc)
+  if test -z "$PROTOC"; then
     AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
+  fi
+  PROTOBUF_VERSION="$($PROTOC --version)"
+else
+  PROTOBUF_VERSION="not required, not building compiler"
 fi
+AM_CONDITIONAL([BUILD_COMPILER], [test "x$enable_protoc" != "xno"])
 
 AC_C_BIGENDIAN
 
@@ -53,5 +61,5 @@ AC_MSG_RESULT([
         pkgconfigdir:           ${pkgconfigdir}
 
         bigendian:              ${ac_cv_c_bigendian}
-        protobuf version:       $($PROTOC --version)
+        protobuf version:       ${PROTOBUF_VERSION}
 ])

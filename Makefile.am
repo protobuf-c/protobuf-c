@@ -52,6 +52,8 @@ EXTRA_DIST += protobuf-c/libprotobuf-c.pc.in
 # protoc-c
 #
 
+if BUILD_COMPILER
+
 bin_PROGRAMS += protoc-c/protoc-c
 protoc_c_protoc_c_SOURCES = \
 	protoc-c/c_bytes_field.cc \
@@ -142,6 +144,8 @@ BUILT_SOURCES += \
 	t/test-full.pb-c.c t/test-full.pb-c.h \
 	t/test-full.pb.cc t/test-full.pb.h \
 	t/generated-code2/test-full-cxx-output.inc
+
+endif # BUILD_COMPILER
 
 EXTRA_DIST += \
 	t/test.proto \
