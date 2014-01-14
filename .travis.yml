@@ -11,4 +11,4 @@ script:
     - ./autogen.sh
     - ./configure && make distcheck VERBOSE=1 && make clean
     - ./configure --enable-valgrind-tests && make distcheck
-      DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests" VERBOSE=1 && make clean
+      DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests" VERBOSE=1
