@@ -9,12 +9,6 @@ protobuf-c (0.16) UNRELEASED
 
   * Add protobuf_c_message_check().
 
-  * Add protobuf_c_rpc_server_configure_threading().
-
-  * Bugs in dsk-dispatch (Issue #65 for one thing; POLLHUP for another; and
-    a problem where we moved fd_map into a local variable, when in fact in
-    can be reallocated all over the place, in dsk_dispatch_dispatch()).
-
   * Compile error in packing 64-bit versions on some platforms
     (srobbins99: Issue #68 Comment 1).
 
@@ -37,14 +31,6 @@ protobuf-c (0.16) UNRELEASED
   * Add source .proto filename to generated files.
 
   * Add protobuf-c version to protoc-c --version output (Issue #52).
-
-  * rpc: Rename AF_LOCAL to AF_UNIX (Issue #86, #100).
-
-  * rpc: Handle server responses with NULL messages on the client side
-    (Issue #78).
-
-  * rpc: Free the timer created by autoreconnect in case the client has
-    failed to connect (Issue #70).
 
   * For embedded submessage fields, merge multiple instances of the same
     field, per the protobuf documentation (Issue #91).
