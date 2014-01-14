@@ -53,13 +53,13 @@ protobuf-c (0.16) UNRELEASED
     - Generate our own pkg-config .pc files.
 
   * Reorganize the source tree. This affects the public protobuf-c header
-    paths, which are now <protobuf-c/protobuf-c.h> and
-    <protobuf-c-rpc/protobuf-c-rpc.h>.
+    path, which is now <protobuf-c/protobuf-c.h>. A compatibility symlink from
+    <google/protobuf-c/> to <protobuf-c/> has been installed so that existing
+    code will continue to compile. New code should at some point begin using
+    the new include path, i.e., "#include <protobuf-c/protobuf-c.h>" rather
+    than "#include <google/protobuf-c/protobuf-c.h>".
 
-  * Split out the RPC library code into its own shared library,
-    libprotobuf-c-rpc. This is now an optional component which is no longer
-    built by default. Specify --enable-rpc to configure to build the RPC
-    library.
+  * The RPC code has been split out into a separate project, protobuf-c-rpc.
 
   * Fix a potential use of an unitialized value in protobuf_c_message_unpack()
     and several memory leaks in protoc-c, discovered by a commercial static code
