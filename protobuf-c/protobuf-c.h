@@ -460,12 +460,9 @@ struct _ProtobufCBufferSimple {
 #define PROTOBUF_C_BUFFER_SIMPLE_CLEAR(simp_buf)			\
 do {									\
 	if ((simp_buf)->must_free_data) {				\
-		if (protobuf_c_default_allocator.free == NULL)		\
-			free((simp_buf)->data);				\
-		else							\
-			protobuf_c_default_allocator.free(		\
-				&protobuf_c_default_allocator,		\
-				simp_buf);				\
+		protobuf_c_default_allocator.free(			\
+			&protobuf_c_default_allocator,			\
+			(simp_buf)->data);				\
 	}								\
 } while (0)
 

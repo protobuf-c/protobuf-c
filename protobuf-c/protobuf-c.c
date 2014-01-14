@@ -99,24 +99,29 @@ unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
 
 /* --- allocator --- */
 
+static void *
+system_alloc(void *allocator_data, size_t size)
+{
+	return malloc(size);
+}
+
+static void
+system_free(void *allocator_data, void *data)
+{
+	free(data);
+}
+
 static inline void *
 do_alloc(ProtobufCAllocator *allocator, size_t size)
 {
-	if (allocator != NULL && allocator->alloc != NULL)
-		return allocator->alloc(allocator->allocator_data, size);
-	else
-		return malloc(size);
+	return allocator->alloc(allocator->allocator_data, size);
 }
 
 static inline void
 do_free(ProtobufCAllocator *allocator, void *data)
 {
-	if (data) {
-		if (allocator != NULL && allocator->free != NULL)
-			allocator->free(allocator->allocator_data, data);
-		else
-			free(data);
-	}
+	if (data != NULL)
+		allocator->free(allocator->allocator_data, data);
 }
 
 /*
@@ -125,8 +130,8 @@ do_free(ProtobufCAllocator *allocator, void *data)
  * messages.
  */
 ProtobufCAllocator protobuf_c_default_allocator = {
-	.alloc = NULL,
-	.free = NULL,
+	.alloc = &system_alloc,
+	.free = &system_free,
 	.allocator_data = NULL,
 };
 
@@ -144,12 +149,12 @@ protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
 		uint8_t *new_data;
 		while (new_alloced < new_len)
 			new_alloced += new_alloced;
-		new_data = do_alloc(NULL, new_alloced);
+		new_data = do_alloc(&protobuf_c_default_allocator, new_alloced);
 		if (!new_data)
 			return;
 		memcpy(new_data, simp->data, simp->len);
 		if (simp->must_free_data)
-			do_free(NULL, simp->data);
+			do_free(&protobuf_c_default_allocator, simp->data);
 		else
 			simp->must_free_data = 1;
 		simp->data = new_data;
