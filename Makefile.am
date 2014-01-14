@@ -39,12 +39,12 @@ protobuf_c_libprotobuf_c_la_SOURCES = \
 
 protobuf_c_libprotobuf_c_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBPROTOBUF_C_CURRENT):$(LIBPROTOBUF_C_REVISION):$(LIBPROTOBUF_C_AGE) \
-	-export-symbols-regex "^(protobuf_c_[a-z].*)" \
+	-Wl,--version-script=$(top_srcdir)/protobuf-c/libprotobuf-c.sym \
 	-no-undefined
 
 pkgconfig_DATA += protobuf-c/libprotobuf-c.pc
 CLEANFILES += protobuf-c/libprotobuf-c.pc
-EXTRA_DIST += protobuf-c/libprotobuf-c.pc.in
+EXTRA_DIST += protobuf-c/libprotobuf-c.pc.in protobuf-c/libprotobuf-c.sym
 
 #
 # protoc-c
