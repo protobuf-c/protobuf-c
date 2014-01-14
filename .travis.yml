@@ -5,7 +5,10 @@ before_install:
 
 install:
     - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev
+      valgrind
 
 script:
     - ./autogen.sh
     - ./configure && make distcheck && make clean
+    - ./configure --enable-valgrind-tests && make distcheck
+      DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests" && make clean

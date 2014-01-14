@@ -41,6 +41,8 @@ else
 fi
 AM_CONDITIONAL([BUILD_COMPILER], [test "x$enable_protoc" != "xno"])
 
+gl_VALGRIND_TESTS
+
 AC_C_BIGENDIAN
 
 AC_OUTPUT
