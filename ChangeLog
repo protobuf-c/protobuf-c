@@ -52,8 +52,6 @@ protobuf-c (0.16) UNRELEASED
 
     - Generate our own pkg-config .pc files.
 
-  * Remove --disable-protoc configure option.
-
   * Reorganize the source tree. This affects the public protobuf-c header
     paths, which are now <protobuf-c/protobuf-c.h> and
     <protobuf-c-rpc/protobuf-c-rpc.h>.
