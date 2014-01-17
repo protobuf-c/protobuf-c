@@ -39,8 +39,11 @@ protobuf_c_libprotobuf_c_la_SOURCES = \
 
 protobuf_c_libprotobuf_c_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBPROTOBUF_C_CURRENT):$(LIBPROTOBUF_C_REVISION):$(LIBPROTOBUF_C_AGE) \
-	-Wl,--version-script=$(top_srcdir)/protobuf-c/libprotobuf-c.sym \
 	-no-undefined
+
+if VERSION_SCRIPT
+protobuf_c_libprotobuf_c_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/protobuf-c/libprotobuf-c.sym
+endif # VERSION_SCRIPT
 
 pkgconfig_DATA += protobuf-c/libprotobuf-c.pc
 CLEANFILES += protobuf-c/libprotobuf-c.pc

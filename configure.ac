@@ -41,6 +41,20 @@ else
 fi
 AM_CONDITIONAL([BUILD_COMPILER], [test "x$enable_protoc" != "xno"])
 
+AC_MSG_CHECKING([whether the linker supports version scripts])
+SAVED_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS -Wl,--version-script,conftest.map"
+cat > conftest.map <<EOF
+VERS_1 {
+  global: *;
+};
+EOF
+AC_LINK_IFELSE([AC_LANG_SOURCE([int main() { return 0; }])],
+  [enable_version_script=yes; AC_MSG_RESULT([yes (GNU style)])],
+  [enable_version_script=no; AC_MSG_RESULT([yes (Sun style)])])
+LDFLAGS="$SAVED_LDFLAGS"
+AM_CONDITIONAL([VERSION_SCRIPT], [test "x$enable_version_script" != "xno"])
+
 gl_VALGRIND_TESTS
 
 AC_C_BIGENDIAN
