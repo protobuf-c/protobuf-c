@@ -5,6 +5,8 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules subdir-objects])
 AC_PROG_CC_STDC
 AC_PROG_CXX
+AC_PROG_LN_S
+AC_PROG_MKDIR_P
 AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 AC_CONFIG_MACRO_DIR([m4])

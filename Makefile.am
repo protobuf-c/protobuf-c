@@ -162,5 +162,6 @@ dist-hook:
 	rm -vf `find $(top_distdir) -name '*.pb-c.[ch]' -o -name '*.pb.cc' -o -name '*.pb.h'`
 
 install-data-hook:
-	mkdir -p $(DESTDIR)$(includedir)/google
-	ln -sf ../protobuf-c $(DESTDIR)$(includedir)/google/
+	$(MKDIR_P) $(DESTDIR)$(includedir)/google/protobuf-c
+	cd $(DESTDIR)$(includedir)/google/protobuf-c && rm -vf protobuf-c.h
+	cd $(DESTDIR)$(includedir)/google/protobuf-c && $(LN_S) ../../protobuf-c/protobuf-c.h protobuf-c.h
