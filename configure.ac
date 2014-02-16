@@ -27,6 +27,11 @@ if test -n "$PKG_CONFIG"; then
 else
     AC_MSG_ERROR([pkg-config is required!])
 fi
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_MAN_FEATURE(ON)
+DX_DOT_FEATURE(ON)
+DX_INIT_DOXYGEN([protobuf-c], [Doxyfile], [doxygen-doc])
 
 AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))

@@ -14,6 +14,7 @@
 /build-aux
 /config.*
 /configure
+/doxygen-doc
 /libtool
 /stamp-h1
 /test-suite.log
