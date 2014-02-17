@@ -27,11 +27,14 @@ if test -n "$PKG_CONFIG"; then
 else
     AC_MSG_ERROR([pkg-config is required!])
 fi
+
+DX_DOXYGEN_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
 DX_MAN_FEATURE(ON)
-DX_DOT_FEATURE(ON)
 DX_INIT_DOXYGEN([protobuf-c], [Doxyfile], [doxygen-doc])
+AS_IF([test "x$DX_DOXYGEN" != "x"], [has_doxygen=yes], [has_doxygen=no])
+AM_CONDITIONAL([DOXYGEN_TARGET], [test "x$has_doxygen" = "xyes"])
 
 AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
@@ -68,6 +71,7 @@ AC_MSG_RESULT([
         libdir:                 ${libdir}
         includedir:             ${includedir}
         pkgconfigdir:           ${pkgconfigdir}
+        doxygen-doc:            ${has_doxygen}
 
         bigendian:              ${ac_cv_c_bigendian}
         protobuf version:       ${PROTOBUF_VERSION}

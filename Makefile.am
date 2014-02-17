@@ -166,6 +166,10 @@ install-data-hook:
 	cd $(DESTDIR)$(includedir)/google/protobuf-c && rm -vf protobuf-c.h
 	cd $(DESTDIR)$(includedir)/google/protobuf-c && $(LN_S) ../../protobuf-c/protobuf-c.h protobuf-c.h
 
-include m4/aminclude_doxygen.am
+if DOXYGEN_TARGET
+
+include aminclude_doxygen.am
 
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
+
+endif # DOXYGEN_TARGET
