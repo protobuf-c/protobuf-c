@@ -71,8 +71,8 @@ AC_MSG_RESULT([
         libdir:                 ${libdir}
         includedir:             ${includedir}
         pkgconfigdir:           ${pkgconfigdir}
-        doxygen-doc:            ${has_doxygen}
 
         bigendian:              ${ac_cv_c_bigendian}
         protobuf version:       ${PROTOBUF_VERSION}
+        doxygen docs:           ${has_doxygen}
 ])
