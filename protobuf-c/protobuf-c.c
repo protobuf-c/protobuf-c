@@ -336,7 +336,7 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_DOUBLE:
 		return rv + 8;
 	case PROTOBUF_C_TYPE_ENUM:
-		// TODO: is this correct for negative-valued enums?
+		/* TODO: is this correct for negative-valued enums? */
 		return rv + uint32_size(*(const uint32_t *) member);
 	case PROTOBUF_C_TYPE_STRING: {
 		const char *str = *(char * const *) member;
@@ -347,7 +347,7 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 		size_t len = ((const ProtobufCBinaryData *) member)->len;
 		return rv + uint32_size(len) + len;
 	}
-	//case PROTOBUF_C_TYPE_GROUP:
+	/* case PROTOBUF_C_TYPE_GROUP: */
 	case PROTOBUF_C_TYPE_MESSAGE: {
 		const ProtobufCMessage *msg = *(ProtobufCMessage * const *) member;
 		size_t subrv = msg ? protobuf_c_message_get_packed_size(msg) : 0;
@@ -455,7 +455,7 @@ repeated_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 			rv += uint32_size(len) + len;
 		}
 		break;
-	//case PROTOBUF_C_TYPE_GROUP: // NOT SUPPORTED
+	/* case PROTOBUF_C_TYPE_GROUP: -- NOT SUPPORTED */
 	}
 
 	if (field->packed)
@@ -771,7 +771,7 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_BYTES:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
 		return rv + binary_data_pack((const ProtobufCBinaryData *) member, out + rv);
-	//case PROTOBUF_C_TYPE_GROUP: // NOT SUPPORTED
+	/* case PROTOBUF_C_TYPE_GROUP: -- NOT SUPPORTED */
 	case PROTOBUF_C_TYPE_MESSAGE:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
 		return rv + prefixed_message_pack(*(ProtobufCMessage * const *) member, out + rv);
@@ -966,7 +966,7 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 		uint32_pack(payload_len, out + len_start);
 		return header_len + payload_len;
 	} else {
-		// not "packed" cased
+		/* not "packed" cased */
 		/* CONSIDER: optimize this case a bit (by putting the loop inside the switch) */
 		size_t rv = 0;
 		unsigned siz = sizeof_elt_in_repeated_array(field->type);
@@ -1108,7 +1108,7 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		rv += sublen;
 		break;
 	}
-	//case PROTOBUF_C_TYPE_GROUP: // NOT SUPPORTED
+	/* case PROTOBUF_C_TYPE_GROUP: -- NOT SUPPORTED */
 	case PROTOBUF_C_TYPE_MESSAGE: {
 		uint8_t simple_buffer_scratch[256];
 		size_t sublen;
@@ -1924,7 +1924,7 @@ parse_required_member(ScannedMember *scanned_member,
 		bd->len = len - pref_len;
 		return 1;
 	}
-	//case PROTOBUF_C_TYPE_GROUP: // NOT SUPPORTED
+	/* case PROTOBUF_C_TYPE_GROUP: -- NOT SUPPORTED */
 	case PROTOBUF_C_TYPE_MESSAGE: {
 		ProtobufCMessage **pmessage = member;
 		ProtobufCMessage *subm;
