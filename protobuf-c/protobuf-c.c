@@ -878,7 +878,7 @@ static size_t
 repeated_field_pack(const ProtobufCFieldDescriptor *field,
 		    size_t count, const void *member, uint8_t *out)
 {
-	char *array = *(char * const *) member;
+	void *array = *(void * const *) member;
 	unsigned i;
 
 	if (field->packed) {
@@ -973,7 +973,7 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 
 		for (i = 0; i < count; i++) {
 			rv += required_field_pack(field, array, out + rv);
-			array += siz;
+			array = (char *)array + siz;
 		}
 		return rv;
 	}
@@ -2016,7 +2016,7 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 	const ProtobufCFieldDescriptor *field = scanned_member->field;
 	size_t *p_n = STRUCT_MEMBER_PTR(size_t, message, field->quantifier_offset);
 	size_t siz = sizeof_elt_in_repeated_array(field->type);
-	char *array = *(char **) member + siz * (*p_n);
+	void *array = *(void **) member + siz * (*p_n);
 	const uint8_t *at = scanned_member->data + scanned_member->length_prefix_len;
 	size_t rem = scanned_member->len - scanned_member->length_prefix_len;
 	size_t count = 0;
@@ -2649,21 +2649,21 @@ protobuf_c_message_check(const ProtobufCMessage *message)
 			unsigned offset = message->descriptor->fields[f].offset;
 			if (label == PROTOBUF_C_LABEL_REQUIRED) {
 				ProtobufCMessage *sub = *(ProtobufCMessage **)
-					((char *) message + offset);
+					(void *)((char *) message + offset);
 				if (sub == NULL)
 					return FALSE;
 				if (!protobuf_c_message_check(sub))
 					return FALSE;
 			} else if (label == PROTOBUF_C_LABEL_OPTIONAL) {
 				ProtobufCMessage *sub = *(ProtobufCMessage **)
-					((char *) message + offset);
+					(void *)((char *) message + offset);
 				if (sub != NULL && !protobuf_c_message_check(sub))
 					return FALSE;
 			} else if (label == PROTOBUF_C_LABEL_REPEATED) {
-				unsigned n = *(unsigned *) ((char *) message +
+				unsigned n = *(unsigned *)(void *)((char *) message +
 					message->descriptor->fields[f].quantifier_offset);
 				ProtobufCMessage **subs = *(ProtobufCMessage ***)
-					((char *) message + offset);
+					(void *)((char *) message + offset);
 				unsigned i;
 				for (i = 0; i < n; i++)
 					if (!protobuf_c_message_check(subs[i]))
@@ -2671,7 +2671,7 @@ protobuf_c_message_check(const ProtobufCMessage *message)
 			}
 		} else if (type == PROTOBUF_C_TYPE_STRING) {
 			if (label == PROTOBUF_C_LABEL_REQUIRED) {
-				char *str = *(char **) ((char *)
+				char *str = *(char **)(void *)((char *)
 					message + message->descriptor->fields[f].offset);
 				if (str == NULL)
 					return FALSE;
