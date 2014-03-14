@@ -2196,7 +2196,7 @@ parse_member(ScannedMember *scanned_member,
  * for old code, and may be useful for certain programmatic techniques for
  * generating descriptors).
  */
-void
+static void
 protobuf_c_message_init_generic(const ProtobufCMessageDescriptor *desc,
 				ProtobufCMessage *message)
 {
