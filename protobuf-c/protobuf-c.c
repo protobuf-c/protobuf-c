@@ -2192,13 +2192,13 @@ parse_member(ScannedMember *scanned_member,
 }
 
 /*
- * TODO: expose/use this function if desc->message_init == NULL (which occurs
- * for old code, and may be useful for certain programmatic techniques for
- * generating descriptors).
+ * This function is used if desc->message_init == NULL (which occurs for old
+ * code, and which would be useful to support allocating descriptors
+ * dynamically).
  */
 static void
-protobuf_c_message_init_generic(const ProtobufCMessageDescriptor *desc,
-				ProtobufCMessage *message)
+message_init_generic(const ProtobufCMessageDescriptor *desc,
+		     ProtobufCMessage *message)
 {
 	unsigned i;
 
@@ -2325,7 +2325,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	if (desc->message_init != NULL)
 		protobuf_c_message_init(desc, rv);
 	else
-		protobuf_c_message_init_generic(desc, rv);
+		message_init_generic(desc, rv);
 
 	while (rem > 0) {
 		uint32_t tag;
