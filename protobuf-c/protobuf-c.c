@@ -296,7 +296,8 @@ zigzag64(int64_t v)
  * converted to an unsigned 64-bit integer with ZigZag encoding, using base-128
  * varint encoding.
  */
-static inline size_t sint64_size(int64_t v)
+static inline size_t
+sint64_size(int64_t v)
 {
 	return uint64_size(zigzag64(v));
 }
@@ -1502,7 +1503,8 @@ scan_length_prefixed_data(size_t len, const uint8_t *data,
 	return hdr_len + val;
 }
 
-static size_t max_b128_numbers(size_t len, const uint8_t *data)
+static size_t
+max_b128_numbers(size_t len, const uint8_t *data)
 {
 	size_t rv = 0;
 	while (len--)
