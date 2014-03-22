@@ -1407,6 +1407,27 @@ test_optional_default_values (void)
 }
 
 static void
+assert_optional_lowercase_enum_default_value_is_default (Foo__LowerCase *mess)
+{
+  assert (!mess->has_value);
+  assert (mess->value == 2);
+}
+
+static void
+test_optional_lowercase_enum_default_value (void)
+{
+  Foo__LowerCase mess = FOO__LOWER_CASE__INIT;
+  Foo__LowerCase *mess2;
+  size_t len; uint8_t *data;
+  assert_optional_lowercase_enum_default_value_is_default (&mess);
+  mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (len == 0);            /* no non-default values */
+  free (data);
+  assert_optional_lowercase_enum_default_value_is_default (mess2);
+  foo__lower_case__free_unpacked (mess2, NULL);
+}
+
+static void
 test_field_merge (void)
 {
    Foo__TestMessOptional msg1 = FOO__TEST_MESS_OPTIONAL__INIT;
@@ -1671,6 +1692,8 @@ static Test tests[] =
 
   { "test required default values", test_required_default_values },
   { "test optional default values", test_optional_default_values },
+
+  { "test optional lowercase enum default value", test_optional_lowercase_enum_default_value },
 
   { "test field merge", test_field_merge },
 
