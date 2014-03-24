@@ -6,6 +6,8 @@
 *.o
 *.tar.gz
 *.trs
+*.gcno
+*.gcda
 .deps/
 .dirstamp
 .libs/
@@ -31,3 +33,5 @@ t/generated-code2/test-generated-code2
 *.pb-c.h
 *.pb.cc
 *.pb.h
+/coverage.info
+/htmlcov
