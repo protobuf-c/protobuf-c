@@ -39,8 +39,11 @@ AM_CONDITIONAL([DOXYGEN_TARGET], [test "x$has_doxygen" = "xyes"])
 AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
 if test "x$enable_protoc" != "xno"; then
-  PKG_CHECK_MODULES([protobuf], [protobuf])
   AC_LANG_PUSH([C++])
+  PKG_CHECK_MODULES([protobuf], [protobuf])
+  AC_CHECK_HEADERS([google/protobuf/compiler/command_line_interface.h],
+                   [],
+                   [AC_MSG_ERROR([required protobuf header file not found])])
   AC_PATH_PROG(PROTOC, protoc)
   if test -z "$PROTOC"; then
     AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
