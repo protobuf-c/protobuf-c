@@ -34,6 +34,10 @@ This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker fl
 
 Note that the `protobuf-c` header file was installed as `google/protobuf-c/protobuf-c.h` in previous versions. A compatibility symlink has been left in place to avoid breaking existing code.
 
+## Versioning
+
+`protobuf-c` follows the [Semantic Versioning Specification](http://semver.org/).
+
 ## Contributing
 
 Please send patches to the [protobuf-c mailing list](https://groups.google.com/forum/#!forum/protobuf-c) or by opening a GitHub pull request.
