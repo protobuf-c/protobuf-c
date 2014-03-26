@@ -32,7 +32,7 @@ Link against the `protobuf-c` library.
 
 This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable.
 
-(Note that the `protobuf-c` header file used to be installed as `google/protobuf-c/protobuf-c.h` in previous versions.)
+Note that the `protobuf-c` header file was installed as `google/protobuf-c/protobuf-c.h` in previous versions. A compatibility symlink has been left in place to avoid breaking existing code.
 
 ## Contributing
 
