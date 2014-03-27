@@ -24,8 +24,6 @@ if test -n "$PKG_CONFIG"; then
     else
         PKG_INSTALLDIR
     fi
-else
-    AC_MSG_ERROR([pkg-config is required!])
 fi
 
 DX_DOXYGEN_FEATURE(OFF)
