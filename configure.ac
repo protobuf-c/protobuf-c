@@ -39,9 +39,14 @@ AC_ARG_ENABLE([protoc],
 if test "x$enable_protoc" != "xno"; then
   AC_LANG_PUSH([C++])
   PKG_CHECK_MODULES([protobuf], [protobuf])
+
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$save_CPPFLAGS $protobuf_CFLAGS"
   AC_CHECK_HEADERS([google/protobuf/compiler/command_line_interface.h],
                    [],
                    [AC_MSG_ERROR([required protobuf header file not found])])
+  CPPFLAGS="$save_CPPFLAGS"
+
   AC_PATH_PROG(PROTOC, protoc)
   if test -z "$PROTOC"; then
     AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
