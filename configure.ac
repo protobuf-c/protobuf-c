@@ -47,7 +47,9 @@ if test "x$enable_protoc" != "xno"; then
                    [AC_MSG_ERROR([required protobuf header file not found])])
   CPPFLAGS="$save_CPPFLAGS"
 
-  AC_PATH_PROG(PROTOC, protoc)
+  AC_ARG_VAR([PROTOC], [protobuf compiler command])
+  AC_PATH_PROG([PROTOC], [protoc], [],
+               [`$PKG_CONFIG --variable=exec_prefix protobuf`/bin:$PATH])
   if test -z "$PROTOC"; then
     AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
   fi
