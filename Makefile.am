@@ -89,8 +89,8 @@ protoc_c_protoc_c_SOURCES = \
 	protoc-c/c_string_field.cc \
 	protoc-c/c_string_field.h \
 	protoc-c/main.cc
-protoc_c_protoc_c_CFLAGS = \
-	$(AM_CFLAGS) \
+protoc_c_protoc_c_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(protobuf_CFLAGS)
 protoc_c_protoc_c_LDADD = \
 	$(protobuf_LIBS) \
@@ -129,8 +129,8 @@ t_generated_code2_cxx_generate_packed_data_SOURCES = \
 	t/generated-code2/cxx-generate-packed-data.cc \
 	t/test-full.pb.cc
 t/generated-code2/cxx-generate-packed-data.$(OBJEXT): t/test-full.pb.h
-t_generated_code2_cxx_generate_packed_data_CFLAGS = \
-	$(AM_CFLAGS) \
+t_generated_code2_cxx_generate_packed_data_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(protobuf_CFLAGS)
 t_generated_code2_cxx_generate_packed_data_LDADD = \
 	$(protobuf_LIBS)
