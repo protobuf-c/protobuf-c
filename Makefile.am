@@ -182,7 +182,7 @@ endif # DOXYGEN_TARGET
 
 if HAVE_GCOV
 
-.PHONY: coverage-html clean-gcda
+.PHONY: coverage-html clean-gcda clean-gcno
 .PHONY: generate-coverage-html clean-coverage-html
 coverage-html: clean-gcda
 	@$(MAKE) $(AM_MAKEFLAGS) -k check
@@ -198,7 +198,7 @@ clean-coverage-html: clean-gcda
 
 else
 
-.PHONY: coverage-html clean-gcda
+.PHONY: coverage-html clean-gcda clean-gcno
 clean-coverage-html: clean-gcda
 	@rm -rf coverage.info htmlcov
 
@@ -206,6 +206,8 @@ endif # HAVE_GCOV
 
 clean-gcda:
 	@find -name '*.gcda' -print | xargs -r rm
+
+clean-gcno:
 	@find -name '*.gcno' -print | xargs -r rm
 
-clean-local: clean-coverage-html
+clean-local: clean-coverage-html clean-gcno
