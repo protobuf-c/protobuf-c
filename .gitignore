@@ -11,6 +11,8 @@
 .deps/
 .dirstamp
 .libs/
+/Makefile
+/Makefile.in
 /aclocal.m4
 /autom4te.cache
 /build-aux
@@ -20,8 +22,6 @@
 /libtool
 /stamp-h1
 /test-suite.log
-Makefile
-Makefile.in
 TAGS
 protobuf-c/libprotobuf-c.pc
 protoc-c/protoc-c

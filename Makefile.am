@@ -39,8 +39,16 @@ protobuf_c_libprotobuf_c_la_SOURCES = \
 
 protobuf_c_libprotobuf_c_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBPROTOBUF_C_CURRENT):$(LIBPROTOBUF_C_REVISION):$(LIBPROTOBUF_C_AGE) \
-	-export-symbols-regex "^(protobuf_c_[a-z].*)" \
 	-no-undefined
+
+if HAVE_LD_VERSION_SCRIPT
+protobuf_c_libprotobuf_c_la_LDFLAGS += \
+    -Wl,--version-script=$(top_srcdir)/protobuf-c/libprotobuf-c.sym
+else
+protobuf_c_libprotobuf_c_la_LDFLAGS += \
+    -export-symbols-regex "^(protobuf_c_[a-z].*)"
+endif
+EXTRA_DIST += protobuf-c/libprotobuf-c.sym
 
 pkgconfig_DATA += protobuf-c/libprotobuf-c.pc
 CLEANFILES += protobuf-c/libprotobuf-c.pc
@@ -81,8 +89,8 @@ protoc_c_protoc_c_SOURCES = \
 	protoc-c/c_string_field.cc \
 	protoc-c/c_string_field.h \
 	protoc-c/main.cc
-protoc_c_protoc_c_CFLAGS = \
-	$(AM_CFLAGS) \
+protoc_c_protoc_c_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(protobuf_CFLAGS)
 protoc_c_protoc_c_LDADD = \
 	$(protobuf_LIBS) \
@@ -124,7 +132,7 @@ t_generated_code2_cxx_generate_packed_data_SOURCES = \
 	t/test-full.pb.cc
 t/generated-code2/cxx-generate-packed-data.$(OBJEXT): t/test-full.pb.h
 t_generated_code2_cxx_generate_packed_data_CFLAGS = \
-	$(AM_CFLAGS) \
+	$(AM_CXXFLAGS) \
 	$(protobuf_CFLAGS) \
 	$(COVERAGE_CXXFLAGS)
 t_generated_code2_cxx_generate_packed_data_LDADD = \

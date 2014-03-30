@@ -130,11 +130,11 @@ string PrimitiveFieldGenerator::GetDefaultValue() const
     case FieldDescriptor::CPPTYPE_INT32:
       return SimpleItoa(descriptor_->default_value_int32());
     case FieldDescriptor::CPPTYPE_INT64:
-      return SimpleItoa(descriptor_->default_value_int64());
+      return SimpleItoa(descriptor_->default_value_int64()) + "ll";
     case FieldDescriptor::CPPTYPE_UINT32:
-      return SimpleItoa(descriptor_->default_value_uint32());
+      return SimpleItoa(descriptor_->default_value_uint32()) + "u";
     case FieldDescriptor::CPPTYPE_UINT64:
-      return SimpleItoa(descriptor_->default_value_uint64());
+      return SimpleItoa(descriptor_->default_value_uint64()) + "ull";
     case FieldDescriptor::CPPTYPE_FLOAT:
       return SimpleFtoa(descriptor_->default_value_float());
     case FieldDescriptor::CPPTYPE_DOUBLE:

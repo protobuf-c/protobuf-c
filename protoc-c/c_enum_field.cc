@@ -82,7 +82,7 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
   if (descriptor->has_default_value()) {
     const EnumValueDescriptor* default_value = descriptor->default_value_enum();
     (*variables)["default"] = FullNameToUpper(default_value->type()->full_name())
-			    + "__" + ToUpper(default_value->name());
+			    + "__" + default_value->name();
   } else
     (*variables)["default"] = "0";
   (*variables)["deprecated"] = FieldDeprecated(descriptor);

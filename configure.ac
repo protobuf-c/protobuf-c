@@ -24,8 +24,6 @@ if test -n "$PKG_CONFIG"; then
     else
         PKG_INSTALLDIR
     fi
-else
-    AC_MSG_ERROR([pkg-config is required!])
 fi
 
 DX_DOXYGEN_FEATURE(OFF)
@@ -39,9 +37,19 @@ AM_CONDITIONAL([DOXYGEN_TARGET], [test "x$has_doxygen" = "xyes"])
 AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
 if test "x$enable_protoc" != "xno"; then
-  PKG_CHECK_MODULES([protobuf], [protobuf])
   AC_LANG_PUSH([C++])
-  AC_PATH_PROG(PROTOC, protoc)
+  PKG_CHECK_MODULES([protobuf], [protobuf])
+
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$save_CPPFLAGS $protobuf_CFLAGS"
+  AC_CHECK_HEADERS([google/protobuf/compiler/command_line_interface.h],
+                   [],
+                   [AC_MSG_ERROR([required protobuf header file not found])])
+  CPPFLAGS="$save_CPPFLAGS"
+
+  AC_ARG_VAR([PROTOC], [protobuf compiler command])
+  AC_PATH_PROG([PROTOC], [protoc], [],
+               [`$PKG_CONFIG --variable=exec_prefix protobuf`/bin:$PATH])
   if test -z "$PROTOC"; then
     AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
   fi
@@ -55,6 +63,8 @@ AC_TDD_GCOV
 AC_SUBST(COVERAGE_CFLAGS)
 AC_SUBST(COVERAGE_CXXFLAGS)
 AC_SUBST(COVERAGE_LDFLAGS)
+gl_LD_VERSION_SCRIPT
+
 gl_VALGRIND_TESTS
 
 AC_C_BIGENDIAN
