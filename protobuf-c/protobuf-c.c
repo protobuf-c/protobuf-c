@@ -57,17 +57,6 @@
 /* The maximum length of a 64 bit integer in varint encoding. */
 #define MAX_UINT64_ENCODED_SIZE		10
 
-/*
- * This should be roughly the biggest message you think you'll encounter.
- * However, the only point of the hashing is to detect uninitialized required
- * members.  I doubt many messages have 128 REQUIRED fields, so hopefully
- * this'll be fine.
- *
- * TODO: A better solution is to separately in the descriptor index the required
- * fields, and use the allocator if the required field count is too big.
- */
-#define MAX_MEMBERS_FOR_HASH_SIZE	128
-
 #ifndef PROTOBUF_C_UNPACK_ERROR
 # define PROTOBUF_C_UNPACK_ERROR(...)
 #endif
@@ -2274,6 +2263,11 @@ message_init_generic(const ProtobufCMessageDescriptor *desc,
    - BOUND_SIZEOF_SCANNED_MEMBER_LOG2		\
    - FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)
 
+#define REQUIRED_FIELD_BITMAP_SET(index) \
+  (required_fields_bitmap[(index)/8] |= (1<<((index)%8)))
+#define REQUIRED_FIELD_BITMAP_IS_SET(index) \
+  (required_fields_bitmap[(index)/8] & (1<<((index)%8)))
+
 ProtobufCMessage *
 protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			  ProtobufCAllocator *allocator,
@@ -2300,24 +2294,26 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	unsigned j;
 	unsigned i_slab;
 	unsigned last_field_index = 0;
-	unsigned char required_fields_bitmap[MAX_MEMBERS_FOR_HASH_SIZE / 8] =
-		{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
+	unsigned char *required_fields_bitmap;
 
 	ASSERT_IS_MESSAGE_DESCRIPTOR(desc);
 
 	if (allocator == NULL)
 		allocator = &protobuf_c_default_allocator;
 
-	/* We treat all fields % (16*8), which should be good enough. */
-#define REQUIRED_FIELD_BITMAP_SET(index) \
-  (required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] |= (1<<((index)%8)))
-#define REQUIRED_FIELD_BITMAP_IS_SET(index) \
-  (required_fields_bitmap[(index/8)%sizeof(required_fields_bitmap)] & (1<<((index)%8)))
-
 	rv = do_alloc(allocator, desc->sizeof_message);
 	if (!rv)
 		return (NULL);
 	scanned_member_slabs[0] = first_member_slab;
+
+	required_fields_bitmap = do_alloc(allocator, (desc->n_fields + 7) / 8);
+
+	if (!required_fields_bitmap) {
+		do_free(allocator, rv);
+		return (NULL);
+	}
+
+	memset(required_fields_bitmap, 0, (desc->n_fields + 7) / 8);
 
 	/*
 	 * Generated code always defines "message_init". However, we provide a
@@ -2535,6 +2531,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	/* cleanup */
 	for (j = 1; j <= which_slab; j++)
 		do_free(allocator, scanned_member_slabs[j]);
+	do_free(allocator, required_fields_bitmap);
 
 	return rv;
 
@@ -2542,12 +2539,14 @@ error_cleanup:
 	protobuf_c_message_free_unpacked(rv, allocator);
 	for (j = 1; j <= which_slab; j++)
 		do_free(allocator, scanned_member_slabs[j]);
+	do_free(allocator, required_fields_bitmap);
 	return NULL;
 
 error_cleanup_during_scan:
 	do_free(allocator, rv);
 	for (j = 1; j <= which_slab; j++)
 		do_free(allocator, scanned_member_slabs[j]);
+	do_free(allocator, required_fields_bitmap);
 	return NULL;
 }
 
