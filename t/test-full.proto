@@ -222,7 +222,7 @@ message AllocValues {
   required DefaultRequiredValues a_mess = 5;
 }
 
-message TestRequiredFieldsHashing128 {
+message TestRequiredFieldsBitmap {
   required string field1 = 1;
   optional string field2 = 2;
   optional string field3 = 3;
