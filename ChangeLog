@@ -1,5 +1,14 @@
 protobuf-c (1.0.0) UNRELEASED
 
+  [ Andrei Nigmatulin ]
+  * Append "u", "ull", and "ll" integer literal suffixes for uint32, uint64,
+    and int64 default values in generated code, in order to avoid "integer
+    constant is so large that it is unsigned" compiler warnings.
+    (Issue #136.)
+
+  * Revert the problematic hash-based required field detection.
+    (Related to Issue #60, #79, #137.)
+
   [ Dave Benson ]
   * Treat a "length-prefixed" wire-type message for a repeated field as
     packed-repeated whenever it makes sense (for all types other than
