@@ -240,12 +240,17 @@ struct _ProtobufCFieldDescriptor {
 	unsigned		offset;
 	const void		*descriptor; /* for MESSAGE and ENUM types */
 	const void		*default_value; /* can be NULL */
-	protobuf_c_boolean	packed;
+	unsigned		flags;
 
 	unsigned		reserved_flags;
 	void			*reserved2;
 	void			*reserved3;
 };
+
+typedef enum {
+	PROTOBUF_C_FIELD_FLAGS_PACKED		= (1 << 0),
+	PROTOBUF_C_FIELD_FLAGS_DEPRECATED	= (1 << 1),
+} ProtobufCFieldFlagType;
 
 /*
  * ProtobufCMessageDescriptor: description of a message.
