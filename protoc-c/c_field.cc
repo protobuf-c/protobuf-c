@@ -130,6 +130,9 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
    && descriptor_->options().packed())
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
 
+  if (descriptor_->options().deprecated())
+    variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_DEPRECATED";
+
   printer->Print(variables,
     "{\n"
     "  \"$proto_name$\",\n"

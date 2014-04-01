@@ -250,7 +250,10 @@ struct _ProtobufCFieldDescriptor {
 typedef enum {
 	/* Set if the field is repeated and marked with the 'packed' option. */
 	PROTOBUF_C_FIELD_FLAG_PACKED		= (1 << 0),
-} ProtobufCFieldFlag;
+
+	/* Set if the field is marked with the 'deprecated' option. */
+	PROTOBUF_C_FIELD_FLAG_DEPRECATED	= (1 << 1),
+} ProtobufCFieldFlagType;
 
 /*
  * ProtobufCMessageDescriptor: description of a message.
