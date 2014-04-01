@@ -249,6 +249,7 @@ struct _ProtobufCFieldDescriptor {
 
 typedef enum {
 	PROTOBUF_C_FIELD_FLAGS_PACKED		= (1 << 0),
+	PROTOBUF_C_FIELD_FLAGS_DEPRECATED	= (1 << 1),
 } ProtobufCFieldFlagType;
 
 /*
