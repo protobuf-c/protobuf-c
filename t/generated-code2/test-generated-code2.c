@@ -1595,6 +1595,23 @@ test_alloc_fail (void)
   free (packed);
 }
 
+/* This test checks that protobuf decoder is capable of detecting special
+   cases of incomplete messages. The message should have at least two required
+   fields field1 and field129 with positions pos1 and pos2 (no matter what the
+   field numbers are), such as (pos1 % 128) == (pos2 % 128). The decoder must
+   return NULL instead of incomplete message with field129 missing. */
+static void test_required_fields_bitmap(void)
+{
+  const uint8_t source[] = {
+    (1 << 3) | PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED,
+    sizeof("hello") - 1,
+    'h', 'e', 'l', 'l', 'o'
+  };
+  Foo__TestRequiredFieldsBitmap *msg;
+  msg = foo__test_required_fields_bitmap__unpack(NULL, sizeof(source), source);
+  assert (msg == NULL);
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -1699,6 +1716,8 @@ static Test tests[] =
 
   { "test free unpacked", test_alloc_free_all },
   { "test alloc failure", test_alloc_fail },
+
+  { "test required_fields_bitmap", test_required_fields_bitmap },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
