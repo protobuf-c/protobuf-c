@@ -278,7 +278,7 @@ typedef enum {
 
 	/* Set if the field is marked with the 'deprecated' option. */
 	PROTOBUF_C_FIELD_FLAG_DEPRECATED	= (1 << 1),
-} ProtobufCFieldFlagType;
+} ProtobufCFieldFlag;
 
 /*
  * ProtobufCMessageDescriptor: description of a message.
