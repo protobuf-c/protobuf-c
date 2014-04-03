@@ -128,7 +128,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   if (descriptor_->label() == FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
    && descriptor_->options().packed())
-    variables["flags"] += " | PROTOBUF_C_FIELD_FLAGS_PACKED";
+    variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
 
   printer->Print(variables,
     "{\n"

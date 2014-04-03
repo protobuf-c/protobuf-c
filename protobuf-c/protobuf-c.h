@@ -228,8 +228,8 @@ typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
  *        otherwise NULL.
  * 'default_value' is a pointer to a default value for this field,
  *        where allowed.
- * 'packed' is only for REPEATED fields (it is 0 otherwise); this is if
- *        the repeated fields is marked with the 'packed' options.
+ * 'flags' is a flag word. Zero or more of the bits defined in the
+ *        ProtobufCFieldFlag enum may be set.
  */
 struct _ProtobufCFieldDescriptor {
 	const char		*name;
@@ -240,7 +240,7 @@ struct _ProtobufCFieldDescriptor {
 	unsigned		offset;
 	const void		*descriptor; /* for MESSAGE and ENUM types */
 	const void		*default_value; /* can be NULL */
-	unsigned		flags;
+	uint32_t		flags;
 
 	unsigned		reserved_flags;
 	void			*reserved2;
@@ -248,8 +248,9 @@ struct _ProtobufCFieldDescriptor {
 };
 
 typedef enum {
-	PROTOBUF_C_FIELD_FLAGS_PACKED		= (1 << 0),
-} ProtobufCFieldFlagType;
+	/* Set if the field is repeated and marked with the 'packed' option. */
+	PROTOBUF_C_FIELD_FLAG_PACKED		= (1 << 0),
+} ProtobufCFieldFlag;
 
 /*
  * ProtobufCMessageDescriptor: description of a message.
