@@ -104,11 +104,13 @@ LOG_COMPILER = $(VALGRIND)
 
 check_PROGRAMS += \
 	t/generated-code/test-generated-code \
-	t/generated-code2/test-generated-code2
+	t/generated-code2/test-generated-code2 \
+	t/version/version
 
 TESTS += \
 	t/generated-code/test-generated-code \
-	t/generated-code2/test-generated-code2
+	t/generated-code2/test-generated-code2 \
+	t/version/version
 
 t_generated_code_test_generated_code_SOURCES = \
 	t/generated-code/test-generated-code.c \
@@ -152,6 +154,11 @@ BUILT_SOURCES += \
 	t/test-full.pb-c.c t/test-full.pb-c.h \
 	t/test-full.pb.cc t/test-full.pb.h \
 	t/generated-code2/test-full-cxx-output.inc
+
+t_version_version_SOURCES = \
+	t/version/version.c
+t_version_version_LDADD = \
+	protobuf-c/libprotobuf-c.la
 
 endif # BUILD_COMPILER
 
