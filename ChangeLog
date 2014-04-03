@@ -104,6 +104,10 @@ protobuf-c (1.0.0) UNRELEASED
     version of the header file. This replaces the interfaces for retrieving
     the protobuf-c version numbers in Issue #53.
 
+  * Add a version guard that ensures that the output of protoc-c is only
+    compiled against a protobuf-c header file from the exact same protobuf-c
+    release.
+
   * Update copyright and license statements throughout. The original
     protobuf code released by Google was relicensed from Apache-2.0 to
     BSD-3-Clause. Dave Benson also converted his license from BSD-3-Clause
