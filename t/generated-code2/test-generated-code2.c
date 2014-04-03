@@ -1612,6 +1612,42 @@ static void test_required_fields_bitmap(void)
   assert (msg == NULL);
 }
 
+static void
+test_field_flags (void)
+{
+  const ProtobufCFieldDescriptor *f;
+
+  f = protobuf_c_message_descriptor_get_field_by_name(
+    &foo__test_field_flags__descriptor, "no_flags1");
+  assert(f != NULL);
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
+
+  f = protobuf_c_message_descriptor_get_field_by_name(
+    &foo__test_field_flags__descriptor, "no_flags2");
+  assert(f != NULL);
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
+
+  f = protobuf_c_message_descriptor_get_field_by_name(
+    &foo__test_field_flags__descriptor, "no_flags3");
+  assert(f != NULL);
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
+
+  f = protobuf_c_message_descriptor_get_field_by_name(
+    &foo__test_field_flags__descriptor, "packed");
+  assert(f != NULL);
+  assert((f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
+  assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
+
+  f = protobuf_c_message_descriptor_get_field_by_name(
+    &foo__test_field_flags__descriptor, "packed_deprecated");
+  assert(f != NULL);
+  assert((f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
+  assert((f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -1718,6 +1754,8 @@ static Test tests[] =
   { "test alloc failure", test_alloc_fail },
 
   { "test required_fields_bitmap", test_required_fields_bitmap },
+
+  { "test field flags", test_field_flags },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
