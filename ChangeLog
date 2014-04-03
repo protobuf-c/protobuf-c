@@ -9,6 +9,9 @@ protobuf-c (1.0.0) UNRELEASED
   * Revert the problematic hash-based required field detection.
     (Related to Issue #60, #79, #137.)
 
+  * Replace the 'packed' member of ProtobufCFieldDescriptor with a 'flags'
+    word. Define flags for packed and deprecated fields. (Issue #138.)
+
   [ Dave Benson ]
   * Treat a "length-prefixed" wire-type message for a repeated field as
     packed-repeated whenever it makes sense (for all types other than
