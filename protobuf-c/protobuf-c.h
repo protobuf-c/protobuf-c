@@ -58,14 +58,6 @@
 
 #define PROTOBUF_C_OFFSETOF(struct, member) offsetof(struct, member)
 
-/* The version of protobuf-c you are compiling against. */
-#define PROTOBUF_C_MAJOR	0
-#define PROTOBUF_C_MINOR	16
-
-/* The version of protobuf-c you are linking against. */
-extern unsigned protobuf_c_major;
-extern unsigned protobuf_c_minor;
-
 #if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
 # ifdef PROTOBUF_C_EXPORT
 #  define PROTOBUF_C_API __declspec(dllexport)
@@ -77,6 +69,39 @@ extern unsigned protobuf_c_minor;
 #endif
 
 PROTOBUF_C_BEGIN_DECLS
+
+/**
+ * Get the version of the protobuf-c library. Note that this is the version of
+ * the library linked against, not the version of the headers compiled against.
+ *
+ * \return A string containing the version number of protobuf-c.
+ */
+PROTOBUF_C_API
+const char *
+protobuf_c_version(void);
+
+/**
+ * Get the version of the protobuf-c library. Note that this is the version of
+ * the library linked against, not the version of the headers compiled against.
+ *
+ * \return A 32 bit unsigned integer containing the version number of
+ *	protobuf-c, represented in base-10 as (MAJOR*1E6) + (MINOR*1E3) + PATCH.
+ */
+PROTOBUF_C_API
+uint32_t
+protobuf_c_version_number(void);
+
+/**
+ * The version of the protobuf-c headers, represented as a string using the same
+ * format as protobuf_c_version().
+ */
+#define PROTOBUF_C_VERSION		"1.0.0-pre"
+
+/**
+ * The version of the protobuf-c headers, represented as an integer using the
+ * same format as protobuf_c_version_number().
+ */
+#define PROTOBUF_C_VERSION_NUMBER	1000000
 
 typedef int protobuf_c_boolean;
 

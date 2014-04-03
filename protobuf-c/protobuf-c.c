@@ -84,8 +84,19 @@
 #define ASSERT_IS_SERVICE_DESCRIPTOR(desc) \
 	assert((desc)->magic == PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC)
 
-unsigned protobuf_c_major = PROTOBUF_C_MAJOR;
-unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
+/* --- version --- */
+
+const char *
+protobuf_c_version(void)
+{
+	return PROTOBUF_C_VERSION;
+}
+
+uint32_t
+protobuf_c_version_number(void)
+{
+	return PROTOBUF_C_VERSION_NUMBER;
+}
 
 /* --- allocator --- */
 
