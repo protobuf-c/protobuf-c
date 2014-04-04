@@ -353,3 +353,12 @@ message TestRequiredFieldsBitmap {
   optional string field128 = 128;
   required string field129 = 129;
 }
+
+message TestFieldFlags {
+  optional int32 no_flags1          = 1;
+  required int32 no_flags2          = 2;
+  repeated int32 no_flags3          = 3;
+  repeated int32 packed             = 4 [packed=true];
+  repeated int32 packed_deprecated  = 5 [packed=true, deprecated=true];
+  repeated int32 deprecated         = 6 [deprecated=true];
+}

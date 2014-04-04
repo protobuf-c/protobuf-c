@@ -84,8 +84,19 @@
 #define ASSERT_IS_SERVICE_DESCRIPTOR(desc) \
 	assert((desc)->magic == PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC)
 
-unsigned protobuf_c_major = PROTOBUF_C_MAJOR;
-unsigned protobuf_c_minor = PROTOBUF_C_MINOR;
+/* --- version --- */
+
+const char *
+protobuf_c_version(void)
+{
+	return PROTOBUF_C_VERSION;
+}
+
+uint32_t
+protobuf_c_version_number(void)
+{
+	return PROTOBUF_C_VERSION_NUMBER;
+}
 
 /* --- allocator --- */
 
@@ -388,7 +399,7 @@ repeated_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 	if (count == 0)
 		return 0;
 	header_size = get_tag_size(field->id);
-	if (!field->packed)
+	if (0 == (field->flags & PROTOBUF_C_FIELD_FLAG_PACKED))
 		header_size *= count;
 
 	switch (field->type) {
@@ -449,7 +460,7 @@ repeated_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 	/* case PROTOBUF_C_TYPE_GROUP: -- NOT SUPPORTED */
 	}
 
-	if (field->packed)
+	if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_PACKED))
 		header_size += uint32_size(rv);
 	return header_size + rv;
 }
@@ -872,7 +883,7 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 	void *array = *(void * const *) member;
 	unsigned i;
 
-	if (field->packed) {
+	if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_PACKED)) {
 		unsigned header_len;
 		unsigned len_start;
 		unsigned min_length;
@@ -1300,7 +1311,7 @@ repeated_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 
 	if (count == 0)
 		return 0;
-	if (field->packed) {
+	if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_PACKED)) {
 		uint8_t scratch[MAX_UINT64_ENCODED_SIZE * 2];
 		size_t rv = tag_pack(field->id, scratch);
 		size_t payload_len = get_packed_payload_length(field, count, array);
@@ -2169,7 +2180,8 @@ parse_member(ScannedMember *scanned_member,
 	case PROTOBUF_C_LABEL_REPEATED:
 		if (scanned_member->wire_type ==
 		    PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED &&
-		    (field->packed || is_packable_type(field->type)))
+		    (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_PACKED) ||
+		     is_packable_type(field->type)))
 		{
 			return parse_packed_repeated_member(scanned_member,
 							    member, message);
@@ -2446,7 +2458,8 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			size_t *n = STRUCT_MEMBER_PTR(size_t, rv,
 						      field->quantifier_offset);
 			if (wire_type == PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED &&
-			    (field->packed || is_packable_type(field->type)))
+			    (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_PACKED) ||
+			     is_packable_type(field->type)))
 			{
 				size_t count;
 				if (!count_packed_elements(field->type,
