@@ -6,6 +6,10 @@ This is `protobuf-c`, a C implementation of [Google Protocol Buffers](https://de
 
 `protobuf-c` was originally maintained by Dave Benson through version 0.15 but is now being maintained by a new team. Thanks, Dave!
 
+## Mailing list
+
+`protobuf-c`'s mailing list is hosted on a [Google Groups forum](https://groups.google.com/forum/#!forum/protobuf-c). Subscribe by sending an email to [protobuf-c+subscribe@googlegroups.com](mailto:protobuf-c+subscribe@googlegroups.com).
+
 ## Building
 
 `protobuf-c` requires a C compiler, a C++ compiler, [Google Protocol Buffers](https://developers.google.com/protocol-buffers/), and `pkg-config` to be installed.
