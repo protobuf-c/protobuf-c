@@ -22,21 +22,27 @@ If building from a git checkout, the `autotools` (`autoconf`, `automake`, `libto
 
 ## Synopsis
 
-Include the `protobuf-c` header file:
+Use the `protoc-c` command to generate `.pb-c.c` and `.pb-c.h` output files from your `.proto` input file.
 
-    #include <protobuf-c/protobuf-c.h>
+    protoc-c --c_out=. example.proto
 
-Link against the `protobuf-c` library.
+Include the `.pb-c.h` file from your C source code.
 
-    -lprotobuf-c
+    #include "example.pb-c.h"
 
-`libprotobuf-c` includes a `pkg-config` file. It is recommended to use the `pkg-config` system in order to determine the complete set of compiler and linker flags for building applications that utilize `libprotobuf-c`. If using `pkg-config` with `autoconf`, the `PKG_CHECK_MODULES` macro can be used to detect the presence of `libprotobuf-c`:
+Compile your C source code together with the `.pb-c.c` file. Add the output of the following command to your compile flags.
 
-    PKG_CHECK_MODULES([PROTOBUF_C], [libprotobuf-c])
+    pkg-config --cflags 'libprotobuf-c >= 1.0.0'
 
-This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable.
+Link against the `libprotobuf-c` support library. Add the output of the following command to your link flags.
 
-Note that the `protobuf-c` header file was installed as `google/protobuf-c/protobuf-c.h` in previous versions. A compatibility symlink has been left in place to avoid breaking existing code.
+    pkg-config --libs 'libprotobuf-c >= 1.0.0'
+
+If using autotools, the `PKG_CHECK_MODULES` macro can be used to detect the presence of `libprotobuf-c`. Add the following line to your `configure.ac` file:
+
+    PKG_CHECK_MODULES([PROTOBUF_C], [libprotobuf-c >= 1.0.0])
+
+This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable. Read [more information here](https://www.flameeyes.eu/autotools-mythbuster/pkgconfig/pkg_check_modules.html) about the `PKG_CHECK_MODULES` macro.
 
 ## Versioning
 
