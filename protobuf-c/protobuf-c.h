@@ -29,6 +29,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/** \file
+ * Support library definitions for \c protoc-c generated code.
+ *
+ * This file defines the public API used by the code generated
+ * by \c protoc-c .
+ *
+ * \authors Dave Benson and the protobuf-c authors
+ * \date 2008-2014
+ */
+
 #ifndef __PROTOBUF_C_RUNTIME_H_
 #define __PROTOBUF_C_RUNTIME_H_
 
