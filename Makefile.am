@@ -190,4 +190,23 @@ include aminclude_doxygen.am
 
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
+gh-pages: clean
+	test `git rev-parse --abbrev-ref HEAD` = master
+	rm -f $(PWD)/.git/index.gh-pages
+	$(MKDIR_P) doxygen-doc/html
+	GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages git --work-tree $(PWD)/doxygen-doc/html checkout gh-pages
+	$(MAKE) doxygen-doc || (git co master; exit 1)
+	GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages git --work-tree $(PWD)/doxygen-doc/html checkout .nojekyll
+	GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages git --work-tree $(PWD)/doxygen-doc/html checkout CNAME
+	GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages git --work-tree $(PWD)/doxygen-doc/html add .
+	GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages git --work-tree $(PWD)/doxygen-doc/html ls-files --deleted | GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages xargs -r git --work-tree $(PWD)/doxygen-doc/html rm
+	GIT_INDEX_FILE=$(PWD)/.git/index.gh-pages git --work-tree $(PWD)/doxygen-doc/html commit -m "Update docs."
+	git checkout master
+else
+gh-pages:
+	@echo "ERROR: Need to run ./configure --enable-doxygen"; false
+DX_PS_GOAL =
+DX_PDF_GOAL =
 endif # DOXYGEN_TARGET
+
+.PHONY: gh-pages doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
