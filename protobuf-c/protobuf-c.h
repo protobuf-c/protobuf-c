@@ -39,6 +39,20 @@
  * \date 2008-2014
  */
 
+/** \mainpage
+ *
+ * \section description Description
+ *
+ * Google protobufs are an efficient way to serialise and deserialise
+ * data to send across the wire or to store on disk.  This library
+ * supports the \c protoc-c generated C code.
+ *
+ * \sa
+ *     - Google Protobufs: https://code.google.com/p/protobuf/
+ *     - Protobuf docs:
+ *       https://developers.google.com/protocol-buffers/docs/overview
+ *     - Protobuf for C code: https://github.com/protobuf-c/protobuf-c
+ */
 #ifndef __PROTOBUF_C_RUNTIME_H_
 #define __PROTOBUF_C_RUNTIME_H_
 
