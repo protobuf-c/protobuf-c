@@ -47,6 +47,11 @@
 #include <stdint.h>
 #include <limits.h>
 
+/** \defgroup api Public API for libprotobuf-c
+ *
+ * The public API for C protobufs.
+ * @{ */
+
 #ifdef __cplusplus
 # define PROTOBUF_C_BEGIN_DECLS	extern "C" {
 # define PROTOBUF_C_END_DECLS	}
@@ -588,5 +593,7 @@ protobuf_c_service_invoke_internal(
 	void *closure_data);
 
 PROTOBUF_C_END_DECLS
+
+/** @} */  /* End of api group. */
 
 #endif /* __PROTOBUF_C_RUNTIME_H_ */

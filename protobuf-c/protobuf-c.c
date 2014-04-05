@@ -29,21 +29,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Todo items:
+/**
  *
- * 64-BIT OPTIMIZATION: certain implementations use 32-bit math even on 64-bit
- * platforms (uint64_size, uint64_pack, parse_uint64).
+ * \todo 64-BIT OPTIMIZATION: certain implementations use 32-bit math
+ * even on 64-bit platforms (uint64_size, uint64_pack, parse_uint64).
  *
- * get_packed_size and pack seem to use type-prefixed names, whereas parse uses
- * type-suffixed names.  pick one and stick with it.  Decision:  go with
- * type-suffixed, since the type (or its instance) is typically the object of
- * the verb.  NOTE: perhaps the "parse" methods should be renamed to "unpack" at
- * the same time. (this only affects internal (static) functions)
+ * \todo get_packed_size and pack seem to use type-prefixed names,
+ * whereas parse uses type-suffixed names.  Pick one and stick with it.
+ * Decision: go with type-suffixed, since the type (or its instance)
+ * is typically the object of the verb.  NOTE: perhaps the "parse"
+ * methods should be renamed to "unpack" at the same time. (this only
+ * affects internal (static) functions)
  *
- * use TRUE and FALSE instead of 1 and 0 as appropriate.
+ * \todo Use TRUE and FALSE instead of 1 and 0 as appropriate.
  *
- * use size_t consistently.
+ * \todo Use size_t consistently.
  */
 
 /** \file
@@ -423,7 +423,7 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_DOUBLE:
 		return rv + 8;
 	case PROTOBUF_C_TYPE_ENUM:
-		/* TODO: is this correct for negative-valued enums? */
+		/* \todo is this correct for negative-valued enums? */
 		return rv + uint32_size(*(const uint32_t *) member);
 	case PROTOBUF_C_TYPE_STRING: {
 		const char *str = *(char * const *) member;
@@ -780,7 +780,7 @@ fixed32_pack(uint32_t value, void *out)
  * Pack a 64-bit quantity in little-endian byte order. Used for
  * protobuf wire types fixed64, sfixed64, double. Similar to "htole64".
  *
- * XXX: the big-endian impl is really only good for 32-bit machines,
+ * \todo the big-endian impl is really only good for 32-bit machines,
  * a 64-bit version would be appreciated, plus a way to decide to use
  * 64-bit math where convenient.
  *
@@ -805,7 +805,7 @@ fixed64_pack(uint64_t value, void *out)
  * Pack a boolean value as an integer and return the number of bytes
  * written.
  *
- * XXX: perhaps on some platforms <tt>*out = !!value</tt> would be a
+ * \todo perhaps on some platforms <tt>*out = !!value</tt> would be a
  * better impl, b/c that is idiomatic C++ in some STL implementations.
  *
  * \param[in] value Boolean to pack.
@@ -891,7 +891,7 @@ prefixed_message_pack(const ProtobufCMessage *message, uint8_t *out)
 /** Pack field tag.
  *
  * wire-type will be added in required_field_pack()
- * XXX: just call uint64_pack on 64-bit platforms.
+ * \todo just call uint64_pack on 64-bit platforms.
  *
  * \param[in] id Id of field to pack.
  * \param[in,out] out Resulting value.
@@ -995,7 +995,15 @@ optional_field_pack(const ProtobufCFieldDescriptor *field,
 	return required_field_pack(field, member, out);
 }
 
-/* TODO: implement as a table lookup */
+/** Get size of element in repeated field.
+ *
+ * Given a field type, return its size.
+ *
+ * \todo implement as a table lookup
+ *
+ * \param[in] type Type of field.
+ * \return Size of the field type.
+ */
 static inline size_t
 sizeof_elt_in_repeated_array(ProtobufCType type)
 {
@@ -1027,6 +1035,14 @@ sizeof_elt_in_repeated_array(ProtobufCType type)
 	return 0;
 }
 
+/** Copy 32 bit int.
+ *
+ * Takes into account endianess of machine when doing the copy.
+ *
+ * \param[in,out] out int32's to be copied here.
+ * \param[in] in int32's to copy.
+ * \param[in] n Number of int32's to copy.
+ */
 static void
 copy_to_little_endian_32(void *out, const void *in, const unsigned n)
 {
@@ -1040,6 +1056,14 @@ copy_to_little_endian_32(void *out, const void *in, const unsigned n)
 #endif
 }
 
+/** Copy 64 bit int.
+ *
+ * Takes into account endianess of machine when doing the copy.
+ *
+ * \param[in,out] out int64's to be copied here.
+ * \param[in] in int64's to copy.
+ * \param[in] n Number of int64's to copy.
+ */
 static void
 copy_to_little_endian_64(void *out, const void *in, const unsigned n)
 {
@@ -1053,6 +1077,11 @@ copy_to_little_endian_64(void *out, const void *in, const unsigned n)
 #endif
 }
 
+/** Get size of fixed ints / floating point types.
+ *
+ * \param[in] type Type of field.
+ * \return Size of the field type.
+ */
 static unsigned
 get_type_min_size(ProtobufCType type)
 {
@@ -1071,6 +1100,18 @@ get_type_min_size(ProtobufCType type)
 	return 1;
 }
 
+/** Pack repeated field.
+ *
+ * Packs a repeated field and returns the serialised field as well as
+ * it's length.
+ *
+ * \param[in] field Field descriptor.
+ * \param[in] count Number of elements in the repeated field.
+ * \param[in] member Pointer to the list of elements for this
+ *                   repeated field.
+ * \param[in,out] out Serialised representation of the repeated field.
+ * \return Size of the serialised repeated field.
+ */
 static size_t
 repeated_field_pack(const ProtobufCFieldDescriptor *field,
 		    size_t count, const void *member, uint8_t *out)
@@ -1228,8 +1269,19 @@ protobuf_c_message_pack(const ProtobufCMessage *message, uint8_t *out)
 	return rv;
 }
 
-/* === protobuf_c_message_pack_to_buffer() implementation === */
+/** \defgroup packbuf protobuf_c_message_pack_to_buffer() implementation
+ *
+ * Routines mainly used in the definition of
+ * protobuf_c_message_pack_to_buffer() .
+ * \ingroup internal
+ * @{ */
 
+/** Pack a required field to a buffer.
+ *
+ * \param[in] field Field descriptor.
+ * \param[in] member The element to be packed.
+ * \param[in,out] buffer The serialised representation of the field.
+ */
 static size_t
 required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 			      const void *member, ProtobufCBuffer *buffer)
@@ -1333,6 +1385,13 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 	return rv;
 }
 
+/** Pack an optional field to a buffer.
+ *
+ * \param[in] field Field descriptor.
+ * \param[in] has True if the field is set, false otherwise.
+ * \param[in] member The element to be packed.
+ * \param[in,out] buffer The serialised representation of the field.
+ */
 static size_t
 optional_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 			      const protobuf_c_boolean *has,
@@ -1351,6 +1410,13 @@ optional_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 	return required_field_pack_to_buffer(field, member, buffer);
 }
 
+/** Get size of an array of same field type.
+ *
+ * \param[in] field Field descriptor.
+ * \param[in] count Number of elements of this type.
+ * \param[in] array The list of elements to get the size of.
+ * \return Size of serialised elements.
+ */
 static size_t
 get_packed_payload_length(const ProtobufCFieldDescriptor *field,
 			  unsigned count, const void *array)
@@ -1407,6 +1473,14 @@ get_packed_payload_length(const ProtobufCFieldDescriptor *field,
 	return rv;
 }
 
+/** Pack buffer of an array of same field type.
+ *
+ * \param[in] field Field descriptor.
+ * \param[in] count Number of elements of this type.
+ * \param[in] array The list of elements to get the size of.
+ * \param[in,out] buffer Serialised elements.
+ * \return Size of serialised elements.
+ */
 static size_t
 pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 			   unsigned count, const void *array,
@@ -1548,6 +1622,8 @@ unknown_field_pack_to_buffer(const ProtobufCMessageUnknownField *field,
 	return rv + field->len;
 }
 
+/** @} */  /* End of packbuf group. */
+
 size_t
 protobuf_c_message_pack_to_buffer(const ProtobufCMessage *message,
 				  ProtobufCBuffer *buffer)
@@ -1588,7 +1664,11 @@ protobuf_c_message_pack_to_buffer(const ProtobufCMessage *message,
 	return rv;
 }
 
-/* === unpacking === */
+/** \defgroup unpack unpacking implementation
+ *
+ * Routines mainly used in the definition of unpacking functions.
+ * \ingroup internal
+ * @{ */
 
 static inline int
 int_range_lookup(unsigned n_ranges, const ProtobufCIntRange *ranges, int value)
@@ -1710,16 +1790,23 @@ max_b128_numbers(size_t len, const uint8_t *data)
 			++rv;
 	return rv;
 }
+/** @} */  /* End of pack group. */
 
-/* Merge earlier message into the latter message as follows:
- * For numeric types and strings, if the same value appears multiple times, the
- * parser accepts the last value it sees.
- * For embedded message fields, the parser merges multiple instances of the same
- * field. That is, all singular scalar fields in the latter instance replace those
- * in the former, singular embedded messages are merged, and repeated fields are
- * concatenated.
- * The earlier message should be freed after calling this function, as some of its
- * fields may have been reused and changed to their default values during the merge*/
+/** Merge earlier message into the latter message.
+ *
+ * Merge earlier message into the latter message as follows:
+ *
+ * For numeric types and strings, if the same value appears multiple
+ * times, the parser accepts the last value it sees.  For embedded
+ * message fields, the parser merges multiple instances of the same
+ * field. That is, all singular scalar fields in the latter instance
+ * replace those in the former, singular embedded messages are merged,
+ * and repeated fields are concatenated.
+ *
+ * The earlier message should be freed after calling this function, as
+ * some of its fields may have been reused and changed to their default
+ * values during the merge
+ */
 static protobuf_c_boolean
 merge_messages(ProtobufCMessage *earlier_msg,
 	       ProtobufCMessage *latter_msg,
@@ -1873,11 +1960,13 @@ merge_messages(ProtobufCMessage *earlier_msg,
 	return 1;
 }
 
-/*
- * Given a raw slab of packed-repeated values, determine the number of elements.
- * This function detects certain kinds of errors but not others; the remaining
- * error checking is done by parse_packed_repeated_member().
-*/
+/** Count packed elements.
+ *
+ * Given a raw slab of packed-repeated values, determine the number of
+ * elements.  This function detects certain kinds of errors but not
+ * others; the remaining error checking is done by
+ * parse_packed_repeated_member().
+ */
 static protobuf_c_boolean
 count_packed_elements(ProtobufCType type,
 		      size_t len, const uint8_t *data, size_t *count_out)
@@ -2392,10 +2481,11 @@ parse_member(ScannedMember *scanned_member,
 	return 0;
 }
 
-/*
- * This function is used if desc->message_init == NULL (which occurs for old
- * code, and which would be useful to support allocating descriptors
- * dynamically).
+/** Initialise messages generated by old code.
+ *
+ * This function is used if desc->message_init == NULL (which occurs
+ * for old code, and which would be useful to support allocating
+ * descriptors dynamically).
  */
 static void
 message_init_generic(const ProtobufCMessageDescriptor *desc,
@@ -2450,6 +2540,8 @@ message_init_generic(const ProtobufCMessageDescriptor *desc,
 		}
 	}
 }
+
+/** @} */  /* End of unpack group. */
 
 /*
  * ScannedMember slabs (an unpacking implementation detail). Before doing real
@@ -2530,11 +2622,12 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	}
 	memset(required_fields_bitmap, 0, required_fields_bitmap_len);
 
-	/*
-	 * Generated code always defines "message_init". However, we provide a
-	 * fallback for (1) users of old protobuf-c generated-code that do not
-	 * provide the function, and (2) descriptors constructed from some other
-	 * source (most likely, direct construction from the .proto file).
+	/**
+	 * Generated code always defines "message_init". However, we
+         * provide a fallback for (1) users of old protobuf-c
+         * generated-code that do not provide the function, and (2)
+         * descriptors constructed from some other source (most likely,
+         * direct construction from the .proto file).
 	 */
 	if (desc->message_init != NULL)
 		protobuf_c_message_init(desc, rv);
@@ -2553,7 +2646,8 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 						(unsigned) (at - data));
 			goto error_cleanup_during_scan;
 		}
-		/* XXX: consider optimizing for field[1].id == tag, if field[1] exists! */
+		/** \todo consider optimizing for field[1].id == tag,
+                 * if field[1] exists! */
 		if (last_field == NULL || last_field->id != tag) {
 			/* lookup field */
 			int field_index =
@@ -2768,8 +2862,6 @@ error_cleanup_during_scan:
 	return NULL;
 }
 
-/* === protobuf_c_message_free_unpacked() implementation === */
-
 void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)
@@ -2931,7 +3023,7 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
 	handlers = (GenericHandler *) (service + 1);
 
 	/* Get our method and invoke it. */
-	/* TODO: seems like handler==NULL is a situation that needs handling. */
+	/** \todo seems like handler==NULL is a situation that needs handling. */
 	handler = handlers[method_index];
 	(*handler)(service, input, closure, closure_data);
 }
