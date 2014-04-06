@@ -177,24 +177,24 @@ typedef enum {
  *     https://developers.google.com/protocol-buffers/docs/proto#scalar
  */
 typedef enum {
-	PROTOBUF_C_TYPE_INT32,
-	PROTOBUF_C_TYPE_SINT32,
-	PROTOBUF_C_TYPE_SFIXED32,
-	PROTOBUF_C_TYPE_INT64,
-	PROTOBUF_C_TYPE_SINT64,
-	PROTOBUF_C_TYPE_SFIXED64,
-	PROTOBUF_C_TYPE_UINT32,
-	PROTOBUF_C_TYPE_FIXED32,
-	PROTOBUF_C_TYPE_UINT64,
-	PROTOBUF_C_TYPE_FIXED64,
-	PROTOBUF_C_TYPE_FLOAT,
-	PROTOBUF_C_TYPE_DOUBLE,
-	PROTOBUF_C_TYPE_BOOL,
-	PROTOBUF_C_TYPE_ENUM,
-	PROTOBUF_C_TYPE_STRING,
-	PROTOBUF_C_TYPE_BYTES,
+	PROTOBUF_C_TYPE_INT32,    /**< int32 */
+	PROTOBUF_C_TYPE_SINT32,   /**< signed int32 */
+	PROTOBUF_C_TYPE_SFIXED32, /**< signed int32 */
+	PROTOBUF_C_TYPE_INT64,    /**< int64 */
+	PROTOBUF_C_TYPE_SINT64,   /**< signed int64 */
+	PROTOBUF_C_TYPE_SFIXED64, /**< signed int64 */
+	PROTOBUF_C_TYPE_UINT32,   /**< unsigned int32 */
+	PROTOBUF_C_TYPE_FIXED32,  /**< unsigned int32 */
+	PROTOBUF_C_TYPE_UINT64,   /**< unsigned int64 */
+	PROTOBUF_C_TYPE_FIXED64,  /**< unsigned int64 */
+	PROTOBUF_C_TYPE_FLOAT,    /**< float */
+	PROTOBUF_C_TYPE_DOUBLE,   /**< double */
+	PROTOBUF_C_TYPE_BOOL,     /**< boolean value */
+	PROTOBUF_C_TYPE_ENUM,     /**< enumerated value */
+	PROTOBUF_C_TYPE_STRING,   /**< string */
+	PROTOBUF_C_TYPE_BYTES,    /**< array of bytes */
 	/* PROTOBUF_C_TYPE_GROUP,	-- NOT SUPPORTED */
-	PROTOBUF_C_TYPE_MESSAGE,
+	PROTOBUF_C_TYPE_MESSAGE,  /**< Nested message. */
 } ProtobufCType;
 
 /** Data structure for \c bytes type.
@@ -360,12 +360,13 @@ struct _ProtobufCFieldDescriptor {
 	/**< Reserved for future use in the implementation. */
 };
 
+/** Field flag types. */
 typedef enum {
-	/* Set if the field is repeated and marked with the 'packed' option. */
 	PROTOBUF_C_FIELD_FLAG_PACKED		= (1 << 0),
-
-	/* Set if the field is marked with the 'deprecated' option. */
+	/**< Set if the field is repeated and marked with the
+         * 'packed' option. */
 	PROTOBUF_C_FIELD_FLAG_DEPRECATED	= (1 << 1),
+	/**< Set if the field is marked with the 'deprecated' option. */
 } ProtobufCFieldFlag;
 
 /** Description of a message.
@@ -657,27 +658,30 @@ struct _ProtobufCEnumValueIndex {
 	unsigned	index; /* into values[] array */
 };
 
-/*
- * IntRange: helper structure for optimizing int => index lookups in the case
+/** Helper structure for optimizing int => index lookups.
+ *
+ * Helper structure for optimizing int => index lookups in the case
  * where the keys are mostly consecutive values, as they presumably are for
  * enums and fields.
  *
  * The data structures assumes that the values in the original array are
  * sorted.
+ *
+ * NOTE: the number of values in the range can be inferred by looking
+ * at the next element's orig_index. A dummy element is added to make
+ * this simple.
  */
 struct _ProtobufCIntRange {
 	int		start_value;
+        /**< TODO */
 	unsigned	orig_index;
-	/*
-	 * NOTE: the number of values in the range can be inferred by looking
-	 * at the next element's orig_index. A dummy element is added to make
-	 * this simple.
-	 */
+        /**< TODO */
 };
 
 /* === declared for exposition on ProtobufCIntRange === */
 
-/*
+/** Lookup int ranges.
+ *
  * Note: ranges must have an extra sentinel IntRange at the end whose
  * orig_index is set to the number of actual values in the original array.
  * Returns -1 if no orig_index found.
