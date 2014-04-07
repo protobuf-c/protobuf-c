@@ -204,8 +204,8 @@ typedef enum {
  */
 typedef struct _ProtobufCBinaryData ProtobufCBinaryData;
 struct _ProtobufCBinaryData {
-	size_t	len;
-	uint8_t	*data;
+	size_t	len;    /**< Length of data. */
+	uint8_t	*data;  /**< Data pointer. */
 };
 
 typedef struct _ProtobufCIntRange ProtobufCIntRange; /* private */
@@ -245,9 +245,10 @@ extern PROTOBUF_C_API ProtobufCAllocator protobuf_c_default_allocator; /* settab
  */
 typedef struct _ProtobufCBuffer ProtobufCBuffer;
 struct _ProtobufCBuffer {
-	void		(*append)(ProtobufCBuffer *buffer,
-				  size_t len,
-				  const uint8_t *data);
+	void (*append)(              /**< Append function. */
+            ProtobufCBuffer *buffer, /**< Buffer pointer. */
+            size_t len,              /**< Length of data. */
+            const uint8_t *data);    /**< Pointer to the data. */
 };
 
 /* --- enums --- */
@@ -259,13 +260,12 @@ typedef struct _ProtobufCEnumDescriptor ProtobufCEnumDescriptor;
 /** Represents a single value of an enumeration. */
 struct _ProtobufCEnumValue {
 	const char	*name;
-	/**< is the string identifying this value, as given in the .proto
+	/**< The string identifying this value, as given in the .proto
          * file. */
 	const char	*c_name;
-	/**< is the full name of the C enumeration value. */
+	/**< The full name of the C enumeration value. */
 	int		value;
-	/**< is the number assigned to this value, as given in the .proto
-         * file. */
+	/**< The number assigned to this value, as given in the .proto file. */
 };
 
 /** Represents the enum as a whole, with all its values.
@@ -285,6 +285,7 @@ struct _ProtobufCEnumDescriptor {
 	const char			*short_name;
 	/**< The unqualified name ("Type"), as given in the .proto file. */
 	const char			*c_name;
+        /**< The full name of the C enumeration value. */
 	const char			*package_name;
 	/**< The '.'-separated namespace */
 
@@ -346,12 +347,12 @@ struct _ProtobufCFieldDescriptor {
 	unsigned		offset;
 	/**< The offset in bytes into the message's C structure
          * for the member itself. */
-	const void		*descriptor; /* for MESSAGE and ENUM types */
+	const void		*descriptor;
 	/**< Pointer to a \c ProtobufC{Enum,Message}Descriptor if type
          * is \c PROTOBUF_C_TYPE_{ENUM,MESSAGE} respectively, otherwise
-         * NULL. */
-	const void		*default_value; /* can be NULL */
-	/**< pointer to a default value for this field, where allowed. */
+         * NULL.  For MESSAGE and ENUM types. */
+	const void		*default_value;
+	/**< pointer to a default value for this field, where allowed.  Can be NULL. */
 	uint32_t		flags;
 	/**< A flag word.  Zero or more of the bits defined in the
          * \c ProtobufCFieldFlag enum may be set. */
@@ -376,7 +377,6 @@ typedef enum {
 /** Description of a message.
  *
  * Describes the components of a specific message.
- *
  */
 struct _ProtobufCMessageDescriptor {
 	uint32_t			magic;
@@ -411,7 +411,7 @@ struct _ProtobufCMessageDescriptor {
 	/**< Used for looking up fields by id. (private) */
 
 	ProtobufCMessageInit		message_init;
-	/** Function to initialise the message. */
+	/**< Function to initialise the message. */
 	void				*reserved1;
 	/**< Reserved for future use in the implementation. */
 	void				*reserved2;
@@ -535,23 +535,26 @@ protobuf_c_message_init(const ProtobufCMessageDescriptor *descriptor,
 /* --- services --- */
 
 typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
+/** Method descriptor. */
 struct _ProtobufCMethodDescriptor {
-	const char				*name;
-	const ProtobufCMessageDescriptor	*input;
-	const ProtobufCMessageDescriptor	*output;
+	const char			 *name;   /**< Method name. */
+	const ProtobufCMessageDescriptor *input;  /**< Input message. */
+	const ProtobufCMessageDescriptor *output; /**< Output message. */
 };
 
 typedef struct _ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
+/** Service descriptor. */
 struct _ProtobufCServiceDescriptor {
-	uint32_t			magic;
+	uint32_t			magic;       /**< Check value. */
 
-	const char			*name;
-	const char			*short_name;
-	const char			*c_name;
-	const char			*package;
-	unsigned			n_methods;
-	const ProtobufCMethodDescriptor	*methods; /* in order from .proto file */
+	const char			*name;       /**< Service name. */
+	const char			*short_name; /**< Short version of service name. */
+	const char			*c_name;     /**< Name of service in C. */
+	const char			*package;    /**< Package name. */
+	unsigned			n_methods;   /**< Number of methods. */
+	const ProtobufCMethodDescriptor	*methods;    /**< In order from .proto file. */
 	const unsigned			*method_indices_by_name;
+                                                     /**< Sort index of methods. */
 };
 
 /** Callback for ProtobufCService.
@@ -562,14 +565,17 @@ struct _ProtobufCServiceDescriptor {
 typedef void (*ProtobufCClosure)(const ProtobufCMessage *, void *closure_data);
 
 typedef struct _ProtobufCService ProtobufCService;
+/** Service structure. */
 struct _ProtobufCService {
-	const ProtobufCServiceDescriptor *descriptor;
-	void (*invoke)(ProtobufCService *service,
-		       unsigned method_index,
-		       const ProtobufCMessage *input,
-		       ProtobufCClosure closure,
-		       void *closure_data);
-	void (*destroy)(ProtobufCService *service);
+	const ProtobufCServiceDescriptor *descriptor; /**< Service descriptor. */
+	void (*invoke)(                               /**< Function to invoke service. */
+                       ProtobufCService *service,     /**< Service struct. */
+		       unsigned method_index,         /**< Method index. */
+		       const ProtobufCMessage *input, /**< Input method. */
+		       ProtobufCClosure closure,      /**< Callback. */
+		       void *closure_data);           /**< Data for callback. */
+	void (*destroy)(                              /**< Function to destroy service. */
+            ProtobufCService *service);               /**< Service. */
 };
 
 /** Free a service.
@@ -722,8 +728,11 @@ do {									\
  * Available for users of \c libprotobuf-c but tied to the current
  * implementation of the compiler; might change in the future.
  * @{ */
+/** Value to confirm the descriptor is initialised correctly. */
 #define PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC	0x14159bc3
+/** Value to confirm the descriptor is initialised correctly. */
 #define PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC	0x28aaeef9
+/** Value to confirm the descriptor is initialised correctly. */
 #define PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC	0x114315af
 
 #ifndef _PROTOBUF_C_FORCE_ENUM_TO_BE_INT_SIZE

@@ -1743,13 +1743,14 @@ parse_tag_and_wiretype(size_t len,
 /* sizeof(ScannedMember) must be <= (1<<BOUND_SIZEOF_SCANNED_MEMBER_LOG2) */
 #define BOUND_SIZEOF_SCANNED_MEMBER_LOG2 5
 typedef struct _ScannedMember ScannedMember;
+/** Field as its being read. */
 struct _ScannedMember {
-	uint32_t tag;
-	uint8_t wire_type;
-	uint8_t length_prefix_len;
-	const ProtobufCFieldDescriptor *field;
-	size_t len;
-	const uint8_t *data;
+	uint32_t tag;              /**< Field tag. */
+	uint8_t wire_type;         /**< Field type. */
+	uint8_t length_prefix_len; /**< Prefix length. */
+	const ProtobufCFieldDescriptor *field; /**< Field descriptor. */
+	size_t len;                /**< Field length. */
+	const uint8_t *data;       /**< Pointer to field data. */
 };
 
 static inline uint32_t
