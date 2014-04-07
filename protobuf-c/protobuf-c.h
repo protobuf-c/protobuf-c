@@ -321,6 +321,10 @@ struct _ProtobufCEnumDescriptor {
 typedef struct _ProtobufCMessageDescriptor ProtobufCMessageDescriptor;
 typedef struct _ProtobufCFieldDescriptor ProtobufCFieldDescriptor;
 typedef struct _ProtobufCMessage ProtobufCMessage;
+/** Function type to initialise \c ProtobufCMessage.
+ *
+ * \param[in] message Message to initialise.
+ */
 typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
 
 /** Description of a single field in a message. */
@@ -528,6 +532,11 @@ struct _ProtobufCServiceDescriptor {
 	const unsigned			*method_indices_by_name;
 };
 
+/** Callback for ProtobufCService.
+ *
+ * \param[in] message Message passed to callback.
+ * \param[in] closure_data Black box data for callback routine.
+ */
 typedef void (*ProtobufCClosure)(const ProtobufCMessage *, void *closure_data);
 
 typedef struct _ProtobufCService ProtobufCService;
@@ -541,31 +550,78 @@ struct _ProtobufCService {
 	void (*destroy)(ProtobufCService *service);
 };
 
+/** Free a service.
+ *
+ * \param[in,out] service Service to free.
+ */
 PROTOBUF_C_API void
-protobuf_c_service_destroy(ProtobufCService *);
+protobuf_c_service_destroy(ProtobufCService *service);
 
 /* --- querying the descriptors --- */
 
+/** Get \c ProtobufCEnumValue by name.
+ *
+ * Using an enum descriptor and an enum name, get its value.
+ *
+ * \param[in] desc Enum descriptor.
+ * \param[in] name Enum name.
+ * \return A \c ProtobufCEnumValue pointer.
+ */
 PROTOBUF_C_API const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value_by_name(
 	const ProtobufCEnumDescriptor *desc,
 	const char *name);
 
+/** Get \c ProtobufCEnumValue by value.
+ *
+ * Using an enum descriptor and a value, get its \c ProtobufCEnumValue.
+ *
+ * \param[in] desc Enum descriptor.
+ * \param[in] value Value of an enum.
+ * \return A \c ProtobufCEnumValue pointer.
+ */
 PROTOBUF_C_API const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value(
 	const ProtobufCEnumDescriptor *desc,
 	int value);
 
+/** Get \c ProtobufCFieldDescriptor by name.
+ *
+ * Using a message descriptor and a field name, get its
+ * \c ProtobufCFieldDescriptor.
+ *
+ * \param[in] desc Message descriptor.
+ * \param[in] name Name of a field.
+ * \return A \c ProtobufCEnumValue pointer.
+ */
 PROTOBUF_C_API const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field_by_name(
 	const ProtobufCMessageDescriptor *desc,
 	const char *name);
 
+/** Get \c ProtobufCFieldDescriptor by value.
+ *
+ * Using a message descriptor and a value, get its
+ * \c ProtobufCFieldDescriptor.
+ *
+ * \param[in] desc Message descriptor.
+ * \param[in] value The field id.
+ * \return A \c ProtobufCEnumValue pointer.
+ */
 PROTOBUF_C_API const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field(
 	const ProtobufCMessageDescriptor *desc,
 	unsigned value);
 
+/** Get \c ProtobufCMethodDescriptor by name.
+ *
+ * Using a service descriptor and a method name, get its
+ * \c ProtobufCMethodDescriptor.
+ *
+ * \param[in] desc Service descriptor.
+ * \param[in] name Method name.
+ * \return A \c ProtobufCMethodDescriptor pointer.
+ */
 PROTOBUF_C_API const ProtobufCMethodDescriptor *
 protobuf_c_service_descriptor_get_method_by_name(
 	const ProtobufCServiceDescriptor *desc,
@@ -573,35 +629,51 @@ protobuf_c_service_descriptor_get_method_by_name(
 
 /* --- wire format enums --- */
 
+/** Enum of possible field types. */
 typedef enum {
-	PROTOBUF_C_WIRE_TYPE_VARINT,
-	PROTOBUF_C_WIRE_TYPE_64BIT,
-	PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED,
-	PROTOBUF_C_WIRE_TYPE_START_GROUP,	/* unsupported */
-	PROTOBUF_C_WIRE_TYPE_END_GROUP,		/* unsupported */
-	PROTOBUF_C_WIRE_TYPE_32BIT
+	PROTOBUF_C_WIRE_TYPE_VARINT,          /**< Variable int type. */
+	PROTOBUF_C_WIRE_TYPE_64BIT,           /**< 64 bit int type. */
+	PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED, /**< Length prefixed type. */
+	PROTOBUF_C_WIRE_TYPE_START_GROUP,     /**< Unsupported. */
+	PROTOBUF_C_WIRE_TYPE_END_GROUP,	      /**< Unsupported. */
+	PROTOBUF_C_WIRE_TYPE_32BIT            /**< 32 bit int type. */
 } ProtobufCWireType;
 
 /* --- unknown message fields --- */
 
+/** Structure for an unknown field. */
 struct _ProtobufCMessageUnknownField {
 	uint32_t		tag;
+        /**< Field tag. */
 	ProtobufCWireType	wire_type;
+        /**< Field type. */
 	size_t			len;
+        /**< Field length. */
 	uint8_t			*data;
+        /**< Pointer to the field data. */
 };
 
 /* --- extra (superfluous) api: trivial buffer --- */
 
 typedef struct _ProtobufCBufferSimple ProtobufCBufferSimple;
+/** Simple buffer used by protobuf_c_buffer_simple_append().
+ *
+ * "Subclass" of \c ProtobufCBuffer.  Extra members are for accounting info.
+ */
 struct _ProtobufCBufferSimple {
 	ProtobufCBuffer		base;
+        /**< Base class. */
 	size_t			alloced;
+        /**< Amount of memory allocated. */
 	size_t			len;
+        /**< Actual data length. */
 	uint8_t			*data;
+        /**< Data pointer. */
 	protobuf_c_boolean	must_free_data;
+        /**< Whether memory should be freed. */
 };
 
+/** Initialise a \c ProtobufCBufferSimple instance. */
 #define PROTOBUF_C_BUFFER_SIMPLE_INIT(array_of_bytes)			\
 {									\
 	{ protobuf_c_buffer_simple_append },				\
@@ -611,6 +683,7 @@ struct _ProtobufCBufferSimple {
 	0								\
 }
 
+/** Clear a \c ProtobufCBufferSimple instance. */
 #define PROTOBUF_C_BUFFER_SIMPLE_CLEAR(simp_buf)			\
 do {									\
 	if ((simp_buf)->must_free_data) {				\
@@ -645,6 +718,14 @@ do {									\
 
 /* === needs to be declared for the PROTOBUF_C_BUFFER_SIMPLE_INIT macro === */
 
+/** Function to append data to \c ProtobufCBuffer .
+ *
+ * Used by the PROTOBUF_C_BUFFER_SIMPLE_INIT() macro.
+ *
+ * \param[in,out] buffer The buffer to append data to.
+ * \param[in] len Length of data to append.
+ * \param[in] data Data to append.
+ */
 void
 protobuf_c_buffer_simple_append(
 	ProtobufCBuffer *buffer,
@@ -653,9 +734,13 @@ protobuf_c_buffer_simple_append(
 
 /* === stuff which needs to be declared for use in the generated code === */
 
+/** Used for the sorted list of enums by name.
+ *
+ * This defines the element in the list of enums sorted by name.
+ */
 struct _ProtobufCEnumValueIndex {
-	const char	*name;
-	unsigned	index; /* into values[] array */
+	const char	*name; /**< The enum name. */
+	unsigned	index; /**< Index into values[] array. */
 };
 
 /** Helper structure for optimizing int => index lookups.
