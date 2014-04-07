@@ -162,9 +162,9 @@ typedef int protobuf_c_boolean;
  *     https://developers.google.com/protocol-buffers/docs/proto#updating
  */
 typedef enum {
-	PROTOBUF_C_LABEL_REQUIRED,
-	PROTOBUF_C_LABEL_OPTIONAL,
-	PROTOBUF_C_LABEL_REPEATED
+	PROTOBUF_C_LABEL_REQUIRED, /**< Required field. */
+	PROTOBUF_C_LABEL_OPTIONAL, /**< Optional field. */
+	PROTOBUF_C_LABEL_REPEATED  /**< Repeated field. */
 } ProtobufCLabel;
 
 /** Enumeration of the field types.
@@ -484,18 +484,40 @@ PROTOBUF_C_API size_t
 protobuf_c_message_pack_to_buffer(const ProtobufCMessage *message,
     ProtobufCBuffer *out);
 
+/** Unpack message from serialised format.
+ *
+ * \param[in] descriptor Message descriptor.
+ * \param[in] allocator Functions to manage memory.
+ * \param[in] len Length of the serialised message.
+ * \param[in] data Pointer to the serialised message.
+ * \return Allocated message structure.
+ */
 PROTOBUF_C_API ProtobufCMessage *
 protobuf_c_message_unpack(
-	const ProtobufCMessageDescriptor *,
-	ProtobufCAllocator *,
+	const ProtobufCMessageDescriptor *descriptor,
+	ProtobufCAllocator *allocator,
 	size_t len,
 	const uint8_t *data);
 
+/** Free unpacked message.
+ *
+ * Free message after it is created from a protobuf_c_message_unpack() call.
+ *
+ * \param[in,out] message Message to be freed.
+ * \param[in] allocator Functions to manage memory.
+ */
 PROTOBUF_C_API void
-protobuf_c_message_free_unpacked(ProtobufCMessage *, ProtobufCAllocator *);
+protobuf_c_message_free_unpacked(ProtobufCMessage *message,
+    ProtobufCAllocator *allocator);
 
+/** Check validity of message.
+ *
+ * Make sure all required fields (\c PROTOBUF_C_LABEL_REQUIRED ) are checked.
+ *
+ * \param[in,out] message Message to be freed.
+ */
 PROTOBUF_C_API protobuf_c_boolean
-protobuf_c_message_check(const ProtobufCMessage *);
+protobuf_c_message_check(const ProtobufCMessage *message);
 
 /** Initialise message.
  *
