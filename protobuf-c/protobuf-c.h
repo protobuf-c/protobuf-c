@@ -138,7 +138,7 @@ protobuf_c_version_number(void);
  * The version of the protobuf-c headers, represented as a string using
  * the same format as protobuf_c_version().
  */
-#define PROTOBUF_C_VERSION		"1.0.0-pre"
+#define PROTOBUF_C_VERSION		"1.0.0-rc1"
 
 /** The numeric version of the library as a #define.
  *

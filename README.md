@@ -2,13 +2,17 @@
 
 ## Overview
 
-This is `protobuf-c`, a C implementation of [Google Protocol Buffers](https://developers.google.com/protocol-buffers/). It includes `libprotobuf-c`, a pure C library that implements protobuf encoding and decoding, and `protoc-c`, a code generator that converts Protocol Buffer `.proto` files to C descriptor code, based on the original `protoc`. `protobuf-c` formerly included an RPC implementation; that code has been split out into the [protobuf-c-rpc](https://github.com/protobuf-c/protobuf-c-rpc) project.
+This is `protobuf-c`, a C implementation of the [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) data serialization format. It includes `libprotobuf-c`, a pure C library that implements protobuf encoding and decoding, and `protoc-c`, a code generator that converts Protocol Buffer `.proto` files to C descriptor code, based on the original `protoc`. `protobuf-c` formerly included an RPC implementation; that code has been split out into the [protobuf-c-rpc](https://github.com/protobuf-c/protobuf-c-rpc) project.
 
-`protobuf-c` was originally maintained by Dave Benson through version 0.15 but is now being maintained by a new team. Thanks, Dave!
+`protobuf-c` was originally written by Dave Benson and maintained by him through version 0.15 but is now being maintained by a new team. Thanks, Dave!
+
+## Mailing list
+
+`protobuf-c`'s mailing list is hosted on a [Google Groups forum](https://groups.google.com/forum/#!forum/protobuf-c). Subscribe by sending an email to [protobuf-c+subscribe@googlegroups.com](mailto:protobuf-c+subscribe@googlegroups.com).
 
 ## Building
 
-`protobuf-c` requires a C compiler, a C++ compiler, [Google Protocol Buffers](https://developers.google.com/protocol-buffers/), and `pkg-config` to be installed.
+`protobuf-c` requires a C compiler, a C++ compiler, [protobuf](https://code.google.com/p/protobuf/), and `pkg-config` to be installed.
 
     ./configure && make && make install
 
@@ -18,21 +22,27 @@ If building from a git checkout, the `autotools` (`autoconf`, `automake`, `libto
 
 ## Synopsis
 
-Include the `protobuf-c` header file:
+Use the `protoc-c` command to generate `.pb-c.c` and `.pb-c.h` output files from your `.proto` input file.
 
-    #include <protobuf-c/protobuf-c.h>
+    protoc-c --c_out=. example.proto
 
-Link against the `protobuf-c` library.
+Include the `.pb-c.h` file from your C source code.
 
-    -lprotobuf-c
+    #include "example.pb-c.h"
 
-`libprotobuf-c` includes a `pkg-config` file. It is recommended to use the `pkg-config` system in order to determine the complete set of compiler and linker flags for building applications that utilize `libprotobuf-c`. If using `pkg-config` with `autoconf`, the `PKG_CHECK_MODULES` macro can be used to detect the presence of `libprotobuf-c`:
+Compile your C source code together with the `.pb-c.c` file. Add the output of the following command to your compile flags.
 
-    PKG_CHECK_MODULES([PROTOBUF_C], [libprotobuf-c])
+    pkg-config --cflags 'libprotobuf-c >= 1.0.0'
 
-This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable.
+Link against the `libprotobuf-c` support library. Add the output of the following command to your link flags.
 
-Note that the `protobuf-c` header file was installed as `google/protobuf-c/protobuf-c.h` in previous versions. A compatibility symlink has been left in place to avoid breaking existing code.
+    pkg-config --libs 'libprotobuf-c >= 1.0.0'
+
+If using autotools, the `PKG_CHECK_MODULES` macro can be used to detect the presence of `libprotobuf-c`. Add the following line to your `configure.ac` file:
+
+    PKG_CHECK_MODULES([PROTOBUF_C], [libprotobuf-c >= 1.0.0])
+
+This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable. Read [more information here](https://www.flameeyes.eu/autotools-mythbuster/pkgconfig/pkg_check_modules.html) about the `PKG_CHECK_MODULES` macro.
 
 ## Versioning
 
