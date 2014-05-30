@@ -52,12 +52,12 @@ protobuf-c (1.0.0) UNRELEASED
   * Optionally allow running the test suite under valgrind with ./configure
     --enable-valgrind-tests. (Based on valgrind-tests.m4 from gnulib.)
 
-  [Kevin Lyda]
+  [ Kevin Lyda ]
   * Autoconf portability fixes.
 
   * Add doxygen detection and make targets to the build system.
 
-  [Nick Galbreath]
+  [ Nick Galbreath ]
   * Prevent possible overflow on 64-bit systems (Issue #106).
 
   [ Robert Edmonds ]
@@ -113,7 +113,7 @@ protobuf-c (1.0.0) UNRELEASED
     BSD-3-Clause. Dave Benson also converted his license from BSD-3-Clause
     to BSD-2-Clause.
 
-  [Tomasz Wasilczyk]
+  [ Tomasz Wasilczyk ]
   * Don't export protobuf_c_message_init_generic() as an external symbol.
 
   * Don't use C++ style comments in C code.
