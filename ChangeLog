@@ -108,6 +108,10 @@ protobuf-c (1.0.0) UNRELEASED
     compiled against a protobuf-c header file from the exact same protobuf-c
     release.
 
+  * Add a --enable-code-coverage option to configure, which enables a
+    "make check-code-coverage" build target. This generates a code coverage
+    report and requires the lcov tool to be installed.
+
   * Update copyright and license statements throughout. The original
     protobuf code released by Google was relicensed from Apache-2.0 to
     BSD-3-Clause. Dave Benson also converted his license from BSD-3-Clause
