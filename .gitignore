@@ -8,6 +8,8 @@
 *.o
 *.tar.gz
 *.trs
+*.gcno
+*.gcda
 .deps/
 .dirstamp
 .libs/
@@ -36,3 +38,5 @@ t/version/version
 *.pb-c.h
 *.pb.cc
 *.pb.h
+/coverage.info
+/htmlcov

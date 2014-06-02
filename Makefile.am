@@ -19,8 +19,8 @@ AM_CPPFLAGS = \
 	-I${top_srcdir}/protobuf-c \
 	-I${top_builddir} \
 	-I${top_srcdir}
-AM_CFLAGS = ${my_CFLAGS}
-AM_LDFLAGS =
+AM_CFLAGS = ${my_CFLAGS} $(COVERAGE_CFLAGS)
+AM_LDFLAGS = $(COVERAGE_LDFLAGS)
 
 # code coverage
 
@@ -127,13 +127,15 @@ t_generated_code_test_generated_code_SOURCES = \
 	t/generated-code/test-generated-code.c \
 	t/test.pb-c.c
 t_generated_code_test_generated_code_LDADD = \
-	protobuf-c/libprotobuf-c.la
+	protobuf-c/libprotobuf-c.la \
+	$(COVERAGE_LDFLAGS)
 
 t_generated_code2_test_generated_code2_SOURCES = \
 	t/generated-code2/test-generated-code2.c \
 	t/test-full.pb-c.c
 t_generated_code2_test_generated_code2_LDADD = \
-	protobuf-c/libprotobuf-c.la
+	protobuf-c/libprotobuf-c.la \
+	$(COVERAGE_LDFLAGS)
 
 noinst_PROGRAMS += \
 	t/generated-code2/cxx-generate-packed-data
@@ -142,11 +144,13 @@ t_generated_code2_cxx_generate_packed_data_SOURCES = \
 	t/generated-code2/cxx-generate-packed-data.cc \
 	t/test-full.pb.cc
 t/generated-code2/cxx-generate-packed-data.$(OBJEXT): t/test-full.pb.h
-t_generated_code2_cxx_generate_packed_data_CXXFLAGS = \
+t_generated_code2_cxx_generate_packed_data_CFLAGS = \
 	$(AM_CXXFLAGS) \
-	$(protobuf_CFLAGS)
+	$(protobuf_CFLAGS) \
+	$(COVERAGE_CXXFLAGS)
 t_generated_code2_cxx_generate_packed_data_LDADD = \
-	$(protobuf_LIBS)
+	$(protobuf_LIBS) \
+	$(COVERAGE_LDFLAGS)
 
 t/test.pb-c.c t/test.pb-c.h: $(top_builddir)/protoc-c/protoc-c$(EXEEXT) $(top_srcdir)/t/test.proto
 	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test.proto
@@ -199,3 +203,37 @@ include aminclude_doxygen.am
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
 endif # DOXYGEN_TARGET
+
+# Coverage targets
+
+if HAVE_GCOV
+
+.PHONY: coverage-html clean-gcda clean-gcno
+.PHONY: generate-coverage-html clean-coverage-html
+coverage-html: clean-gcda
+	@$(MAKE) $(AM_MAKEFLAGS) -k check
+	@$(MAKE) $(AM_MAKEFLAGS) generate-coverage-html
+
+generate-coverage-html:
+	@echo Collecting coverage data
+	$(LCOV) --directory $(top_builddir) -b $(top_builddir) --capture --output-file coverage.info --no-checksum --compat-libtool
+	LANG=C $(GENHTML) --prefix $(top_builddir) --output-directory htmlcov --title "Code Coverage" --legend --show-details coverage.info
+
+clean-coverage-html: clean-gcda
+	@$(LCOV) --directory $(top_builddir) -z
+
+else
+
+.PHONY: coverage-html clean-gcda clean-gcno
+clean-coverage-html: clean-gcda
+	@rm -rf coverage.info htmlcov
+
+endif # HAVE_GCOV
+
+clean-gcda:
+	@find -name '*.gcda' -print | xargs -r rm
+
+clean-gcno:
+	@find -name '*.gcno' -print | xargs -r rm
+
+clean-local: clean-coverage-html clean-gcno
