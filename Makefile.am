@@ -22,6 +22,14 @@ AM_CPPFLAGS = \
 AM_CFLAGS = ${my_CFLAGS}
 AM_LDFLAGS =
 
+# code coverage
+
+AM_CFLAGS += ${CODE_COVERAGE_CFLAGS}
+AM_LDFLAGS += ${CODE_COVERAGE_LDFLAGS}
+CODE_COVERAGE_LCOV_OPTIONS = --no-external
+CODE_COVERAGE_IGNORE_PATTERN = "$(abs_top_builddir)/t/*"
+@CODE_COVERAGE_RULES@
+
 #
 # libprotobuf-c
 #

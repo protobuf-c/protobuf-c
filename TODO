@@ -19,7 +19,6 @@
   - message unpack alloc failures when allocating unknown field buffers
   - packed message corruption.
     - meta-todo: get a list of all the unpack errors together to check off
-- run gcov
 
 ---------------------
 --- DOCUMENTATION ---

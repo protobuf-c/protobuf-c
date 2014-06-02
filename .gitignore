@@ -1,6 +1,8 @@
 *~
 .*swp
 *.la
+*.gcda
+*.gcno
 *.lo
 *.log
 *.o
@@ -18,6 +20,8 @@
 /configure
 /doxygen-doc
 /libtool
+/protobuf-c-*-coverage.info
+/protobuf-c-*-coverage/
 /stamp-h1
 /test-suite.log
 TAGS
