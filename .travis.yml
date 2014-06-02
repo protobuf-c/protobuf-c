@@ -9,11 +9,14 @@ before_install:
     - sudo apt-get update -qq
 
 install:
-    - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev
-      valgrind
+    - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev valgrind lcov
+    - sudo pip install cpp-coveralls
 
 script:
     - ./autogen.sh
     - ./configure && make distcheck VERBOSE=1 && make clean
-    - ./configure --enable-valgrind-tests && make distcheck
-      DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests" VERBOSE=1
+    - ./configure --enable-valgrind-tests && make distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests" VERBOSE=1 && make clean
+    - if [ "$CC" = "gcc" ]; then ./configure --enable-code-coverage && make && make check; fi
+
+after_success:
+    - if [ "$CC" = "gcc" ]; then cpp-coveralls --build-root . --exclude t/ --exclude /usr/include; fi
