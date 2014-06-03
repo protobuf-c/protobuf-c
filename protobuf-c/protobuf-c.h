@@ -103,6 +103,12 @@ protobuf_c_version_number(void);
  */
 #define PROTOBUF_C_VERSION_NUMBER	1000000
 
+/**
+ * The minimum protoc-c version which works with the current version of the
+ * protobuf-c headers.
+ */
+#define PROTOBUF_C_MIN_COMPILER_VERSION	1000000
+
 typedef int protobuf_c_boolean;
 
 typedef enum {
