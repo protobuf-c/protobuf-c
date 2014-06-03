@@ -29,8 +29,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __PROTOBUF_C_RUNTIME_H_
-#define __PROTOBUF_C_RUNTIME_H_
+#ifndef PROTOBUF_C_H
+#define PROTOBUF_C_H
 
 #include <assert.h>
 #include <stddef.h>
@@ -585,4 +585,4 @@ protobuf_c_service_invoke_internal(
 
 PROTOBUF_C_END_DECLS
 
-#endif /* __PROTOBUF_C_RUNTIME_H_ */
+#endif /* PROTOBUF_C_H */
