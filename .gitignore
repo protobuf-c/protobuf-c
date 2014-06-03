@@ -11,6 +11,7 @@
 .deps/
 .dirstamp
 .libs/
+/Doxyfile
 /Makefile
 /Makefile.in
 /aclocal.m4
@@ -19,10 +20,12 @@
 /config.*
 /configure
 /doxygen-doc
+/html
 /libtool
 /protobuf-c-*-coverage.info
 /protobuf-c-*-coverage/
 /stamp-h1
+/stamp-html
 /test-suite.log
 TAGS
 protobuf-c/libprotobuf-c.pc

@@ -24,6 +24,15 @@ LT_INIT
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([Makefile protobuf-c/libprotobuf-c.pc])
 
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+AM_CONDITIONAL([HAVE_DOXYGEN],
+               [test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN],
+           [AC_CONFIG_FILES([Doxyfile])
+            DOXYGEN_INPUT="${srcdir}/protobuf-c"
+            AC_SUBST(DOXYGEN_INPUT)
+           ])
+
 PKG_PROG_PKG_CONFIG
 if test -n "$PKG_CONFIG"; then
     # Horrible hack for systems where the pkg-config install directory is simply wrong!
@@ -33,14 +42,6 @@ if test -n "$PKG_CONFIG"; then
         PKG_INSTALLDIR
     fi
 fi
-
-DX_DOXYGEN_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
-DX_PS_FEATURE(OFF)
-DX_MAN_FEATURE(ON)
-DX_INIT_DOXYGEN([protobuf-c], [Doxyfile], [doxygen-doc])
-AS_IF([test "x$DX_DOXYGEN" != "x"], [has_doxygen=yes], [has_doxygen=no])
-AM_CONDITIONAL([DOXYGEN_TARGET], [test "x$has_doxygen" = "xyes"])
 
 AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
@@ -94,5 +95,4 @@ AC_MSG_RESULT([
 
         bigendian:              ${ac_cv_c_bigendian}
         protobuf version:       ${PROTOBUF_VERSION}
-        doxygen docs:           ${has_doxygen}
 ])

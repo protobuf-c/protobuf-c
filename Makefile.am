@@ -192,10 +192,19 @@ install-data-hook:
 	cd $(DESTDIR)$(includedir)/google/protobuf-c && rm -vf protobuf-c.h
 	cd $(DESTDIR)$(includedir)/google/protobuf-c && $(LN_S) ../../protobuf-c/protobuf-c.h protobuf-c.h
 
-if DOXYGEN_TARGET
+#
+# documentation
+#
 
-include aminclude_doxygen.am
+if HAVE_DOXYGEN
+stamp-html: $(DOXYGEN_INPUT_FILES) $(top_builddir)/Doxyfile $(top_srcdir)/DoxygenLayout.xml $(include_HEADERS) $(nobase_include_HEADERS)
+	$(AM_V_GEN) $(DOXYGEN)
+	@touch $@
+html-local: stamp-html
 
-MOSTLYCLEANFILES = $(DX_CLEANFILES)
+clean-local:
+	rm -rf $(top_builddir)/html $(top_builddir)/stamp-html
+endif
 
-endif # DOXYGEN_TARGET
+EXTRA_DIST += Doxyfile.in
+EXTRA_DIST += DoxygenLayout.xml
