@@ -29,7 +29,6 @@ fi
 DX_DOXYGEN_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
-DX_MAN_FEATURE(ON)
 DX_INIT_DOXYGEN([protobuf-c], [Doxyfile], [doxygen-doc])
 AS_IF([test "x$DX_DOXYGEN" != "x"], [has_doxygen=yes], [has_doxygen=no])
 AM_CONDITIONAL([DOXYGEN_TARGET], [test "x$has_doxygen" = "xyes"])
