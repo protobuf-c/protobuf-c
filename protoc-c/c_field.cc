@@ -145,16 +145,16 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
       if (optional_uses_has) {
-	printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, has_$name$),\n");
+	printer->Print(variables, "  offsetof($classname$, has_$name$),\n");
       } else {
 	printer->Print(variables, "  0,   /* quantifier_offset */\n");
       }
       break;
     case FieldDescriptor::LABEL_REPEATED:
-      printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, n_$name$),\n");
+      printer->Print(variables, "  offsetof($classname$, n_$name$),\n");
       break;
   }
-  printer->Print(variables, "  PROTOBUF_C_OFFSETOF($classname$, $name$),\n");
+  printer->Print(variables, "  offsetof($classname$, $name$),\n");
   printer->Print(variables, "  $descriptor_addr$,\n");
   printer->Print(variables, "  $default_value$,\n");
   printer->Print(variables, "  $flags$,             /* flags */\n");

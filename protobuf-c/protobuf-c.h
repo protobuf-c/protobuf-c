@@ -53,8 +53,6 @@
 # define PROTOBUF_C_DEPRECATED
 #endif
 
-#define PROTOBUF_C_OFFSETOF(struct, member) offsetof(struct, member)
-
 #if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
 # ifdef PROTOBUF_C_EXPORT
 #  define PROTOBUF_C_API __declspec(dllexport)
