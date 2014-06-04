@@ -135,17 +135,17 @@ typedef enum {
 	PROTOBUF_C_TYPE_MESSAGE,
 } ProtobufCType;
 
-typedef struct _ProtobufCBinaryData ProtobufCBinaryData;
-struct _ProtobufCBinaryData {
+typedef struct ProtobufCBinaryData ProtobufCBinaryData;
+struct ProtobufCBinaryData {
 	size_t	len;
 	uint8_t	*data;
 };
 
-typedef struct _ProtobufCIntRange ProtobufCIntRange; /* private */
+typedef struct ProtobufCIntRange ProtobufCIntRange; /* private */
 
 /* --- memory management --- */
-typedef struct _ProtobufCAllocator ProtobufCAllocator;
-struct _ProtobufCAllocator
+typedef struct ProtobufCAllocator ProtobufCAllocator;
+struct ProtobufCAllocator
 {
 	void		*(*alloc)(void *allocator_data, size_t size);
 	void		(*free)(void *allocator_data, void *pointer);
@@ -163,8 +163,8 @@ struct _ProtobufCAllocator
 extern PROTOBUF_C_API ProtobufCAllocator protobuf_c_default_allocator; /* settable */
 
 /* --- append-only data buffer --- */
-typedef struct _ProtobufCBuffer ProtobufCBuffer;
-struct _ProtobufCBuffer {
+typedef struct ProtobufCBuffer ProtobufCBuffer;
+struct ProtobufCBuffer {
 	void		(*append)(ProtobufCBuffer *buffer,
 				  size_t len,
 				  const uint8_t *data);
@@ -172,9 +172,9 @@ struct _ProtobufCBuffer {
 
 /* --- enums --- */
 
-typedef struct _ProtobufCEnumValue ProtobufCEnumValue;
-typedef struct _ProtobufCEnumValueIndex ProtobufCEnumValueIndex;
-typedef struct _ProtobufCEnumDescriptor ProtobufCEnumDescriptor;
+typedef struct ProtobufCEnumValue ProtobufCEnumValue;
+typedef struct ProtobufCEnumValueIndex ProtobufCEnumValueIndex;
+typedef struct ProtobufCEnumDescriptor ProtobufCEnumDescriptor;
 
 /*
  * ProtobufCEnumValue: this represents a single value of an enumeration.
@@ -182,7 +182,7 @@ typedef struct _ProtobufCEnumDescriptor ProtobufCEnumDescriptor;
  * 'c_name' is the full name of the C enumeration value.
  * 'value' is the number assigned to this value, as given in the .proto file.
  */
-struct _ProtobufCEnumValue {
+struct ProtobufCEnumValue {
 	const char	*name;
 	const char	*c_name;
 	int		value;
@@ -206,7 +206,7 @@ struct _ProtobufCEnumValue {
  * and protobuf_c_enum_descriptor_get_value() to efficiently
  * lookup values in the descriptor.
  */
-struct _ProtobufCEnumDescriptor {
+struct ProtobufCEnumDescriptor {
 	uint32_t			magic;
 
 	const char			*name;
@@ -234,9 +234,9 @@ struct _ProtobufCEnumDescriptor {
 
 /* --- messages --- */
 
-typedef struct _ProtobufCMessageDescriptor ProtobufCMessageDescriptor;
-typedef struct _ProtobufCFieldDescriptor ProtobufCFieldDescriptor;
-typedef struct _ProtobufCMessage ProtobufCMessage;
+typedef struct ProtobufCMessageDescriptor ProtobufCMessageDescriptor;
+typedef struct ProtobufCFieldDescriptor ProtobufCFieldDescriptor;
+typedef struct ProtobufCMessage ProtobufCMessage;
 typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
 
 /*
@@ -259,7 +259,7 @@ typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
  * 'flags' is a flag word. Zero or more of the bits defined in the
  *        ProtobufCFieldFlag enum may be set.
  */
-struct _ProtobufCFieldDescriptor {
+struct ProtobufCFieldDescriptor {
 	const char		*name;
 	uint32_t		id;
 	ProtobufCLabel		label;
@@ -298,7 +298,7 @@ typedef enum {
  * 'fields_sorted_by_name', 'n_field_ranges' and 'field_ranges'
  *       are used for looking up fields by name and id. (private)
  */
-struct _ProtobufCMessageDescriptor {
+struct ProtobufCMessageDescriptor {
 	uint32_t			magic;
 
 	const char			*name;
@@ -342,8 +342,8 @@ struct _ProtobufCMessageDescriptor {
  * 'n_unknown_fields' is the number of fields we didn't recognize.
  * 'unknown_fields' are fields we didn't recognize.
  */
-typedef struct _ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
-struct _ProtobufCMessage {
+typedef struct ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
+struct ProtobufCMessage {
 	const ProtobufCMessageDescriptor	*descriptor;
 	unsigned				n_unknown_fields;
 	ProtobufCMessageUnknownField		*unknown_fields;
@@ -391,15 +391,15 @@ protobuf_c_message_init(const ProtobufCMessageDescriptor *, void *message);
 
 /* --- services --- */
 
-typedef struct _ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
-struct _ProtobufCMethodDescriptor {
+typedef struct ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
+struct ProtobufCMethodDescriptor {
 	const char				*name;
 	const ProtobufCMessageDescriptor	*input;
 	const ProtobufCMessageDescriptor	*output;
 };
 
-typedef struct _ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
-struct _ProtobufCServiceDescriptor {
+typedef struct ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
+struct ProtobufCServiceDescriptor {
 	uint32_t			magic;
 
 	const char			*name;
@@ -413,8 +413,8 @@ struct _ProtobufCServiceDescriptor {
 
 typedef void (*ProtobufCClosure)(const ProtobufCMessage *, void *closure_data);
 
-typedef struct _ProtobufCService ProtobufCService;
-struct _ProtobufCService {
+typedef struct ProtobufCService ProtobufCService;
+struct ProtobufCService {
 	const ProtobufCServiceDescriptor *descriptor;
 	void (*invoke)(ProtobufCService *service,
 		       unsigned method_index,
@@ -467,7 +467,7 @@ typedef enum {
 
 /* --- unknown message fields --- */
 
-struct _ProtobufCMessageUnknownField {
+struct ProtobufCMessageUnknownField {
 	uint32_t		tag;
 	ProtobufCWireType	wire_type;
 	size_t			len;
@@ -476,8 +476,8 @@ struct _ProtobufCMessageUnknownField {
 
 /* --- extra (superfluous) api: trivial buffer --- */
 
-typedef struct _ProtobufCBufferSimple ProtobufCBufferSimple;
-struct _ProtobufCBufferSimple {
+typedef struct ProtobufCBufferSimple ProtobufCBufferSimple;
+struct ProtobufCBufferSimple {
 	ProtobufCBuffer		base;
 	size_t			alloced;
 	size_t			len;
@@ -529,7 +529,7 @@ protobuf_c_buffer_simple_append(
 
 /* === stuff which needs to be declared for use in the generated code === */
 
-struct _ProtobufCEnumValueIndex {
+struct ProtobufCEnumValueIndex {
 	const char	*name;
 	unsigned	index; /* into values[] array */
 };
@@ -542,7 +542,7 @@ struct _ProtobufCEnumValueIndex {
  * The data structures assumes that the values in the original array are
  * sorted.
  */
-struct _ProtobufCIntRange {
+struct ProtobufCIntRange {
 	int		start_value;
 	unsigned	orig_index;
 	/*
