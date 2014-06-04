@@ -54,6 +54,8 @@
 #define TRUE				1
 #define FALSE				0
 
+#define PROTOBUF_C__ASSERT_NOT_REACHED() assert(0)
+
 /* The maximum length of a 64 bit integer in varint encoding. */
 #define MAX_UINT64_ENCODED_SIZE		10
 
@@ -356,7 +358,7 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 		return rv + uint32_size(subrv) + subrv;
 	}
 	}
-	PROTOBUF_C_ASSERT_NOT_REACHED();
+	PROTOBUF_C__ASSERT_NOT_REACHED();
 	return 0;
 }
 
@@ -778,7 +780,7 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 		out[0] |= PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED;
 		return rv + prefixed_message_pack(*(ProtobufCMessage * const *) member, out + rv);
 	}
-	PROTOBUF_C_ASSERT_NOT_REACHED();
+	PROTOBUF_C__ASSERT_NOT_REACHED();
 	return 0;
 }
 
@@ -828,7 +830,7 @@ sizeof_elt_in_repeated_array(ProtobufCType type)
 	case PROTOBUF_C_TYPE_BYTES:
 		return sizeof(ProtobufCBinaryData);
 	}
-	PROTOBUF_C_ASSERT_NOT_REACHED();
+	PROTOBUF_C__ASSERT_NOT_REACHED();
 	return 0;
 }
 
@@ -954,7 +956,7 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 			break;
 		}
 		default:
-			PROTOBUF_C_ASSERT_NOT_REACHED();
+			PROTOBUF_C__ASSERT_NOT_REACHED();
 		}
 
 		payload_len = payload_at - (out + header_len);
@@ -1131,7 +1133,7 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		break;
 	}
 	default:
-		PROTOBUF_C_ASSERT_NOT_REACHED();
+		PROTOBUF_C__ASSERT_NOT_REACHED();
 	}
 	return rv;
 }
@@ -1205,7 +1207,7 @@ get_packed_payload_length(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_BOOL:
 		return count;
 	default:
-		PROTOBUF_C_ASSERT_NOT_REACHED();
+		PROTOBUF_C__ASSERT_NOT_REACHED();
 	}
 	return rv;
 }
@@ -1293,7 +1295,7 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 		}
 		return count;
 	default:
-		PROTOBUF_C_ASSERT_NOT_REACHED();
+		PROTOBUF_C__ASSERT_NOT_REACHED();
 	}
 	return rv;
 
@@ -2126,7 +2128,7 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 		}
 		break;
 	default:
-		PROTOBUF_C_ASSERT_NOT_REACHED();
+		PROTOBUF_C__ASSERT_NOT_REACHED();
 	}
 	*p_n += count;
 	return TRUE;
@@ -2191,7 +2193,7 @@ parse_member(ScannedMember *scanned_member,
 						     allocator);
 		}
 	}
-	PROTOBUF_C_ASSERT_NOT_REACHED();
+	PROTOBUF_C__ASSERT_NOT_REACHED();
 	return 0;
 }
 
