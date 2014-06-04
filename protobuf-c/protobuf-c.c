@@ -75,16 +75,16 @@
 /* Assertions for magic numbers. */
 
 #define ASSERT_IS_ENUM_DESCRIPTOR(desc) \
-	assert((desc)->magic == PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC)
+	assert((desc)->magic == PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC)
 
 #define ASSERT_IS_MESSAGE_DESCRIPTOR(desc) \
-	assert((desc)->magic == PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
+	assert((desc)->magic == PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC)
 
 #define ASSERT_IS_MESSAGE(message) \
 	ASSERT_IS_MESSAGE_DESCRIPTOR((message)->descriptor)
 
 #define ASSERT_IS_SERVICE_DESCRIPTOR(desc) \
-	assert((desc)->magic == PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC)
+	assert((desc)->magic == PROTOBUF_C__SERVICE_DESCRIPTOR_MAGIC)
 
 /* --- version --- */
 
@@ -2661,7 +2661,7 @@ protobuf_c_message_check(const ProtobufCMessage *message)
 {
 	if (!message ||
 	    !message->descriptor ||
-	    message->descriptor->magic != PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC)
+	    message->descriptor->magic != PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC)
 	{
 		return FALSE;
 	}

@@ -467,7 +467,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
   printer->Print(vars,
   "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
   "{\n"
-  "  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,\n"
+  "  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,\n"
   "  \"$fullname$\",\n"
   "  \"$shortname$\",\n"
   "  \"$classname$\",\n"

@@ -505,9 +505,9 @@ do {									\
 
 /* ====== private ====== */
 
-#define PROTOBUF_C_SERVICE_DESCRIPTOR_MAGIC	0x14159bc3
-#define PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC	0x28aaeef9
-#define PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC	0x114315af
+#define PROTOBUF_C__SERVICE_DESCRIPTOR_MAGIC	0x14159bc3
+#define PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC	0x28aaeef9
+#define PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC	0x114315af
 
 /*
  * A little enum helper macro: this will ensure that your enum's size is
