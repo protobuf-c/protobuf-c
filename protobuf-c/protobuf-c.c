@@ -2727,7 +2727,7 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
 	 * likely invoking a newly added method on an old service.  (Although
 	 * other memory corruption bugs can cause this assertion too.)
 	*/
-	PROTOBUF_C_ASSERT(method_index < service->descriptor->n_methods);
+	assert(method_index < service->descriptor->n_methods);
 
 	/*
 	 * Get the array of virtual methods (which are enumerated by the

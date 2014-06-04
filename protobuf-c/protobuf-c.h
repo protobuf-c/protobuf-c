@@ -45,8 +45,6 @@
 # define PROTOBUF_C_END_DECLS
 #endif
 
-#define PROTOBUF_C_ASSERT(condition) assert(condition)
-
 #if !defined(PROTOBUF_C_NO_DEPRECATED)
 # if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
 #  define PROTOBUF_C_DEPRECATED __attribute__((__deprecated__))
