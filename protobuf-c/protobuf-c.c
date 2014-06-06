@@ -41,7 +41,6 @@
  * the verb.  NOTE: perhaps the "parse" methods should be renamed to "unpack" at
  * the same time. (this only affects internal (static) functions)
  *
- * use TRUE and FALSE instead of 1 and 0 as appropriate.
  *
  * use size_t consistently.
  */
@@ -159,7 +158,7 @@ protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
 		if (simp->must_free_data)
 			do_free(&protobuf_c_default_allocator, simp->data);
 		else
-			simp->must_free_data = 1;
+			simp->must_free_data = TRUE;
 		simp->data = new_data;
 		simp->alloced = new_alloced;
 	}
@@ -667,7 +666,7 @@ fixed64_pack(uint64_t value, void *out)
 static inline size_t
 boolean_pack(protobuf_c_boolean value, uint8_t *out)
 {
-	*out = value ? 1 : 0;
+	*out = value ? TRUE : FALSE;
 	return 1;
 }
 
@@ -1558,7 +1557,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 					new_field = do_alloc(allocator,
 						(*n_earlier + *n_latter) * el_size);
 					if (!new_field)
-						return 0;
+						return FALSE;
 
 					memcpy(new_field, *p_latter,
 					       *n_latter * el_size);
@@ -1593,7 +1592,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 				if (*lm != NULL) {
 					if (!merge_messages
 					    (*em, *lm, allocator))
-						return 0;
+						return FALSE;
 				} else {
 					/* Zero copy the optional message */
 					assert(fields[i].label ==
@@ -1604,7 +1603,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 			}
 		} else if (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL) {
 			size_t el_size = 0;
-			protobuf_c_boolean need_to_merge = 0;
+			protobuf_c_boolean need_to_merge = FALSE;
 			void *earlier_elem =
 				STRUCT_MEMBER_P(earlier_msg, fields[i].offset);
 			void *latter_elem =
@@ -1666,16 +1665,16 @@ merge_messages(ProtobufCMessage *earlier_msg,
 					STRUCT_MEMBER(protobuf_c_boolean,
 						      latter_msg,
 						      fields[i].
-						      quantifier_offset) = 1;
+						      quantifier_offset) = TRUE;
 					STRUCT_MEMBER(protobuf_c_boolean,
 						      earlier_msg,
 						      fields[i].
-						      quantifier_offset) = 0;
+						      quantifier_offset) = FALSE;
 				}
 			}
 		}
 	}
-	return 1;
+	return TRUE;
 }
 
 /*
@@ -1823,8 +1822,8 @@ parse_boolean(unsigned len, const uint8_t *data)
 	unsigned i;
 	for (i = 0; i < len; i++)
 		if (data[i] & 0x7f)
-			return 1;
-	return 0;
+			return TRUE;
+	return FALSE;
 }
 
 static protobuf_c_boolean
@@ -1840,58 +1839,58 @@ parse_required_member(ScannedMember *scanned_member,
 	switch (scanned_member->field->type) {
 	case PROTOBUF_C_TYPE_INT32:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return 0;
+			return FALSE;
 		*(uint32_t *) member = parse_int32(len, data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_UINT32:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return 0;
+			return FALSE;
 		*(uint32_t *) member = parse_uint32(len, data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_SINT32:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return 0;
+			return FALSE;
 		*(int32_t *) member = unzigzag32(parse_uint32(len, data));
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
 	case PROTOBUF_C_TYPE_FLOAT:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_32BIT)
-			return 0;
+			return FALSE;
 		*(uint32_t *) member = parse_fixed_uint32(data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_INT64:
 	case PROTOBUF_C_TYPE_UINT64:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return 0;
+			return FALSE;
 		*(uint64_t *) member = parse_uint64(len, data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_SINT64:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return 0;
+			return FALSE;
 		*(int64_t *) member = unzigzag64(parse_uint64(len, data));
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
 	case PROTOBUF_C_TYPE_DOUBLE:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_64BIT)
-			return 0;
+			return FALSE;
 		*(uint64_t *) member = parse_fixed_uint64(data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_BOOL:
 		*(protobuf_c_boolean *) member = parse_boolean(len, data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_ENUM:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return 0;
+			return FALSE;
 		*(uint32_t *) member = parse_uint32(len, data);
-		return 1;
+		return TRUE;
 	case PROTOBUF_C_TYPE_STRING: {
 		char **pstr = member;
 		unsigned pref_len = scanned_member->length_prefix_len;
 
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
-			return 0;
+			return FALSE;
 
 		if (maybe_clear && *pstr != NULL) {
 			const char *def = scanned_member->field->default_value;
@@ -1900,10 +1899,10 @@ parse_required_member(ScannedMember *scanned_member,
 		}
 		*pstr = do_alloc(allocator, len - pref_len + 1);
 		if (*pstr == NULL)
-			return 0;
+			return FALSE;
 		memcpy(*pstr, data + pref_len, len - pref_len);
 		(*pstr)[len - pref_len] = 0;
-		return 1;
+		return TRUE;
 	}
 	case PROTOBUF_C_TYPE_BYTES: {
 		ProtobufCBinaryData *bd = member;
@@ -1911,7 +1910,7 @@ parse_required_member(ScannedMember *scanned_member,
 		unsigned pref_len = scanned_member->length_prefix_len;
 
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
-			return 0;
+			return FALSE;
 
 		def_bd = scanned_member->field->default_value;
 		if (maybe_clear &&
@@ -1923,22 +1922,22 @@ parse_required_member(ScannedMember *scanned_member,
 		if (len - pref_len > 0) {
 			bd->data = do_alloc(allocator, len - pref_len);
 			if (bd->data == NULL)
-				return 0;
+				return FALSE;
 			memcpy(bd->data, data + pref_len, len - pref_len);
 		}
 		bd->len = len - pref_len;
-		return 1;
+		return TRUE;
 	}
 	/* case PROTOBUF_C_TYPE_GROUP: -- NOT SUPPORTED */
 	case PROTOBUF_C_TYPE_MESSAGE: {
 		ProtobufCMessage **pmessage = member;
 		ProtobufCMessage *subm;
 		const ProtobufCMessage *def_mess;
-		protobuf_c_boolean merge_successful = 1;
+		protobuf_c_boolean merge_successful = TRUE;
 		unsigned pref_len = scanned_member->length_prefix_len;
 
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
-			return 0;
+			return FALSE;
 
 		def_mess = scanned_member->field->default_value;
 		subm = protobuf_c_message_unpack(scanned_member->field->descriptor,
@@ -1957,11 +1956,11 @@ parse_required_member(ScannedMember *scanned_member,
 		}
 		*pmessage = subm;
 		if (subm == NULL || !merge_successful)
-			return 0;
-		return 1;
+			return FALSE;
+		return TRUE;
 	}
 	}
-	return 0;
+	return FALSE;
 }
 
 static protobuf_c_boolean
@@ -1971,12 +1970,12 @@ parse_optional_member(ScannedMember *scanned_member,
 		      ProtobufCAllocator *allocator)
 {
 	if (!parse_required_member(scanned_member, member, allocator, TRUE))
-		return 0;
+		return FALSE;
 	if (scanned_member->field->quantifier_offset != 0)
 		STRUCT_MEMBER(protobuf_c_boolean,
 			      message,
-			      scanned_member->field->quantifier_offset) = 1;
-	return 1;
+			      scanned_member->field->quantifier_offset) = TRUE;
+	return TRUE;
 }
 
 static protobuf_c_boolean
@@ -1993,10 +1992,10 @@ parse_repeated_member(ScannedMember *scanned_member,
 	if (!parse_required_member(scanned_member, array + siz * (*p_n),
 				   allocator, FALSE))
 	{
-		return 0;
+		return FALSE;
 	}
 	*p_n += 1;
-	return 1;
+	return TRUE;
 }
 
 static unsigned
@@ -2167,9 +2166,9 @@ parse_member(ScannedMember *scanned_member,
 		ufield->len = scanned_member->len;
 		ufield->data = do_alloc(allocator, scanned_member->len);
 		if (ufield->data == NULL)
-			return 0;
+			return FALSE;
 		memcpy(ufield->data, scanned_member->data, ufield->len);
-		return 1;
+		return TRUE;
 	}
 	member = (char *) message + field->offset;
 	switch (field->label) {
@@ -2312,7 +2311,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	unsigned required_fields_bitmap_len;
 	unsigned char required_fields_bitmap_stack[16];
 	unsigned char *required_fields_bitmap = required_fields_bitmap_stack;
-	protobuf_c_boolean required_fields_bitmap_alloced = 0;
+	protobuf_c_boolean required_fields_bitmap_alloced = FALSE;
 
 	ASSERT_IS_MESSAGE_DESCRIPTOR(desc);
 
@@ -2331,7 +2330,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			do_free(allocator, rv);
 			return (NULL);
 		}
-		required_fields_bitmap_alloced = 1;
+		required_fields_bitmap_alloced = TRUE;
 	}
 	memset(required_fields_bitmap, 0, required_fields_bitmap_len);
 
