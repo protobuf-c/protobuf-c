@@ -225,8 +225,8 @@ void FileGenerator::GenerateSource(io::Printer* printer) {
     "/* Generated from: $filename$ */\n"
     "\n"
     "/* Do not generate deprecated warnings for self */\n"
-    "#ifndef PROTOBUF_C_NO_DEPRECATED\n"
-    "#define PROTOBUF_C_NO_DEPRECATED\n"
+    "#ifndef PROTOBUF_C__NO_DEPRECATED\n"
+    "#define PROTOBUF_C__NO_DEPRECATED\n"
     "#endif\n"
     "\n"
     "#include \"$basename$.pb-c.h\"\n",

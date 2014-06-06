@@ -45,12 +45,12 @@
 # define PROTOBUF_C__END_DECLS
 #endif
 
-#if !defined(PROTOBUF_C_NO_DEPRECATED)
+#if !defined(PROTOBUF_C__NO_DEPRECATED)
 # if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
-#  define PROTOBUF_C_DEPRECATED __attribute__((__deprecated__))
+#  define PROTOBUF_C__DEPRECATED __attribute__((__deprecated__))
 # endif
 #else
-# define PROTOBUF_C_DEPRECATED
+# define PROTOBUF_C__DEPRECATED
 #endif
 
 #if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
