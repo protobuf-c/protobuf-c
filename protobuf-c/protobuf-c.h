@@ -38,11 +38,11 @@
 #include <limits.h>
 
 #ifdef __cplusplus
-# define PROTOBUF_C_BEGIN_DECLS	extern "C" {
-# define PROTOBUF_C_END_DECLS	}
+# define PROTOBUF_C__BEGIN_DECLS	extern "C" {
+# define PROTOBUF_C__END_DECLS		}
 #else
-# define PROTOBUF_C_BEGIN_DECLS
-# define PROTOBUF_C_END_DECLS
+# define PROTOBUF_C__BEGIN_DECLS
+# define PROTOBUF_C__END_DECLS
 #endif
 
 #if !defined(PROTOBUF_C_NO_DEPRECATED)
@@ -63,7 +63,7 @@
 # define PROTOBUF_C_API
 #endif
 
-PROTOBUF_C_BEGIN_DECLS
+PROTOBUF_C__BEGIN_DECLS
 
 /**
  * Get the version of the protobuf-c library. Note that this is the version of
@@ -578,6 +578,6 @@ protobuf_c_service_invoke_internal(
 	ProtobufCClosure closure,
 	void *closure_data);
 
-PROTOBUF_C_END_DECLS
+PROTOBUF_C__END_DECLS
 
 #endif /* PROTOBUF_C_H */
