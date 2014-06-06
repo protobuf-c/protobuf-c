@@ -55,12 +55,12 @@
 
 #if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
 # ifdef PROTOBUF_C_EXPORT
-#  define PROTOBUF_C_API __declspec(dllexport)
+#  define PROTOBUF_C__API __declspec(dllexport)
 # else
-#  define PROTOBUF_C_API __declspec(dllimport)
+#  define PROTOBUF_C__API __declspec(dllimport)
 # endif
 #else
-# define PROTOBUF_C_API
+# define PROTOBUF_C__API
 #endif
 
 PROTOBUF_C__BEGIN_DECLS
@@ -71,7 +71,7 @@ PROTOBUF_C__BEGIN_DECLS
  *
  * \return A string containing the version number of protobuf-c.
  */
-PROTOBUF_C_API
+PROTOBUF_C__API
 const char *
 protobuf_c_version(void);
 
@@ -82,7 +82,7 @@ protobuf_c_version(void);
  * \return A 32 bit unsigned integer containing the version number of
  *	protobuf-c, represented in base-10 as (MAJOR*1E6) + (MINOR*1E3) + PATCH.
  */
-PROTOBUF_C_API
+PROTOBUF_C__API
 uint32_t
 protobuf_c_version_number(void);
 
@@ -158,7 +158,7 @@ struct ProtobufCAllocator
  *
  * NOTE: you may modify this allocator.
  */
-extern PROTOBUF_C_API ProtobufCAllocator protobuf_c_default_allocator; /* settable */
+extern PROTOBUF_C__API ProtobufCAllocator protobuf_c_default_allocator; /* settable */
 
 /* --- append-only data buffer --- */
 typedef struct ProtobufCBuffer ProtobufCBuffer;
@@ -358,33 +358,33 @@ struct ProtobufCMessage {
  * (2) Provide a virtual buffer (a ProtobufCBuffer) to
  *     accept data as we scan through it.
  */
-PROTOBUF_C_API size_t
+PROTOBUF_C__API size_t
 protobuf_c_message_get_packed_size(const ProtobufCMessage *);
 
-PROTOBUF_C_API size_t
+PROTOBUF_C__API size_t
 protobuf_c_message_pack(const ProtobufCMessage *, uint8_t *out);
 
-PROTOBUF_C_API size_t
+PROTOBUF_C__API size_t
 protobuf_c_message_pack_to_buffer(const ProtobufCMessage *, ProtobufCBuffer *);
 
-PROTOBUF_C_API ProtobufCMessage *
+PROTOBUF_C__API ProtobufCMessage *
 protobuf_c_message_unpack(
 	const ProtobufCMessageDescriptor *,
 	ProtobufCAllocator *,
 	size_t len,
 	const uint8_t *data);
 
-PROTOBUF_C_API void
+PROTOBUF_C__API void
 protobuf_c_message_free_unpacked(ProtobufCMessage *, ProtobufCAllocator *);
 
-PROTOBUF_C_API protobuf_c_boolean
+PROTOBUF_C__API protobuf_c_boolean
 protobuf_c_message_check(const ProtobufCMessage *);
 
 /*
  * WARNING: 'message' must be a block of memory of size
  * descriptor->sizeof_message.
  */
-PROTOBUF_C_API void
+PROTOBUF_C__API void
 protobuf_c_message_init(const ProtobufCMessageDescriptor *, void *message);
 
 /* --- services --- */
@@ -422,32 +422,32 @@ struct ProtobufCService {
 	void (*destroy)(ProtobufCService *service);
 };
 
-PROTOBUF_C_API void
+PROTOBUF_C__API void
 protobuf_c_service_destroy(ProtobufCService *);
 
 /* --- querying the descriptors --- */
 
-PROTOBUF_C_API const ProtobufCEnumValue *
+PROTOBUF_C__API const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value_by_name(
 	const ProtobufCEnumDescriptor *desc,
 	const char *name);
 
-PROTOBUF_C_API const ProtobufCEnumValue *
+PROTOBUF_C__API const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value(
 	const ProtobufCEnumDescriptor *desc,
 	int value);
 
-PROTOBUF_C_API const ProtobufCFieldDescriptor *
+PROTOBUF_C__API const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field_by_name(
 	const ProtobufCMessageDescriptor *desc,
 	const char *name);
 
-PROTOBUF_C_API const ProtobufCFieldDescriptor *
+PROTOBUF_C__API const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field(
 	const ProtobufCMessageDescriptor *desc,
 	unsigned value);
 
-PROTOBUF_C_API const ProtobufCMethodDescriptor *
+PROTOBUF_C__API const ProtobufCMethodDescriptor *
 protobuf_c_service_descriptor_get_method_by_name(
 	const ProtobufCServiceDescriptor *desc,
 	const char *name);
