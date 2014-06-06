@@ -214,7 +214,7 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   printer->Print(
     "\n"
     "PROTOBUF_C_END_DECLS\n"
-    "\n\n#endif  /* PROTOBUF_$filename_identifier$__INCLUDED */\n",
+    "\n\n#endif  /* PROTOBUF_C_$filename_identifier$__INCLUDED */\n",
     "filename_identifier", filename_identifier);
 }
 
