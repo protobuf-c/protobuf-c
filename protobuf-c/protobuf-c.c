@@ -164,11 +164,11 @@ do_free(ProtobufCAllocator *allocator, void *data)
 }
 
 /*
- * Some users may configure the default allocator; providing your own allocator
- * to unpack() is preferred. This allocator is still used for packing nested
- * messages.
+ * This allocator uses the system's malloc() and free(). It is the default
+ * allocator used if NULL is passed as the ProtobufCAllocator to an exported
+ * function.
  */
-ProtobufCAllocator protobuf_c_default_allocator = {
+static ProtobufCAllocator protobuf_c__allocator = {
 	.alloc = &system_alloc,
 	.free = &system_free,
 	.allocator_data = NULL,
@@ -184,16 +184,20 @@ protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
 	size_t new_len = simp->len + len;
 
 	if (new_len > simp->alloced) {
+		ProtobufCAllocator *allocator = simp->allocator;
 		size_t new_alloced = simp->alloced * 2;
 		uint8_t *new_data;
+
+		if (allocator == NULL)
+			allocator = &protobuf_c__allocator;
 		while (new_alloced < new_len)
 			new_alloced += new_alloced;
-		new_data = do_alloc(&protobuf_c_default_allocator, new_alloced);
+		new_data = do_alloc(allocator, new_alloced);
 		if (!new_data)
 			return;
 		memcpy(new_data, simp->data, simp->len);
 		if (simp->must_free_data)
-			do_free(&protobuf_c_default_allocator, simp->data);
+			do_free(allocator, simp->data);
 		else
 			simp->must_free_data = TRUE;
 		simp->data = new_data;
@@ -2692,7 +2696,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	ASSERT_IS_MESSAGE_DESCRIPTOR(desc);
 
 	if (allocator == NULL)
-		allocator = &protobuf_c_default_allocator;
+		allocator = &protobuf_c__allocator;
 
 	rv = do_alloc(allocator, desc->sizeof_message);
 	if (!rv)
@@ -2960,7 +2964,7 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 
 	ASSERT_IS_MESSAGE(message);
 	if (allocator == NULL)
-		allocator = &protobuf_c_default_allocator;
+		allocator = &protobuf_c__allocator;
 	message->descriptor = NULL;
 	for (f = 0; f < desc->n_fields; f++) {
 		if (desc->fields[f].label == PROTOBUF_C_LABEL_REPEATED) {

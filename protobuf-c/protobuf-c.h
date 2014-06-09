@@ -458,6 +458,8 @@ struct ProtobufCBufferSimple {
 	uint8_t			*data;
 	/** Whether `data` must be freed. */
 	protobuf_c_boolean	must_free_data;
+	/** Allocator to use. May be NULL to indicate the system allocator. */
+	ProtobufCAllocator	*allocator;
 };
 
 /**
@@ -735,17 +737,6 @@ struct ProtobufCServiceDescriptor {
 	/** Sort index of methods. */
 	const unsigned			*method_indices_by_name;
 };
-
-/**
- * The default memory allocator.
- *
- * By default, it uses the system allocator (meaning malloc() and free()).
- * This is typically changed to adapt to frameworks that provide
- * some non-standard allocation functions.
- *
- * NOTE: you may modify this allocator.
- */
-extern PROTOBUF_C__API ProtobufCAllocator protobuf_c_default_allocator;
 
 /**
  * Get the version of the protobuf-c library. Note that this is the version of
@@ -1028,7 +1019,8 @@ protobuf_c_service_descriptor_get_method_by_name(
 	sizeof(array_of_bytes),                                         \
 	0,                                                              \
 	(array_of_bytes),                                               \
-	0                                                               \
+	0,                                                              \
+	NULL                                                            \
 }
 
 /**
@@ -1037,9 +1029,12 @@ protobuf_c_service_descriptor_get_method_by_name(
 #define PROTOBUF_C_BUFFER_SIMPLE_CLEAR(simp_buf)                        \
 do {                                                                    \
 	if ((simp_buf)->must_free_data) {                               \
-		protobuf_c_default_allocator.free(                      \
-			&protobuf_c_default_allocator,                  \
-			(simp_buf)->data);                              \
+		if ((simp_buf)->allocator != NULL)                      \
+			(simp_buf)->allocator->free(                    \
+				(simp_buf)->allocator,                  \
+				(simp_buf)->data);			\
+		else                                                    \
+			free((simp_buf)->data);                         \
 	}                                                               \
 } while (0)
 

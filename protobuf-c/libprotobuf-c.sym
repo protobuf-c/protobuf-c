@@ -1,7 +1,6 @@
 LIBPROTOBUF_C_1.0.0 {
 global:
         protobuf_c_buffer_simple_append;
-        protobuf_c_default_allocator;
         protobuf_c_enum_descriptor_get_value;
         protobuf_c_enum_descriptor_get_value_by_name;
         protobuf_c_message_check;
