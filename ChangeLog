@@ -118,6 +118,23 @@ protobuf-c (1.0.0) UNRELEASED
     Relevant material has been updated and incorporated into the Doxygen
     documentation in the protobuf-c header file.
 
+  * Remove the protobuf_c_default_allocator and protobuf_c_system_allocator
+    global variables from the exported library interface. All exported library
+    functions that need to perform dynamic memory allocation receive a
+    user-provided ProtobufCAllocator* parameter. If this parameter is NULL,
+    the system's default memory allocator will be used.
+
+    Client code that previously passed "&protobuf_c_system_allocator" to
+    protobuf-c library functions taking a ProtobufCAllocator* argument should
+    be updated to pass "NULL" instead.
+
+    Client code that previously overrode protobuf_c_default_allocator with
+    custom allocation functions and passed NULL as the ProtobufCAllocator*
+    argument to protobuf-c library functions should be updated to instead
+    enclose the custom allocation functions in a ProtobufCAllocator struct and
+    pass this object to protobuf-c library functions taking a
+    ProtobufCAllocator* parameter.
+
   * Update copyright and license statements throughout. The original
     protobuf code released by Google was relicensed from Apache-2.0 to
     BSD-3-Clause. Dave Benson also converted his license from BSD-3-Clause
