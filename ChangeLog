@@ -57,6 +57,8 @@ protobuf-c (1.0.0) UNRELEASED
 
   * Add doxygen detection and make targets to the build system.
 
+  * Doxygen documentation for the libprotobuf-c public API (Issue #132).
+
   [ Nick Galbreath ]
   * Prevent possible overflow on 64-bit systems (Issue #106).
 
@@ -111,6 +113,10 @@ protobuf-c (1.0.0) UNRELEASED
   * Add a --enable-code-coverage option to configure, which enables a
     "make check-code-coverage" build target. This generates a code coverage
     report and requires the lcov tool to be installed.
+
+  * Remove the old DocBook documentation in doc/c-code-generator.{html,xml}.
+    Relevant material has been updated and incorporated into the Doxygen
+    documentation in the protobuf-c header file.
 
   * Update copyright and license statements throughout. The original
     protobuf code released by Google was relicensed from Apache-2.0 to
