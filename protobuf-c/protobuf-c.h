@@ -1077,3 +1077,5 @@ protobuf_c_service_invoke_internal(
 PROTOBUF_C__END_DECLS
 
 #endif /* PROTOBUF_C_H */
+
+// vim: tabstop=8 shiftwidth=8 noexpandtab

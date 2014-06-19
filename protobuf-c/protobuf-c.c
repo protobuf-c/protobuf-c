@@ -3247,3 +3247,5 @@ protobuf_c_service_descriptor_get_method_by_name(const ProtobufCServiceDescripto
 		return desc->methods + desc->method_indices_by_name[start];
 	return NULL;
 }
+
+// vim: tabstop=8 shiftwidth=8 noexpandtab
