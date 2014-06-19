@@ -1469,8 +1469,8 @@ test_field_merge (void)
    msg2.test_message = &sub2;
    sub2.has_val2 = 1;
    sub2.val2 = 666;
-   int32_t arr2[] = {2, 3};
-   sub2.n_rep = 2;
+   int32_t arr2[] = {2, 3, 4};
+   sub2.n_rep = 3;
    sub2.rep = arr2;
    sub2.sub1 = &subsub2;
    subsub2.has_val1 = 1;
@@ -1496,8 +1496,8 @@ test_field_merge (void)
    assert (merged->test_message->has_val1 && merged->test_message->val1 == sub1.val1);
    assert (merged->test_message->has_val2 && merged->test_message->val2 == sub2.val2);
    /* Repeated fields should get concatenated */
-   int32_t merged_arr[] = {2, 3, 0, 1};
-   assert (merged->test_message->n_rep == 4 &&
+   int32_t merged_arr[] = {0, 1, 2, 3, 4};
+   assert (merged->test_message->n_rep == 5 &&
            memcmp(merged->test_message->rep, merged_arr, sizeof(merged_arr)) == 0);
 
    assert (merged->test_message->sub1->val1 == subsub2.val1);

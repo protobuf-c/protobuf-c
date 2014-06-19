@@ -1933,12 +1933,12 @@ merge_messages(ProtobufCMessage *earlier_msg,
 					if (!new_field)
 						return FALSE;
 
-					memcpy(new_field, *p_latter,
-					       *n_latter * el_size);
-					memcpy(new_field +
-					       *n_latter * el_size,
-					       *p_earlier,
+					memcpy(new_field, *p_earlier,
 					       *n_earlier * el_size);
+					memcpy(new_field +
+					       *n_earlier * el_size,
+					       *p_latter,
+					       *n_latter * el_size);
 
 					do_free(allocator, *p_latter);
 					do_free(allocator, *p_earlier);
