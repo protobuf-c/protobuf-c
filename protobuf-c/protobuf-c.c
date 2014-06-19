@@ -1590,8 +1590,8 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 			buffer->append(buffer, len, scratch);
 			rv += len;
 		}
-#endif
 		break;
+#endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
 	case PROTOBUF_C_TYPE_DOUBLE:
@@ -1985,7 +1985,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 			const void *def_val = fields[i].default_value;
 
 			switch (fields[i].type) {
-			case PROTOBUF_C_TYPE_BYTES:
+			case PROTOBUF_C_TYPE_BYTES: {
 				el_size = sizeof(ProtobufCBinaryData);
 				uint8_t *e_data =
 					((ProtobufCBinaryData *) earlier_elem)->data;
@@ -2002,7 +2002,8 @@ merge_messages(ProtobufCMessage *earlier_msg,
 					 (d_bd != NULL &&
 					  l_data == d_bd->data));
 				break;
-			case PROTOBUF_C_TYPE_STRING:
+			}
+			case PROTOBUF_C_TYPE_STRING: {
 				el_size = sizeof(char *);
 				char *e_str = *(char **) earlier_elem;
 				char *l_str = *(char **) latter_elem;
@@ -2010,7 +2011,8 @@ merge_messages(ProtobufCMessage *earlier_msg,
 
 				need_to_merge = e_str != d_str && l_str == d_str;
 				break;
-			default:
+			}
+			default: {
 				el_size = sizeof_elt_in_repeated_array(fields[i].type);
 
 				need_to_merge =
@@ -2021,6 +2023,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 						       latter_msg,
 						       fields[i].quantifier_offset);
 				break;
+			}
 			}
 
 			if (need_to_merge) {
@@ -2414,8 +2417,8 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 			((uint32_t *) array)[i] = parse_fixed_uint32(at);
 			at += 4;
 		}
-#endif
 		break;
+#endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
 	case PROTOBUF_C_TYPE_DOUBLE:
