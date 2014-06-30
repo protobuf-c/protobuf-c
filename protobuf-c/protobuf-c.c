@@ -3049,43 +3049,66 @@ protobuf_c_message_check(const ProtobufCMessage *message)
 		return FALSE;
 	}
 
-	unsigned f;
-	for (f = 0; f < message->descriptor->n_fields; f++) {
-		ProtobufCType type = message->descriptor->fields[f].type;
-		ProtobufCLabel label = message->descriptor->fields[f].label;
-		if (type == PROTOBUF_C_TYPE_MESSAGE) {
-			unsigned offset = message->descriptor->fields[f].offset;
-			if (label == PROTOBUF_C_LABEL_REQUIRED) {
-				ProtobufCMessage *sub = *(ProtobufCMessage **)
-					(void *)((char *) message + offset);
-				if (sub == NULL)
-					return FALSE;
-				if (!protobuf_c_message_check(sub))
-					return FALSE;
-			} else if (label == PROTOBUF_C_LABEL_OPTIONAL) {
-				ProtobufCMessage *sub = *(ProtobufCMessage **)
-					(void *)((char *) message + offset);
-				if (sub != NULL && !protobuf_c_message_check(sub))
-					return FALSE;
-			} else if (label == PROTOBUF_C_LABEL_REPEATED) {
-				unsigned n = *(unsigned *)(void *)((char *) message +
-					message->descriptor->fields[f].quantifier_offset);
-				ProtobufCMessage **subs = *(ProtobufCMessage ***)
-					(void *)((char *) message + offset);
-				unsigned i;
-				for (i = 0; i < n; i++)
-					if (!protobuf_c_message_check(subs[i]))
-						return FALSE;
+	unsigned i;
+	for (i = 0; i < message->descriptor->n_fields; i++) {
+		const ProtobufCFieldDescriptor *f = message->descriptor->fields + i;
+		ProtobufCType type = f->type;
+		ProtobufCLabel label = f->label;
+		void *field = STRUCT_MEMBER_P (message, f->offset);
+
+		if (label == PROTOBUF_C_LABEL_REPEATED) {
+			size_t *quantity = STRUCT_MEMBER_P (message, f->quantifier_offset);
+
+			if (*quantity > 0 && *(void **) field == NULL) {
+				return FALSE;
 			}
-		} else if (type == PROTOBUF_C_TYPE_STRING) {
-			if (label == PROTOBUF_C_LABEL_REQUIRED) {
-				char *str = *(char **)(void *)((char *)
-					message + message->descriptor->fields[f].offset);
-				if (str == NULL)
+
+			if (type == PROTOBUF_C_TYPE_MESSAGE) {
+				ProtobufCMessage **submessage = *(ProtobufCMessage ***) field;
+				unsigned j;
+				for (j = 0; j < *quantity; j++) {
+					if (!protobuf_c_message_check(submessage[j]))
+						return FALSE;
+				}
+			} else if (type == PROTOBUF_C_TYPE_STRING) {
+				char **string = *(char ***) field;
+				unsigned j;
+				for (j = 0; j < *quantity; j++) {
+					if (!string[j])
+						return FALSE;
+				}
+			} else if (type == PROTOBUF_C_TYPE_BYTES) {
+				ProtobufCBinaryData *bd = *(ProtobufCBinaryData **) field;
+				unsigned j;
+				for (j = 0; j < *quantity; j++) {
+					if (bd[j].len > 0 && bd[j].data == NULL)
+						return FALSE;
+				}
+			}
+
+		} else { /* PROTOBUF_C_LABEL_REQUIRED or PROTOBUF_C_LABEL_OPTIONAL */
+
+			if (type == PROTOBUF_C_TYPE_MESSAGE) {
+				ProtobufCMessage *submessage = *(ProtobufCMessage **) field;
+				if (label == PROTOBUF_C_LABEL_REQUIRED || submessage != NULL) {
+					if (!protobuf_c_message_check(submessage))
+						return FALSE;
+				}
+			} else if (type == PROTOBUF_C_TYPE_STRING) {
+				char *string = *(char **) field;
+				if (label == PROTOBUF_C_LABEL_REQUIRED && string == NULL)
 					return FALSE;
+			} else if (type == PROTOBUF_C_TYPE_BYTES) {
+				protobuf_c_boolean *has = STRUCT_MEMBER_P (message, f->quantifier_offset);
+				ProtobufCBinaryData *bd = field;
+				if (label == PROTOBUF_C_LABEL_REQUIRED || *has == TRUE) {
+					if (bd->len > 0 && bd->data == NULL)
+						return FALSE;
+				}
 			}
 		}
 	}
+
 	return TRUE;
 }
 

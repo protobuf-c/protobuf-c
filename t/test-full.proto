@@ -362,3 +362,19 @@ message TestFieldFlags {
   repeated int32 packed_deprecated  = 5 [packed=true, deprecated=true];
   repeated int32 deprecated         = 6 [deprecated=true];
 }
+
+message TestMessageCheck {
+  message SubMessage {
+    required string str = 1;
+  }
+  required SubMessage required_msg  = 1;
+  repeated SubMessage repeated_msg  = 2;
+  optional SubMessage optional_msg  = 3;
+  required string required_string   = 4;
+  repeated string repeated_string   = 5;
+  optional string optional_string   = 6;
+  required bytes required_bytes     = 7;
+  repeated bytes repeated_bytes     = 8;
+  optional bytes optional_bytes     = 9;
+}
+

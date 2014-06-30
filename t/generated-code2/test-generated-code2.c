@@ -1648,6 +1648,126 @@ test_field_flags (void)
   assert((f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
 }
 
+static void
+test_message_check(void)
+{
+  Foo__TestMessageCheck__SubMessage sm = FOO__TEST_MESSAGE_CHECK__SUB_MESSAGE__INIT;
+  Foo__TestMessageCheck__SubMessage sm2 = FOO__TEST_MESSAGE_CHECK__SUB_MESSAGE__INIT;
+  Foo__TestMessageCheck m = FOO__TEST_MESSAGE_CHECK__INIT;
+  char *null = NULL;
+  char *str = "";
+  Foo__TestMessageCheck__SubMessage *sm_p;
+  ProtobufCBinaryData bd;
+
+  /* test incomplete submessage */
+  assert(0 == protobuf_c_message_check(&sm.base));
+
+  /* test complete submessage */
+  sm.str = str;
+  assert(1 == protobuf_c_message_check(&sm.base));
+
+  /* test just initialized message */
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with required_string not set */
+  m.required_string = NULL;
+  m.required_msg = &sm;
+  m.required_bytes.data = str; m.required_bytes.len = 1;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with required_msg not set */
+  m.required_string = str;
+  m.required_msg = NULL;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with required_bytes set incorrectly */
+  m.required_msg = &sm;
+  m.required_bytes.data = NULL; m.required_bytes.len = 1;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with all required fields set */
+  m.required_bytes.data = str; m.required_bytes.len = 1;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with incomplete required submessage */
+  sm.str = NULL;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with incomplete optional submessage */
+  sm.str = str;
+  m.optional_msg = &sm2;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with complete optional submessage */
+  sm2.str = str;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with correct optional bytes */
+  m.has_optional_bytes = 1;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with incorrect optional bytes */
+  m.optional_bytes.data = NULL; m.optional_bytes.len = 1;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with correct optional bytes */
+  m.optional_bytes.data = str; m.optional_bytes.len = 1;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated strings set incorrectly */
+  m.n_repeated_string = 1;
+  m.repeated_string = &null;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated strings set correctly */
+  m.repeated_string = &str;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated submessage set incorrectly */
+  sm_p = NULL;
+  m.n_repeated_msg = 1;
+  m.repeated_msg = &sm_p;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated incomplete submessage */
+  sm_p = &sm;
+  sm.str = NULL;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated complete submessage */
+  sm.str = str;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated bytes set incorrectly */
+  bd.len = 1;
+  bd.data = NULL;
+  m.n_repeated_bytes = 1;
+  m.repeated_bytes = &bd;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with repeated bytes set correctly */
+  bd.data = str;
+  assert(1 == protobuf_c_message_check(&m.base));
+
+  /* test with empty repeated string vector */
+  m.repeated_string = NULL;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with empty repeated bytes vector */
+  m.repeated_string = &str;
+  m.repeated_bytes = NULL;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test with empty repeated submessage vector */
+  m.repeated_bytes = &bd;
+  m.repeated_msg = NULL;
+  assert(0 == protobuf_c_message_check(&m.base));
+
+  /* test all vectors set again */
+  m.repeated_msg = &sm_p;
+  assert(1 == protobuf_c_message_check(&m.base));
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -1756,6 +1876,8 @@ static Test tests[] =
   { "test required_fields_bitmap", test_required_fields_bitmap },
 
   { "test field flags", test_field_flags },
+
+  { "test message_check()", test_message_check },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
