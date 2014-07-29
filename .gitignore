@@ -35,6 +35,7 @@ t/generated-code2/cxx-generate-packed-data
 t/generated-code2/test-full-cxx-output.inc
 t/generated-code2/test-generated-code2
 t/version/version
+build-cmake/
 *.pb-c.c
 *.pb-c.h
 *.pb.cc

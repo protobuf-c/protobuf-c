@@ -208,9 +208,11 @@ PROTOBUF_C__BEGIN_DECLS
 #if !defined(PROTOBUF_C__NO_DEPRECATED)
 # if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
 #  define PROTOBUF_C__DEPRECATED __attribute__((__deprecated__))
+# else
+#  define PROTOBUF_C__DEPRECATED
 # endif
 #else
-# define PROTOBUF_C__DEPRECATED
+#define PROTOBUF_C__DEPRECATED
 #endif
 
 #ifndef PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE
