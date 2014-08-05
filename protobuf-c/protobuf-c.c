@@ -2304,6 +2304,8 @@ parse_required_member(ScannedMember *scanned_member,
 			if (bd->data == NULL)
 				return FALSE;
 			memcpy(bd->data, data + pref_len, len - pref_len);
+		} else {
+			bd->data = NULL;
 		}
 		bd->len = len - pref_len;
 		return TRUE;
