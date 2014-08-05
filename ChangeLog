@@ -1,3 +1,9 @@
+protobuf-c (1.0.1)
+
+  [ Robert Edmonds ]
+  * Explicitly set the .data field of ProtobufCBinaryData's to NULL when
+    unpacking a zero length byte string (Issue #157).
+
 protobuf-c (1.0.0)
 
   [ Andrei Nigmatulin ]
