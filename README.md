@@ -12,7 +12,7 @@ This is `protobuf-c`, a C implementation of the [Google Protocol Buffers](https:
 
 ## Building
 
-`protobuf-c` requires a C compiler, a C++ compiler, [protobuf](https://code.google.com/p/protobuf/), and `pkg-config` to be installed.
+`protobuf-c` requires a C compiler, a C++ compiler, [protobuf](https://github.com/google/protobuf), and `pkg-config` to be installed.
 
     ./configure && make && make install
 
