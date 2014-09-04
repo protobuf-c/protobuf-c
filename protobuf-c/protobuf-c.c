@@ -50,6 +50,11 @@
 
 #include "protobuf-c.h"
 
+#ifdef _MSC_VER
+// MSVC does not fully support C99, inline should be replaced
+#define inline _inline
+#endif
+
 #define TRUE				1
 #define FALSE				0
 
@@ -2401,7 +2406,7 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 	const ProtobufCFieldDescriptor *field = scanned_member->field;
 	size_t *p_n = STRUCT_MEMBER_PTR(size_t, message, field->quantifier_offset);
 	size_t siz = sizeof_elt_in_repeated_array(field->type);
-	void *array = *(void **) member + siz * (*p_n);
+	void *array = *(uint8_t **) member + siz * (*p_n);
 	const uint8_t *at = scanned_member->data + scanned_member->length_prefix_len;
 	size_t rem = scanned_member->len - scanned_member->length_prefix_len;
 	size_t count = 0;
