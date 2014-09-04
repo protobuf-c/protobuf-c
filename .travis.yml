@@ -9,7 +9,11 @@ before_install:
     - sudo apt-get update -qq
 
 install:
-    - sudo apt-get -q install protobuf-compiler libprotobuf-dev libprotoc-dev valgrind lcov
+    - wget http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz
+    - tar -xzvf protobuf-2.5.0.tar.gz
+    - cd protobuf-2.5.0 && ./configure CC=gcc CXX=g++ && make -j8 && sudo make install && cd ..
+
+    - sudo apt-get -q install valgrind lcov
     - sudo pip install cpp-coveralls
 
 script:
