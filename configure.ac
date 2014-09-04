@@ -47,7 +47,7 @@ AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
 if test "x$enable_protoc" != "xno"; then
   AC_LANG_PUSH([C++])
-  PKG_CHECK_MODULES([protobuf], [protobuf])
+  PKG_CHECK_MODULES([protobuf], [protobuf >= 2.5.0])
 
   save_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$save_CPPFLAGS $protobuf_CFLAGS"
