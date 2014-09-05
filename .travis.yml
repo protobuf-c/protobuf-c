@@ -1,5 +1,6 @@
-language: c
-language: cpp
+language:
+    - c
+    - cpp
 
 env:
     - PROTOBUF_VERSION=2.5.0
