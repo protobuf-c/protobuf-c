@@ -205,10 +205,9 @@ PROTOBUF_C__BEGIN_DECLS
 # define PROTOBUF_C__API
 #endif
 
-#if !defined(PROTOBUF_C__NO_DEPRECATED)
-# if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
-#  define PROTOBUF_C__DEPRECATED __attribute__((__deprecated__))
-# endif
+#if !defined(PROTOBUF_C__NO_DEPRECATED) && \
+	((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+# define PROTOBUF_C__DEPRECATED __attribute__((__deprecated__))
 #else
 # define PROTOBUF_C__DEPRECATED
 #endif
