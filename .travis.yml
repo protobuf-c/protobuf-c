@@ -17,7 +17,7 @@ install:
     - sudo pip install cpp-coveralls
     - wget https://protobuf.googlecode.com/svn/rc/protobuf-$PROTOBUF_VERSION.tar.gz
     - tar xf protobuf-$PROTOBUF_VERSION.tar.gz
-    - ( cd protobuf-$PROTOBUF_VERSION && ./configure && make -j2 && sudo make install )
+    - ( cd protobuf-$PROTOBUF_VERSION && ./configure && make -j2 && sudo make install && sudo ldconfig )
 
 script:
     - ./autogen.sh
