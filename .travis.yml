@@ -15,7 +15,7 @@ before_install:
 install:
     - sudo apt-get -q install valgrind lcov
     - sudo pip install cpp-coveralls
-    - wget https://protobuf.googlecode.com/svn/rc/protobuf-$PROTOBUF_VERSION.tar.gz
+    - wget https://github.com/google/protobuf/releases/download/v$PROTOBUF_VERSION/protobuf-$PROTOBUF_VERSION.tar.gz
     - tar xf protobuf-$PROTOBUF_VERSION.tar.gz
     - ( cd protobuf-$PROTOBUF_VERSION && ./configure && make -j2 && sudo make install && sudo ldconfig )
 
