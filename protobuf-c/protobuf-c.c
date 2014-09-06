@@ -52,7 +52,7 @@
 
 #ifdef _MSC_VER
 // MSVC does not fully support C99, inline should be replaced
-#define inline _inline
+#define inline __inline
 #endif
 
 #define TRUE				1
