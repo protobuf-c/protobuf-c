@@ -208,3 +208,4 @@ endif
 
 EXTRA_DIST += Doxyfile.in
 EXTRA_DIST += DoxygenLayout.xml
+EXTRA_DIST += build-cmake/CMakeLists.txt
