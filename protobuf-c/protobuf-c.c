@@ -55,6 +55,11 @@
 
 #define PROTOBUF_C__ASSERT_NOT_REACHED() assert(0)
 
+/* Workaround for Microsoft compilers. */
+#ifdef _MSC_VER
+# define inline __inline
+#endif
+
 /**
  * \defgroup internal Internal functions and macros
  *
