@@ -7,7 +7,7 @@ protobuf-c (1.0.2)
   * Protobuf 2.5.0 or newer is now required to build protobuf-c (Issue #166).
     This is due to the fix for #163.
 
-  [ alex85k ]
+  [ Alexei Kasatkin ]
   * Eliminate void pointer arithmetic (Issue #167).
 
   * Always define PROTOBUF_C__DEPRECATED, even on compilers that are not GCC
