@@ -1,5 +1,8 @@
 protobuf-c (1.0.2)
 
+  [ Robert Edmonds ]
+  * Release 1.0.2.
+
   [ Ilya Lipnitskiy ]
   * Fix a build failure with Protobuf 2.6.0 related to aliased enum constants
     (Issue #163).
