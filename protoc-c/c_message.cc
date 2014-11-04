@@ -147,6 +147,25 @@ GenerateStructDefinition(io::Printer* printer) {
     vars["dllexport"] = dllexport_decl_ + " ";
   }
 
+  // Generate the case enums for unions
+  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+    const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
+    vars["oneofname"] = FullNameToUpper(oneof->name());
+    vars["foneofname"] = FullNameToC(oneof->full_name());
+
+    printer->Print("typedef enum {\n");
+    printer->Indent();
+    printer->Print(vars, "$ucclassname$__$oneofname$__NOT_SET = 0,\n");
+    for (int j = 0; j < oneof->field_count(); j++) {
+      const FieldDescriptor *field = oneof->field(j);
+      vars["fieldname"] = FullNameToUpper(field->name());
+      vars["fieldnum"] = SimpleItoa(field->number());
+      printer->Print(vars, "$ucclassname$__$oneofname$_$fieldname$ = $fieldnum$,\n");
+    }
+    printer->Outdent();
+    printer->Print(vars, "} $foneofname$Case;\n\n");
+  }
+
   printer->Print(vars,
     "struct $dllexport$ _$classname$\n"
     "{\n"
@@ -156,7 +175,27 @@ GenerateStructDefinition(io::Printer* printer) {
   printer->Indent();
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
-    field_generators_.get(field).GenerateStructMembers(printer);
+    if (field->containing_oneof() == NULL) {
+      field_generators_.get(field).GenerateStructMembers(printer);
+    }
+  }
+
+  // Generate unions from oneofs.
+  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+    const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
+    vars["oneofname"] = FullNameToLower(oneof->name());
+    vars["foneofname"] = FullNameToC(oneof->full_name());
+
+    printer->Print(vars, "$foneofname$Case $oneofname$_case;\n");
+
+    printer->Print("union {\n");
+    printer->Indent();
+    for (int j = 0; j < oneof->field_count(); j++) {
+      const FieldDescriptor *field = oneof->field(j);
+      field_generators_.get(field).GenerateStructMembers(printer);
+    }
+    printer->Outdent();
+    printer->Print(vars, "};\n");
   }
   printer->Outdent();
 
@@ -173,8 +212,18 @@ GenerateStructDefinition(io::Printer* printer) {
 		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor) \\\n    ");
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
-    printer->Print(", ");
-    field_generators_.get(field).GenerateStaticInit(printer);
+    if (field->containing_oneof() == NULL) {
+      printer->Print(", ");
+      field_generators_.get(field).GenerateStaticInit(printer);
+    }
+  }
+  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+    const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
+    vars["foneofname"] = FullNameToUpper(oneof->full_name());
+    // Initialize the case enum
+    printer->Print(vars, ", $foneofname$__NOT_SET");
+    // Initialize the enum
+    printer->Print(", {}");
   }
   printer->Print(" }\n\n\n");
 
