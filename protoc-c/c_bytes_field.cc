@@ -101,7 +101,8 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
+      if (descriptor_->containing_oneof() == NULL)
+        printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
