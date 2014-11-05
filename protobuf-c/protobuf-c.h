@@ -239,6 +239,9 @@ typedef enum {
 
 	/** Set if the field is marked with the `deprecated` option. */
 	PROTOBUF_C_FIELD_FLAG_DEPRECATED	= (1 << 1),
+
+	/** Set if the field is a member of a oneof (union). */
+	PROTOBUF_C_FIELD_FLAG_ONEOF		= (1 << 2),
 } ProtobufCFieldFlag;
 
 /**

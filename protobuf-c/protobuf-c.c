@@ -461,6 +461,39 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 }
 
 /**
+ * Calculate the serialized size of a single oneof message field, including
+ * the space needed by the preceding tag. Returns 0 if the oneof field isn't
+ * selected or is not set.
+ *
+ * \param field
+ *      Field descriptor for member.
+ * \param field_id
+ *      The pointer to the case enum that selects the field in the oneof.
+ * \param member
+ *      Field to encode.
+ * \return
+ *      Number of bytes required.
+ */
+static size_t
+oneof_field_get_packed_size(const ProtobufCFieldDescriptor *field,
+			    const uint32_t *field_id,
+			    const void *member)
+{
+	if (*field_id == field->id) {
+		if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+		    field->type == PROTOBUF_C_TYPE_STRING)
+		{
+			const void *ptr = *(const void * const *) member;
+			if (ptr == NULL || ptr == field->default_value)
+				return 0;
+		}
+	} else {
+		return 0;
+	}
+	return required_field_get_packed_size(field, member);
+}
+
+/**
  * Calculate the serialized size of a single optional message field, including
  * the space needed by the preceding tag. Returns 0 if the optional field isn't
  * set.
@@ -621,7 +654,10 @@ size_t protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 		if (field->label == PROTOBUF_C_LABEL_REQUIRED) {
 			rv += required_field_get_packed_size(field, member);
 		} else if (field->label == PROTOBUF_C_LABEL_OPTIONAL) {
-			rv += optional_field_get_packed_size(field, qmember, member);
+			if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF))
+				rv += oneof_field_get_packed_size(field, qmember, member);
+			else
+				rv += optional_field_get_packed_size(field, qmember, member);
 		} else {
 			rv += repeated_field_get_packed_size(
 				field,
@@ -1019,6 +1055,40 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 }
 
 /**
+ * Pack a oneof field and return the number of bytes written. Only packs the
+ * field that is selected by the case enum.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param field_id
+ *      The pointer to the case enum that selects the field in the oneof.
+ * \param member
+ *      The field member.
+ * \param[out] out
+ *      Packed value.
+ * \return
+ *      Number of bytes written to `out`.
+ */
+static size_t
+oneof_field_pack(const ProtobufCFieldDescriptor *field,
+		 const uint32_t *field_id,
+		 const void *member, uint8_t *out)
+{
+	if (*field_id == field->id) {
+		if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+		    field->type == PROTOBUF_C_TYPE_STRING)
+		{
+			const void *ptr = *(const void * const *) member;
+			if (ptr == NULL || ptr == field->default_value)
+				return 0;
+		}
+	} else {
+		return 0;
+	}
+	return required_field_pack(field, member, out);
+}
+
+/**
  * Pack an optional field and return the number of bytes written.
  *
  * \param field
@@ -1312,6 +1382,7 @@ protobuf_c_message_pack(const ProtobufCMessage *message, uint8_t *out)
 		 * quantifier field of the structure), but the pointer is only
 		 * valid if the field is:
 		 *  - a repeated field, or
+                 *  - a field that is part of a oneof
 		 *  - an optional field that isn't a pointer type
 		 * (Meaning: not a message or a string).
 		 */
@@ -1321,11 +1392,10 @@ protobuf_c_message_pack(const ProtobufCMessage *message, uint8_t *out)
 		if (field->label == PROTOBUF_C_LABEL_REQUIRED) {
 			rv += required_field_pack(field, member, out + rv);
 		} else if (field->label == PROTOBUF_C_LABEL_OPTIONAL) {
-			/*
-			 * Note that qmember is bogus for strings and messages,
-			 * but it isn't used.
-			 */
-			rv += optional_field_pack(field, qmember, member, out + rv);
+			if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF))
+				rv += oneof_field_pack (field, qmember, member, out + rv);
+			else
+				rv += optional_field_pack(field, qmember, member, out + rv);
 		} else {
 			rv += repeated_field_pack(field, *(const size_t *) qmember,
 				member, out + rv);
@@ -1457,6 +1527,39 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		PROTOBUF_C__ASSERT_NOT_REACHED();
 	}
 	return rv;
+}
+
+/**
+ * Pack a oneof field to a buffer. Only packs the field that is selected by the case enum.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param field_id
+ *      The pointer to the case enum that selects the field in the oneof.
+ * \param member
+ *      The element to be packed.
+ * \param[out] buffer
+ *      Virtual buffer to append data to.
+ * \return
+ *      Number of bytes serialised to `buffer`.
+ */
+static size_t
+oneof_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
+			   const uint32_t *field_id,
+			   const void *member, ProtobufCBuffer *buffer)
+{
+	if (*field_id == field->id) {
+		if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+		    field->type == PROTOBUF_C_TYPE_STRING)
+		{
+			const void *ptr = *(const void *const *) member;
+			if (ptr == NULL || ptr == field->default_value)
+				return 0;
+		}
+	} else {
+		return 0;
+	}
+	return required_field_pack_to_buffer(field, member, buffer);
 }
 
 /**
@@ -1735,12 +1838,21 @@ protobuf_c_message_pack_to_buffer(const ProtobufCMessage *message,
 		if (field->label == PROTOBUF_C_LABEL_REQUIRED) {
 			rv += required_field_pack_to_buffer(field, member, buffer);
 		} else if (field->label == PROTOBUF_C_LABEL_OPTIONAL) {
-			rv += optional_field_pack_to_buffer(
-				field,
-				qmember,
-				member,
-				buffer
-			);
+			if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF)) {
+				rv += oneof_field_pack_to_buffer(
+						field,
+						qmember,
+						member,
+						buffer
+						);
+			} else {
+				rv += optional_field_pack_to_buffer(
+						field,
+						qmember,
+						member,
+						buffer
+						);
+			}
 		} else {
 			rv += repeated_field_pack_to_buffer(
 				field,
@@ -2350,6 +2462,30 @@ parse_required_member(ScannedMember *scanned_member,
 }
 
 static protobuf_c_boolean
+parse_oneof_member (ScannedMember *scanned_member,
+		    void *member,
+		    ProtobufCMessage *message,
+		    ProtobufCAllocator *allocator)
+{
+	uint32_t *field_id = STRUCT_MEMBER_PTR(uint32_t, message,
+					       scanned_member->field->quantifier_offset);
+
+        /*
+         * If we have already parsed a oneof field, punt. Note that the Google
+         * spec states that we need to keep the last parsed value, so need to
+         * revisit this logic.
+         */
+	if (*field_id != 0)
+		return FALSE;
+	if (!parse_required_member (scanned_member, member, allocator, TRUE))
+		return FALSE;
+
+	*field_id = scanned_member->tag;
+	return TRUE;
+}
+
+
+static protobuf_c_boolean
 parse_optional_member(ScannedMember *scanned_member,
 		      void *member,
 		      ProtobufCMessage *message,
@@ -2562,8 +2698,13 @@ parse_member(ScannedMember *scanned_member,
 		return parse_required_member(scanned_member, member,
 					     allocator, TRUE);
 	case PROTOBUF_C_LABEL_OPTIONAL:
-		return parse_optional_member(scanned_member, member,
-					     message, allocator);
+		if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF)) {
+			return parse_oneof_member(scanned_member, member,
+					message, allocator);
+		} else {
+			return parse_optional_member(scanned_member, member,
+					message, allocator);
+		}
 	case PROTOBUF_C_LABEL_REPEATED:
 		if (scanned_member->wire_type ==
 		    PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED &&
@@ -2977,6 +3118,14 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 		allocator = &protobuf_c__allocator;
 	message->descriptor = NULL;
 	for (f = 0; f < desc->n_fields; f++) {
+		if (0 != (desc->fields[f].flags & PROTOBUF_C_FIELD_FLAG_ONEOF) &&
+		    desc->fields[f].id !=
+		    STRUCT_MEMBER(uint32_t, message, desc->fields[f].quantifier_offset))
+		{
+			/* This is not the selected oneof, skip it */
+			continue;
+		}
+
 		if (desc->fields[f].label == PROTOBUF_C_LABEL_REPEATED) {
 			size_t n = STRUCT_MEMBER(size_t,
 						 message,
