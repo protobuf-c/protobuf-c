@@ -20,6 +20,12 @@ If building from a git checkout, the `autotools` (`autoconf`, `automake`, `libto
 
     ./autogen.sh && ./configure && make && make install
 
+## Documentation
+
+See the [online Doxygen documentation here](http://lib.protobuf-c.io) or [the Wiki](https://github.com/protobuf-c/protobuf-c/wiki) for a detailed reference. The Doxygen documentation can be built from the source tree by running:
+
+    make html
+
 ## Synopsis
 
 Use the `protoc-c` command to generate `.pb-c.c` and `.pb-c.h` output files from your `.proto` input file.
