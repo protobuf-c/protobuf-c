@@ -2001,7 +2001,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 
 				need_to_merge =
 					(e_data != NULL &&
-					 (d_bd != NULL &&
+					 (d_bd == NULL ||
 					  e_data != d_bd->data)) &&
 					(l_data == NULL ||
 					 (d_bd != NULL &&
