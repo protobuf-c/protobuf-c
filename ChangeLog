@@ -1,3 +1,8 @@
+protobuf-c (1.0.3) UNRELEASED
+
+  [ Ilya Lipnitskiy ]
+  * Fix a bug when merging optional byte fields.
+
 protobuf-c (1.0.2)
 
   [ Robert Edmonds ]
