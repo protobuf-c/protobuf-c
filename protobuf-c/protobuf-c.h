@@ -239,6 +239,9 @@ typedef enum {
 
 	/** Set if the field is marked with the `deprecated` option. */
 	PROTOBUF_C_FIELD_FLAG_DEPRECATED	= (1 << 1),
+
+	/** Set if the field is a member of a oneof (union). */
+	PROTOBUF_C_FIELD_FLAG_ONEOF		= (1 << 2),
 } ProtobufCFieldFlag;
 
 /**
@@ -545,7 +548,7 @@ struct ProtobufCFieldDescriptor {
 	/**
 	 * The offset in bytes of the message's C structure's quantifier field
 	 * (the `has_MEMBER` field for optional members or the `n_MEMBER` field
-	 * for repeated members.
+	 * for repeated members or the case enum for oneofs).
 	 */
 	unsigned		quantifier_offset;
 

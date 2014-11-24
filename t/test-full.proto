@@ -132,6 +132,30 @@ message TestMessOptional {
   optional SubMess test_message = 18;
 }
 
+message TestMessOneof {
+  oneof test_oneof {
+    int32 test_int32 = 1;
+    sint32 test_sint32 = 2;
+    sfixed32 test_sfixed32 = 3;
+    int64 test_int64 = 4;
+    sint64 test_sint64 = 5;
+    sfixed64 test_sfixed64 = 6;
+    uint32 test_uint32 = 7;
+    fixed32 test_fixed32 = 8;
+    uint64 test_uint64 = 9;
+    fixed64 test_fixed64 = 10;
+    float test_float = 11;
+    double test_double = 12;
+    bool test_boolean = 13;
+    TestEnumSmall test_enum_small = 14;
+    TestEnum test_enum = 15;
+    string test_string = 16;
+    bytes test_bytes = 17;
+    SubMess test_message = 18;
+  }
+  optional int32 opt_int = 19;
+}
+
 message TestMessRequiredInt32 {
   required int32 test = 42;
 }
@@ -379,3 +403,10 @@ message TestMessageCheck {
   optional bytes optional_bytes     = 9;
 }
 
+message TestMessSubMess {
+  required TestMess rep_mess = 1;
+  required TestMessOptional opt_mess = 2;
+  required TestMessOneof oneof_mess = 3;
+  required SubMess req_mess = 4;
+  required DefaultOptionalValues def_mess = 5;
+}

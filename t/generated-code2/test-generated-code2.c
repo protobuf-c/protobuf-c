@@ -82,8 +82,13 @@ test_compare_pack_methods (ProtobufCMessage *message,
   return rv;
 }
 
+#define GENERIC_ASSIGN(dst,src)    ((dst) = (src))
+
 #define NUMERIC_EQUALS(a,b)   ((a) == (b))
 #define STRING_EQUALS(a,b)    (strcmp((a),(b))==0)
+
+#define CHECK_NONE(a)
+#define CHECK_NOT_NULL(a)    assert( (a) != NULL )
 
 static protobuf_c_boolean
 binary_data_equals (ProtobufCBinaryData a, ProtobufCBinaryData b)
@@ -681,6 +686,297 @@ static void test_optional_SubMess (void)
   DO_TEST (&submess, test_optional_submess_42);
 #undef DO_TEST
 }
+
+/* === Oneof type fields === */
+static void test_empty_oneof (void)
+{
+  Foo__TestMessOneof mess = FOO__TEST_MESS_ONEOF__INIT;
+  size_t len;
+  uint8_t *data;
+  Foo__TestMessOneof *mess2 = test_compare_pack_methods (&mess.base, &len, &data);
+  assert (len == 0);
+  free (data);
+  foo__test_mess_oneof__free_unpacked (mess2, NULL);
+}
+
+#define DO_TEST_GENERIC_ONEOF(type, init, free_unpacked, case_member, case_enum, member, value, example_packed_data, assign, equal_func, result_check) \
+  do{ \
+  type opt = init; \
+  type *mess; \
+  size_t len; uint8_t *data; \
+  opt.case_member = case_enum; \
+  assign(opt.member, value); \
+  mess = test_compare_pack_methods (&opt.base, &len, &data); \
+  TEST_VERSUS_STATIC_ARRAY (len, data, example_packed_data); \
+  assert (mess->case_member == case_enum); \
+  result_check(mess->member); \
+  assert (equal_func (mess->member, value)); \
+  free_unpacked (mess, NULL); \
+  free (data); \
+  }while(0)
+
+#define DO_TEST_ONEOF(member, MEMBER, value, example_packed_data, assign, equal_func) \
+  DO_TEST_GENERIC_ONEOF(Foo__TestMessOneof, \
+                FOO__TEST_MESS_ONEOF__INIT, \
+                foo__test_mess_oneof__free_unpacked, \
+                test_oneof_case, \
+                FOO__TEST_MESS_ONEOF__TEST_ONEOF_##MEMBER, \
+                member, \
+                value, example_packed_data, assign, equal_func, CHECK_NONE)
+
+#define DO_TEST_ONEOF_REF_VAL(member, MEMBER, value, example_packed_data, assign, equal_func) \
+  DO_TEST_GENERIC_ONEOF(Foo__TestMessOneof, \
+                FOO__TEST_MESS_ONEOF__INIT, \
+                foo__test_mess_oneof__free_unpacked, \
+                test_oneof_case, \
+                FOO__TEST_MESS_ONEOF__TEST_ONEOF_##MEMBER, \
+                member, \
+                value, example_packed_data, assign, equal_func, CHECK_NOT_NULL)
+
+static void test_oneof_int32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_int32, TEST_INT32, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (INT32_MIN, test_optional_int32_min);
+  DO_TEST (-1, test_optional_int32_m1);
+  DO_TEST (0, test_optional_int32_0);
+  DO_TEST (666, test_optional_int32_666);
+  DO_TEST (INT32_MAX, test_optional_int32_max);
+
+#undef DO_TEST
+}
+static void test_oneof_sint32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_sint32, TEST_SINT32, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (INT32_MIN, test_optional_sint32_min);
+  DO_TEST (-1, test_optional_sint32_m1);
+  DO_TEST (0, test_optional_sint32_0);
+  DO_TEST (666, test_optional_sint32_666);
+  DO_TEST (INT32_MAX, test_optional_sint32_max);
+
+#undef DO_TEST
+}
+static void test_oneof_sfixed32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_sfixed32, TEST_SFIXED32, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (INT32_MIN, test_optional_sfixed32_min);
+  DO_TEST (-1, test_optional_sfixed32_m1);
+  DO_TEST (0, test_optional_sfixed32_0);
+  DO_TEST (666, test_optional_sfixed32_666);
+  DO_TEST (INT32_MAX, test_optional_sfixed32_max);
+
+#undef DO_TEST
+}
+static void test_oneof_int64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_int64, TEST_INT64, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (INT64_MIN, test_optional_int64_min);
+  DO_TEST (-1111111111LL, test_optional_int64_m1111111111LL);
+  DO_TEST (0, test_optional_int64_0);
+  DO_TEST (QUINTILLION, test_optional_int64_quintillion);
+  DO_TEST (INT64_MAX, test_optional_int64_max);
+
+#undef DO_TEST
+}
+static void test_oneof_sint64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_sint64, TEST_SINT64, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (INT64_MIN, test_optional_sint64_min);
+  DO_TEST (-1111111111LL, test_optional_sint64_m1111111111LL);
+  DO_TEST (0, test_optional_sint64_0);
+  DO_TEST (QUINTILLION, test_optional_sint64_quintillion);
+  DO_TEST (INT64_MAX, test_optional_sint64_max);
+
+#undef DO_TEST
+}
+static void test_oneof_sfixed64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_sfixed64, TEST_SFIXED64, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (INT64_MIN, test_optional_sfixed64_min);
+  DO_TEST (-1111111111LL, test_optional_sfixed64_m1111111111LL);
+  DO_TEST (0, test_optional_sfixed64_0);
+  DO_TEST (QUINTILLION, test_optional_sfixed64_quintillion);
+  DO_TEST (INT64_MAX, test_optional_sfixed64_max);
+
+#undef DO_TEST
+}
+
+static void test_oneof_uint32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_uint32, TEST_UINT32, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_uint32_0);
+  DO_TEST (669, test_optional_uint32_669);
+  DO_TEST (UINT32_MAX, test_optional_uint32_max);
+
+#undef DO_TEST
+}
+
+static void test_oneof_fixed32 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_fixed32, TEST_FIXED32, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_fixed32_0);
+  DO_TEST (669, test_optional_fixed32_669);
+  DO_TEST (UINT32_MAX, test_optional_fixed32_max);
+
+#undef DO_TEST
+}
+
+static void test_oneof_uint64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_uint64, TEST_UINT64, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_uint64_0);
+  DO_TEST (669669669669669ULL, test_optional_uint64_669669669669669);
+  DO_TEST (UINT64_MAX, test_optional_uint64_max);
+
+#undef DO_TEST
+}
+
+static void test_oneof_fixed64 (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_fixed64, TEST_FIXED64, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_fixed64_0);
+  DO_TEST (669669669669669ULL, test_optional_fixed64_669669669669669);
+  DO_TEST (UINT64_MAX, test_optional_fixed64_max);
+
+#undef DO_TEST
+}
+
+static void test_oneof_float (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_float, TEST_FLOAT, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (-100, test_optional_float_m100);
+  DO_TEST (0, test_optional_float_0);
+  DO_TEST (141243, test_optional_float_141243);
+
+#undef DO_TEST
+}
+static void test_oneof_double (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_double, TEST_DOUBLE, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (-100, test_optional_double_m100);
+  DO_TEST (0, test_optional_double_0);
+  DO_TEST (141243, test_optional_double_141243);
+
+#undef DO_TEST
+}
+static void test_oneof_bool (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_boolean, TEST_BOOLEAN, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_bool_0);
+  DO_TEST (1, test_optional_bool_1);
+
+#undef DO_TEST
+}
+static void test_oneof_TestEnumSmall (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_enum_small, TEST_ENUM_SMALL, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (0, test_optional_enum_small_0);
+  DO_TEST (1, test_optional_enum_small_1);
+
+#undef DO_TEST
+}
+
+static void test_oneof_TestEnum (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF(test_enum, TEST_ENUM, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
+
+  DO_TEST (FOO__TEST_ENUM__VALUE0, test_optional_enum_0);
+  DO_TEST (FOO__TEST_ENUM__VALUE1, test_optional_enum_1);
+  DO_TEST (FOO__TEST_ENUM__VALUE127, test_optional_enum_127);
+  DO_TEST (FOO__TEST_ENUM__VALUE128, test_optional_enum_128);
+  DO_TEST (FOO__TEST_ENUM__VALUE16383, test_optional_enum_16383);
+  DO_TEST (FOO__TEST_ENUM__VALUE16384, test_optional_enum_16384);
+  DO_TEST (FOO__TEST_ENUM__VALUE2097151, test_optional_enum_2097151);
+  DO_TEST (FOO__TEST_ENUM__VALUE2097152, test_optional_enum_2097152);
+  DO_TEST (FOO__TEST_ENUM__VALUE268435455, test_optional_enum_268435455);
+  DO_TEST (FOO__TEST_ENUM__VALUE268435456, test_optional_enum_268435456);
+
+#undef DO_TEST
+}
+
+static void test_oneof_string (void)
+{
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF_REF_VAL (test_string, TEST_STRING, value, example_packed_data, GENERIC_ASSIGN, STRING_EQUALS)
+  DO_TEST ("", test_optional_string_empty);
+  DO_TEST ("hello", test_optional_string_hello);
+#undef DO_TEST
+}
+static void test_oneof_bytes (void)
+{
+  static ProtobufCBinaryData bd_empty = { 0, (uint8_t*)"" };
+  static ProtobufCBinaryData bd_hello = { 5, (uint8_t*)"hello" };
+  static ProtobufCBinaryData bd_random = { 5, (uint8_t*)"\1\0\375\2\4" };
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF (test_bytes, TEST_BYTES, value, example_packed_data, GENERIC_ASSIGN, binary_data_equals)
+  DO_TEST (bd_empty, test_optional_bytes_empty);
+  DO_TEST (bd_hello, test_optional_bytes_hello);
+  DO_TEST (bd_random, test_optional_bytes_random);
+#undef DO_TEST
+}
+static void test_oneof_SubMess (void)
+{
+  Foo__SubMess submess = FOO__SUB_MESS__INIT;
+#define DO_TEST(value, example_packed_data) \
+  DO_TEST_ONEOF_REF_VAL (test_message, TEST_MESSAGE, value, example_packed_data, GENERIC_ASSIGN, submesses_equals)
+  submess.test = 0;
+  DO_TEST (&submess, test_optional_submess_0);
+  submess.test = 42;
+  DO_TEST (&submess, test_optional_submess_42);
+#undef DO_TEST
+}
+static void test_oneof_merge (void)
+{
+  Foo__TestMessOneof *msg;
+#define DO_TEST(value, member, MEMBER, equals_func, example_packed_data) \
+  msg = foo__test_mess_oneof__unpack (NULL, sizeof (example_packed_data), example_packed_data); \
+  assert (msg); \
+  assert (msg->test_oneof_case == FOO__TEST_MESS_ONEOF__TEST_ONEOF_##MEMBER); \
+  assert (equals_func (msg->member, value)); \
+  foo__test_mess_oneof__free_unpacked (msg, NULL);
+
+  DO_TEST (444455555, test_double, TEST_DOUBLE, NUMERIC_EQUALS, test_oneof_merge_double);
+  DO_TEST (333, test_float, TEST_FLOAT, NUMERIC_EQUALS, test_oneof_merge_float);
+  DO_TEST (666, test_int32, TEST_INT32, NUMERIC_EQUALS, test_oneof_merge_int32);
+  DO_TEST ("", test_string, TEST_STRING, STRING_EQUALS, test_oneof_merge_string);
+
+  Foo__SubMess submess = FOO__SUB_MESS__INIT;
+  submess.test = 42;
+  DO_TEST (&submess, test_message, TEST_MESSAGE, submesses_equals, test_oneof_merge_submess);
+
+  ProtobufCBinaryData bd_hello = { 5, (uint8_t*)"hello" };
+  DO_TEST(bd_hello, test_bytes, TEST_BYTES, binary_data_equals, test_oneof_merge_bytes);
+#undef DO_TEST
+}
+
 /* === repeated type fields === */
 #define DO_TEST_REPEATED(lc_member_name, cast, \
                          static_array, example_packed_data, \
@@ -1514,6 +1810,40 @@ test_field_merge (void)
    foo__test_mess_optional__free_unpacked (merged, NULL);
 }
 
+static void
+test_submessage_merge (void)
+{
+   Foo__TestMessSubMess *merged;
+   size_t size;
+   uint8_t *packed;
+
+   merged = foo__test_mess_sub_mess__unpack
+      (NULL, sizeof (test_submess_unmerged1), test_submess_unmerged1);
+
+   size = foo__test_mess_sub_mess__get_packed_size(merged);
+   packed = malloc (size);
+   foo__test_mess_sub_mess__pack (merged, packed);
+
+   assert (size == sizeof (test_submess_merged1));
+   assert (memcmp (packed, test_submess_merged1, size) == 0);
+
+   foo__test_mess_sub_mess__free_unpacked (merged, NULL);
+   free (packed);
+
+   merged = foo__test_mess_sub_mess__unpack
+      (NULL, sizeof (test_submess_unmerged2), test_submess_unmerged2);
+
+   size = foo__test_mess_sub_mess__get_packed_size(merged);
+   packed = malloc (size);
+   foo__test_mess_sub_mess__pack (merged, packed);
+
+   assert (size == sizeof (test_submess_merged2));
+   assert (memcmp (packed, test_submess_merged2, size) == 0);
+   
+   foo__test_mess_sub_mess__free_unpacked (merged, NULL);
+   free (packed);
+}
+
 static struct alloc_data {
   uint32_t alloc_count;
   int32_t allocs_left;
@@ -1821,6 +2151,27 @@ static Test tests[] =
   { "test optional string", test_optional_string },
   { "test optional bytes", test_optional_bytes },
   { "test optional SubMess", test_optional_SubMess },
+  
+  { "test empty oneof" ,test_empty_oneof },
+  { "test oneof int32", test_oneof_int32 },
+  { "test oneof sint32", test_oneof_sint32 },
+  { "test oneof sfixed32", test_oneof_sfixed32 },
+  { "test oneof int64", test_oneof_int64 },
+  { "test oneof sint64", test_oneof_sint64 },
+  { "test oneof sfixed64", test_oneof_sfixed64 },
+  { "test oneof uint32", test_oneof_uint32 },
+  { "test oneof fixed32", test_oneof_fixed32 },
+  { "test oneof uint64", test_oneof_uint64 },
+  { "test oneof fixed64", test_oneof_fixed64 },
+  { "test oneof float", test_oneof_float },
+  { "test oneof double", test_oneof_double },
+  { "test oneof bool", test_oneof_bool },
+  { "test oneof TestEnumSmall", test_oneof_TestEnumSmall },
+  { "test oneof TestEnum", test_oneof_TestEnum },
+  { "test oneof string", test_oneof_string },
+  { "test oneof bytes", test_oneof_bytes },
+  { "test oneof SubMess", test_oneof_SubMess },
+  { "test merged oneof unpack", test_oneof_merge },
 
   { "test empty repeated" ,test_empty_repeated },
   { "test repeated int32" ,test_repeated_int32 },
@@ -1869,6 +2220,7 @@ static Test tests[] =
   { "test optional lowercase enum default value", test_optional_lowercase_enum_default_value },
 
   { "test field merge", test_field_merge },
+  { "test submessage merge", test_submessage_merge },
 
   { "test free unpacked", test_alloc_free_all },
   { "test alloc failure", test_alloc_fail },

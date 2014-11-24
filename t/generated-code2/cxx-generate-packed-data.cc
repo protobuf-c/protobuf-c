@@ -36,23 +36,33 @@ using namespace foo;
 #define N_ELEMENTS(arr)   (sizeof(arr)/sizeof((arr)[0]))
 
 static void
+dump_messages_bytes(size_t n_msgs,
+                    google::protobuf::Message **messages,
+                    const char *label)
+{
+  printf ("static const uint8_t %s[] = { ", label);
+  for (unsigned m = 0; m < n_msgs; m++) {
+    std::string rv;
+    google::protobuf::Message *message = messages[m];
+    if (m)
+      printf (", ");
+    if (!message->SerializeToString(&rv))
+      assert(0);
+    unsigned char *bytes = (unsigned char *) rv.data();
+    for (unsigned i = 0; i < rv.size(); i++) {
+      if (i)
+        printf (", ");
+      printf ("0x%02x", bytes[i]);
+    }
+  }
+  printf (" };\n");
+}
+
+static void
 dump_message_bytes(google::protobuf::Message *message,
                    const char *label)
 {
-  std::string rv;
-  unsigned char *bytes;
-  unsigned len;
-  if (!message->SerializeToString(&rv))
-    assert(0);
-  bytes = (unsigned char *) rv.data();
-  len = rv.size();
-  printf ("static const uint8_t %s[%u] = { ", label, len);
-  for (unsigned i = 0; i < len; i++) {
-    if (i)
-      printf (", ");
-    printf ("0x%02x", bytes[i]);
-  }
-  printf (" };\n");
+  dump_messages_bytes (1, &message, label);
 }
 
 static void
@@ -564,6 +574,33 @@ static void dump_test_optional_message (void)
   opt.mutable_test_message()->set_test(42);
   dump_message_bytes (&opt, "test_optional_submess_42");
 }
+static void dump_test_oneof_merge (void)
+{
+#define SWAP(a, b) temp = a, a = b, b = temp
+  google::protobuf::Message *temp;
+  TestMessOptional opt[6];
+  google::protobuf::Message *msgs[6] = { &opt[0], &opt[1], &opt[2], &opt[3],
+    &opt[4], &opt[5] };
+  opt[0].set_test_bytes ("hello");
+  opt[1].mutable_test_message()->set_test (42);
+  opt[2].set_test_string ("");
+  opt[3].set_test_int32 (666);
+  opt[4].set_test_float (333);
+  opt[5].set_test_double (444455555);
+  dump_messages_bytes (6, msgs, "test_oneof_merge_double");
+  SWAP (msgs[5], msgs[4]);
+  dump_messages_bytes (6, msgs, "test_oneof_merge_float");
+  SWAP (msgs[5], msgs[3]);
+  dump_messages_bytes (6, msgs, "test_oneof_merge_int32");
+  SWAP (msgs[5], msgs[2]);
+  dump_messages_bytes (6, msgs, "test_oneof_merge_string");
+  SWAP (msgs[5], msgs[1]);
+  dump_messages_bytes (6, msgs, "test_oneof_merge_submess");
+  SWAP (msgs[5], msgs[0]);
+  dump_messages_bytes (6, msgs, "test_oneof_merge_bytes");
+
+#undef SWAP
+}
 
 #define DUMP_STATIC_ARRAY_GENERIC(member, static_array, output_array_name) \
   do{ \
@@ -978,6 +1015,65 @@ static void dump_test_unknown_fields (void)
   dump_message_bytes (&mess, "test_unknown_fields_1");
 }
 
+static void dump_test_submess_merge (void)
+{
+  TestMessSubMess mess1, mess2, merged1, merged2;
+
+  /* Repeated merge */
+  mess1.mutable_rep_mess()->add_test_int32(1);
+  mess1.mutable_rep_mess()->add_test_int32(2);
+  mess2.mutable_rep_mess()->add_test_int32(3);
+  mess2.mutable_rep_mess()->add_test_int32(4);
+
+  mess1.mutable_rep_mess()->add_test_string("hello ");
+  mess2.mutable_rep_mess()->add_test_string("world");
+
+  mess1.mutable_rep_mess()->add_test_bytes("\001\002\003");
+  mess2.mutable_rep_mess()->add_test_bytes("\004\005\006");
+
+  mess1.mutable_rep_mess()->add_test_message()->set_test(111);
+  mess2.mutable_rep_mess()->add_test_message()->set_test(222);
+
+  /* Optional merge */
+  mess1.mutable_opt_mess()->set_test_sint32(-1);
+  mess2.mutable_opt_mess()->set_test_sint32(-2);
+
+  mess1.mutable_opt_mess()->set_test_float(333);
+  mess2.mutable_opt_mess()->set_test_double(444);
+
+  mess1.mutable_opt_mess()->set_test_bytes("\001\002\003");
+  mess1.mutable_opt_mess()->mutable_test_message()->set_test(111);
+  mess2.mutable_opt_mess()->set_test_string("hello");
+
+  /* Oneof merge */
+  mess1.mutable_oneof_mess()->set_opt_int (1);
+  mess2.mutable_oneof_mess()->mutable_test_message()->set_test(111);
+
+  /* Required merge */
+  mess1.mutable_req_mess()->set_test(1);
+  mess2.mutable_req_mess()->set_test(2);
+
+  /* Default value merge */
+  mess1.mutable_def_mess()->set_v_int32(111);
+  mess1.mutable_def_mess()->set_v_string("hello");
+  mess2.mutable_def_mess()->set_v_bytes("\001\002\003");
+  mess2.mutable_def_mess()->set_v_double(444);
+
+  /* Merge both ways and encode the merged and unmerged messages */
+  merged1.CopyFrom(mess1);
+  merged1.MergeFrom(mess2);
+  merged2.CopyFrom(mess2);
+  merged2.MergeFrom(mess1);
+
+  google::protobuf::Message *msgs[] = { &mess1, &mess2 };
+  dump_messages_bytes (2, msgs, "test_submess_unmerged1");
+  msgs[0] = &mess2;
+  msgs[1] = &mess1;
+  dump_messages_bytes (2, msgs, "test_submess_unmerged2");
+  dump_message_bytes(&merged1, "test_submess_merged1");
+  dump_message_bytes(&merged2, "test_submess_merged2");
+}
+
 int main()
 {
   dump_test_enum_small ();
@@ -1019,6 +1115,7 @@ int main()
   dump_test_optional_string ();
   dump_test_optional_bytes ();
   dump_test_optional_message ();
+  dump_test_oneof_merge ();
   dump_test_repeated_int32 ();
   dump_test_repeated_sint32 ();
   dump_test_repeated_uint32 ();
@@ -1053,5 +1150,6 @@ int main()
   dump_test_packed_repeated_enum_small ();
   dump_test_packed_repeated_enum ();
   dump_test_unknown_fields ();
+  dump_test_submess_merge ();
   return 0;
 }
