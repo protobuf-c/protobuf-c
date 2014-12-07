@@ -106,9 +106,25 @@ extern const ProtobufCMessageDescriptor foo__bar__baz_bah__descriptor;
  * sufficient to allow them to be cast to `ProtobufCMessage`.
  *
  * For each message defined in a `.proto` file, we generate a number of
- * functions. Each function name contains a prefix based on the package name and
- * message name in order to make it a unique C identifier.
+ * functions and macros. Each function name contains a prefix based on the
+ * package name and message name in order to make it a unique C identifier.
  *
+ * - `INIT`. Statically initializes a message object, initializing its
+ *   descriptor and setting its fields to default values. Uninitialized
+ *   messages cannot be processed by the protobuf-c library.
+ *
+~~~{.c}
+#define FOO__BAR__BAZ_BAH__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&foo__bar__baz_bah__descriptor), 0 }
+~~~
+ * - `init()`. Initializes a message object, initializing its descriptor and
+ *   setting its fields to default values. Uninitialized messages cannot be
+ *   processed by the protobuf-c library.
+ *
+~~~{.c}
+void foo__bar__baz_bah__init
+                     (Foo__Bar__BazBah *message);
+~~~
  * - `unpack()`. Unpacks data for a particular message format. Note that the
  *   `allocator` parameter is usually `NULL` to indicate that the system's
  *   `malloc()` and `free()` functions should be used for dynamically allocating
