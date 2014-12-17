@@ -210,6 +210,28 @@ string FullNameToC(const string &full_name) {
   return rv;
 }
 
+void PrintComment (io::Printer* printer, string comment)
+{
+   if (!comment.empty())
+   {
+      vector<string> comment_lines;
+      SplitStringUsing (comment, "\r\n", &comment_lines);
+      printer->Print ("/*\n");
+      for (int i = 0; i < comment_lines.size(); i++)
+      {
+         if (!comment_lines[i].empty())
+         {
+            /* Make sure we don't inadvertently close the comment block */
+            if (comment_lines[i][0] == '/')
+               comment_lines[i] = ' ' + comment_lines[i];
+
+            printer->Print (" *$line$\n", "line", comment_lines[i]);
+         }
+      }
+      printer->Print (" */\n");
+   }
+}
+
 string ConvertToSpaces(const string &input) {
   return string(input.size(), ' ');
 }

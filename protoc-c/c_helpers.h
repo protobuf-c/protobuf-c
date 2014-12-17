@@ -138,6 +138,9 @@ string FullNameToUpper(const string &full_name);
 // full_name() to c-typename (with underscores for packages, otherwise camel case)
 string FullNameToC(const string &class_name);
 
+// Splits, indents, formats, and prints comment lines
+void PrintComment (io::Printer* printer, string comment);
+
 // make a string of spaces as long as input
 string ConvertToSpaces(const string &input);
 

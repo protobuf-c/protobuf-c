@@ -166,6 +166,10 @@ GenerateStructDefinition(io::Printer* printer) {
     printer->Print(vars, "} $foneofname$Case;\n\n");
   }
 
+  SourceLocation msgSourceLoc;
+  descriptor_->GetSourceLocation(&msgSourceLoc);
+  PrintComment (printer, msgSourceLoc.leading_comments);
+
   printer->Print(vars,
     "struct $dllexport$ _$classname$\n"
     "{\n"
@@ -176,6 +180,11 @@ GenerateStructDefinition(io::Printer* printer) {
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
     if (field->containing_oneof() == NULL) {
+      SourceLocation fieldSourceLoc;
+      field->GetSourceLocation(&fieldSourceLoc);
+
+      PrintComment (printer, fieldSourceLoc.leading_comments);
+      PrintComment (printer, fieldSourceLoc.trailing_comments);
       field_generators_.get(field).GenerateStructMembers(printer);
     }
   }
@@ -192,6 +201,11 @@ GenerateStructDefinition(io::Printer* printer) {
     printer->Indent();
     for (int j = 0; j < oneof->field_count(); j++) {
       const FieldDescriptor *field = oneof->field(j);
+      SourceLocation fieldSourceLoc;
+      field->GetSourceLocation(&fieldSourceLoc);
+
+      PrintComment (printer, fieldSourceLoc.leading_comments);
+      PrintComment (printer, fieldSourceLoc.trailing_comments);
       field_generators_.get(field).GenerateStructMembers(printer);
     }
     printer->Outdent();

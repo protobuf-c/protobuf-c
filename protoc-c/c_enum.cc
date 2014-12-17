@@ -86,6 +86,10 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   vars["shortname"] = descriptor_->name();
   vars["uc_name"] = FullNameToUpper(descriptor_->full_name());
 
+  SourceLocation sourceLoc;
+  descriptor_->GetSourceLocation(&sourceLoc);
+  PrintComment (printer, sourceLoc.leading_comments);
+
   printer->Print(vars, "typedef enum _$classname$ {\n");
   printer->Indent();
 
@@ -101,6 +105,11 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
 
+    SourceLocation valSourceLoc;
+    descriptor_->value(i)->GetSourceLocation(&valSourceLoc);
+
+    PrintComment (printer, valSourceLoc.leading_comments);
+    PrintComment (printer, valSourceLoc.trailing_comments);
     printer->Print(vars, "$prefix$$name$ = $number$$opt_comma$\n");
 
     if (descriptor_->value(i)->number() < min_value->number()) {
