@@ -121,7 +121,8 @@ var group__api =
     [ "protobuf_c_boolean", "group__api.html#ga98475218bcbd7a2171589414021c2633", null ],
     [ "ProtobufCFieldFlag", "group__api.html#gaadb4aa7b15fbb0f75d96838516eee012", [
       [ "PROTOBUF_C_FIELD_FLAG_PACKED", "group__api.html#ggaadb4aa7b15fbb0f75d96838516eee012af024ba3c72b83253823211a7e38ed8e2", null ],
-      [ "PROTOBUF_C_FIELD_FLAG_DEPRECATED", "group__api.html#ggaadb4aa7b15fbb0f75d96838516eee012a2f78d93c033bb4bee08818e5d10f26e2", null ]
+      [ "PROTOBUF_C_FIELD_FLAG_DEPRECATED", "group__api.html#ggaadb4aa7b15fbb0f75d96838516eee012a2f78d93c033bb4bee08818e5d10f26e2", null ],
+      [ "PROTOBUF_C_FIELD_FLAG_ONEOF", "group__api.html#ggaadb4aa7b15fbb0f75d96838516eee012af4e5885518bbc5d4b3274697ff9e1690", null ]
     ] ],
     [ "ProtobufCLabel", "group__api.html#ga5ec2e3fd5bbe4c5f6a64b06b7425d0e5", [
       [ "PROTOBUF_C_LABEL_REQUIRED", "group__api.html#gga5ec2e3fd5bbe4c5f6a64b06b7425d0e5a407dd9d769a377e156a6c945647bccbb", null ],
