@@ -781,7 +781,7 @@ protobuf_c_version_number(void);
  * The version of the protobuf-c headers, represented as a string using the same
  * format as protobuf_c_version().
  */
-#define PROTOBUF_C_VERSION		"1.1.0-pre"
+#define PROTOBUF_C_VERSION		"1.1.0"
 
 /**
  * The version of the protobuf-c headers, represented as an integer using the

@@ -1,7 +1,7 @@
 AC_PREREQ(2.64)
 
 AC_INIT([protobuf-c],
-        [1.1.0-pre],
+        [1.1.0],
         [https://github.com/protobuf-c/protobuf-c/issues],
         [protobuf-c],
         [https://github.com/protobuf-c/protobuf-c])
