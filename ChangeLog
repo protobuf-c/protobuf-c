@@ -1,4 +1,7 @@
-protobuf-c (1.1.0) UNRELEASED
+protobuf-c (1.1.0)
+
+  [ Robert Edmonds ]
+  * Release 1.1.0.
 
   [ Ilya Lipnitskiy ]
   * Fix a bug when merging optional byte fields.
