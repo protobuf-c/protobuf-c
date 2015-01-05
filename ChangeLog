@@ -3,7 +3,13 @@ protobuf-c (1.1.0) UNRELEASED
   [ Ilya Lipnitskiy ]
   * Fix a bug when merging optional byte fields.
 
-  * Implement oneof support.
+  * Documentation updates.
+
+  * Implement oneof support (Issue #174). Protobuf 2.6.0 or newer is now
+    required to build protobuf-c.
+
+  * Print leading comments for enum, message, and field definitions into
+    generated header files (Issue #175).
 
 protobuf-c (1.0.2)
 
