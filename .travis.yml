@@ -1,6 +1,6 @@
-language:
-    - c
-    - cpp
+# C is enough here
+# If you specify cpp, then Travis failed to found clang++
+language: c
 
 env:
     - PROTOBUF_VERSION=2.6.0
