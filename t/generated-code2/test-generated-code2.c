@@ -2002,7 +2002,7 @@ test_message_check(void)
   /* test with required_string not set */
   m.required_string = NULL;
   m.required_msg = &sm;
-  m.required_bytes.data = str; m.required_bytes.len = 1;
+  m.required_bytes.data = (uint8_t *)str; m.required_bytes.len = 1;
   assert(0 == protobuf_c_message_check(&m.base));
 
   /* test with required_msg not set */
@@ -2016,7 +2016,7 @@ test_message_check(void)
   assert(0 == protobuf_c_message_check(&m.base));
 
   /* test with all required fields set */
-  m.required_bytes.data = str; m.required_bytes.len = 1;
+  m.required_bytes.data = (uint8_t *)str; m.required_bytes.len = 1;
   assert(1 == protobuf_c_message_check(&m.base));
 
   /* test with incomplete required submessage */
@@ -2041,7 +2041,7 @@ test_message_check(void)
   assert(0 == protobuf_c_message_check(&m.base));
 
   /* test with correct optional bytes */
-  m.optional_bytes.data = str; m.optional_bytes.len = 1;
+  m.optional_bytes.data = (uint8_t *)str; m.optional_bytes.len = 1;
   assert(1 == protobuf_c_message_check(&m.base));
 
   /* test with repeated strings set incorrectly */
@@ -2076,7 +2076,7 @@ test_message_check(void)
   assert(0 == protobuf_c_message_check(&m.base));
 
   /* test with repeated bytes set correctly */
-  bd.data = str;
+  bd.data = (uint8_t *)str;
   assert(1 == protobuf_c_message_check(&m.base));
 
   /* test with empty repeated string vector */
