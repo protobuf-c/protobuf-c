@@ -225,6 +225,14 @@ void PrintComment (io::Printer* printer, string comment)
             if (comment_lines[i][0] == '/')
                comment_lines[i] = ' ' + comment_lines[i];
 
+            /* Or cause other compiler issues. */
+            size_t delim_i;
+            while ((delim_i = comment_lines[i].find("/*")) != string::npos)
+               comment_lines[i][delim_i] = ' ';
+
+            while ((delim_i = comment_lines[i].find("*/")) != string::npos)
+               comment_lines[i][delim_i + 1] = ' ';
+
             printer->Print (" *$line$\n", "line", comment_lines[i]);
          }
       }
