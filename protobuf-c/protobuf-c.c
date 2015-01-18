@@ -3186,24 +3186,25 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 						  message,
 						  desc->fields[f].offset);
 
-			if (desc->fields[f].type == PROTOBUF_C_TYPE_STRING) {
-				unsigned i;
-				for (i = 0; i < n; i++)
-					do_free(allocator, ((char **) arr)[i]);
-			} else if (desc->fields[f].type == PROTOBUF_C_TYPE_BYTES) {
-				unsigned i;
-				for (i = 0; i < n; i++)
-					do_free(allocator, ((ProtobufCBinaryData *) arr)[i].data);
-			} else if (desc->fields[f].type == PROTOBUF_C_TYPE_MESSAGE) {
-				unsigned i;
-				for (i = 0; i < n; i++)
-					protobuf_c_message_free_unpacked(
-						((ProtobufCMessage **) arr)[i],
-						allocator
-					);
-			}
-			if (arr != NULL)
+			if (arr != NULL) {
+				if (desc->fields[f].type == PROTOBUF_C_TYPE_STRING) {
+					unsigned i;
+					for (i = 0; i < n; i++)
+						do_free(allocator, ((char **) arr)[i]);
+				} else if (desc->fields[f].type == PROTOBUF_C_TYPE_BYTES) {
+					unsigned i;
+					for (i = 0; i < n; i++)
+						do_free(allocator, ((ProtobufCBinaryData *) arr)[i].data);
+				} else if (desc->fields[f].type == PROTOBUF_C_TYPE_MESSAGE) {
+					unsigned i;
+					for (i = 0; i < n; i++)
+						protobuf_c_message_free_unpacked(
+							((ProtobufCMessage **) arr)[i],
+							allocator
+						);
+				}
 				do_free(allocator, arr);
+			}
 		} else if (desc->fields[f].type == PROTOBUF_C_TYPE_STRING) {
 			char *str = STRUCT_MEMBER(char *, message,
 						  desc->fields[f].offset);

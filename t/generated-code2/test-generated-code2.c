@@ -1931,6 +1931,24 @@ test_free_unpacked_input_check_for_null_message (void)
   protobuf_c_message_free_unpacked (NULL, NULL);
 }
 
+static void
+test_free_unpacked_input_check_for_null_repeated_field (void)
+{
+  Foo__TestMess *tm = calloc(1, foo__test_mess__descriptor.sizeof_message);
+  foo__test_mess__init(tm);
+
+  tm->n_test_string = 1;
+  tm->test_string = NULL;
+
+  tm->n_test_bytes = 1;
+  tm->test_bytes = NULL;
+
+  tm->n_test_message = 1;
+  tm->test_message = NULL;
+
+  foo__test_mess__free_unpacked (tm, NULL);
+}
+
 /* This test checks that protobuf decoder is capable of detecting special
    cases of incomplete messages. The message should have at least two required
    fields field1 and field129 with positions pos1 and pos2 (no matter what the
@@ -2232,6 +2250,7 @@ static Test tests[] =
   { "test alloc failure", test_alloc_fail },
 
   { "test free unpacked input check for null message", test_free_unpacked_input_check_for_null_message },
+  { "test free unpacked input check for null repeated field", test_free_unpacked_input_check_for_null_repeated_field },
 
   { "test required_fields_bitmap", test_required_fields_bitmap },
 
