@@ -1925,6 +1925,12 @@ test_alloc_fail (void)
   free (packed);
 }
 
+static void
+test_free_unpacked_input_check_for_null_message (void)
+{
+  protobuf_c_message_free_unpacked (NULL, NULL);
+}
+
 /* This test checks that protobuf decoder is capable of detecting special
    cases of incomplete messages. The message should have at least two required
    fields field1 and field129 with positions pos1 and pos2 (no matter what the
@@ -2224,6 +2230,8 @@ static Test tests[] =
 
   { "test free unpacked", test_alloc_free_all },
   { "test alloc failure", test_alloc_fail },
+
+  { "test free unpacked input check for null message", test_free_unpacked_input_check_for_null_message },
 
   { "test required_fields_bitmap", test_required_fields_bitmap },
 
