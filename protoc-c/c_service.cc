@@ -198,6 +198,10 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
   int n_methods = descriptor_->method_count();
   MethodIndexAndName *mi_array = new MethodIndexAndName[n_methods];
 
+  bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+    descriptor_->file()->options().optimize_for() ==
+    FileOptions_OptimizeMode_LITE_RUNTIME;
+
   vars_["n_methods"] = SimpleItoa(n_methods);
   printer->Print(vars_, "static const ProtobufCMethodDescriptor $lcfullname$__method_descriptors[$n_methods$] =\n"
                        "{\n");
@@ -206,37 +210,54 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
     vars_["method"] = method->name();
     vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name()) + "__descriptor";
     vars_["output_descriptor"] = "&" + FullNameToLower(method->output_type()->full_name()) + "__descriptor";
-    printer->Print(vars_,
-             "  { \"$method$\", $input_descriptor$, $output_descriptor$ },\n");
+    if (lite_runtime) {
+      printer->Print(vars_,
+          "  { NULL, $input_descriptor$, $output_descriptor$ }, /* LITE_RUNTIME */\n");
+    } else {
+      printer->Print(vars_,
+          "  { \"$method$\", $input_descriptor$, $output_descriptor$ },\n");
+    }
     mi_array[i].i = i;
     mi_array[i].name = method->name().c_str();
   }
   printer->Print(vars_, "};\n");
 
-  qsort ((void*)mi_array, n_methods, sizeof (MethodIndexAndName),
-         compare_method_index_and_name_by_name);
-  printer->Print(vars_, "const unsigned $lcfullname$__method_indices_by_name[] = {\n");
-  for (int i = 0; i < n_methods; i++) {
-    vars_["i"] = SimpleItoa(mi_array[i].i);
-    vars_["name"] = mi_array[i].name;
-    vars_["comma"] = (i + 1 < n_methods) ? "," : " ";
-    printer->Print(vars_, "  $i$$comma$        /* $name$ */\n");
+  if (!lite_runtime) {
+    qsort ((void*)mi_array, n_methods, sizeof (MethodIndexAndName),
+        compare_method_index_and_name_by_name);
+    printer->Print(vars_, "const unsigned $lcfullname$__method_indices_by_name[] = {\n");
+    for (int i = 0; i < n_methods; i++) {
+      vars_["i"] = SimpleItoa(mi_array[i].i);
+      vars_["name"] = mi_array[i].name;
+      vars_["comma"] = (i + 1 < n_methods) ? "," : " ";
+      printer->Print(vars_, "  $i$$comma$        /* $name$ */\n");
+    }
+    printer->Print(vars_, "};\n");
+    vars_["name"] = descriptor_->name();
   }
-  printer->Print(vars_, "};\n");
 
-  vars_["name"] = descriptor_->name();
-
-  printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"
-                       "{\n"
-		       "  PROTOBUF_C__SERVICE_DESCRIPTOR_MAGIC,\n"
-		       "  \"$fullname$\",\n"
-		       "  \"$name$\",\n"
-		       "  \"$cname$\",\n"
-		       "  \"$package$\",\n"
-		       "  $n_methods$,\n"
-		       "  $lcfullname$__method_descriptors,\n"
-		       "  $lcfullname$__method_indices_by_name\n"
-		       "};\n");
+  if (lite_runtime) {
+    printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"
+        "{\n"
+        "  PROTOBUF_C__SERVICE_DESCRIPTOR_MAGIC,\n"
+        "  NULL,NULL,NULL,NULL, /* LITE_RUNTIME */\n"
+        "  $n_methods$,\n"
+        "  $lcfullname$__method_descriptors,\n"
+        "  NULL /* LITE_RUNTIME */\n"
+        "};\n");
+  } else {
+    printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"
+        "{\n"
+        "  PROTOBUF_C__SERVICE_DESCRIPTOR_MAGIC,\n"
+        "  \"$fullname$\",\n"
+        "  \"$name$\",\n"
+        "  \"$cname$\",\n"
+        "  \"$package$\",\n"
+        "  $n_methods$,\n"
+        "  $lcfullname$__method_descriptors,\n"
+        "  $lcfullname$__method_indices_by_name\n"
+        "};\n");
+  }
 
   delete[] mi_array;
 }

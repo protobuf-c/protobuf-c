@@ -139,9 +139,15 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   if (oneof != NULL)
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_ONEOF";
 
+  printer->Print("{\n");
+  if (descriptor_->file()->options().has_optimize_for() &&
+        descriptor_->file()->options().optimize_for() ==
+        FileOptions_OptimizeMode_LITE_RUNTIME) {
+     printer->Print("  NULL, /* LITE_RUNTIME */\n");
+  } else {
+     printer->Print(variables, "  \"$proto_name$\",\n");
+  }
   printer->Print(variables,
-    "{\n"
-    "  \"$proto_name$\",\n"
     "  $value$,\n"
     "  PROTOBUF_C_LABEL_$LABEL$,\n"
     "  PROTOBUF_C_TYPE_$TYPE$,\n");

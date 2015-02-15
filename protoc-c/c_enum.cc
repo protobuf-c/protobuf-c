@@ -150,11 +150,17 @@ void EnumGenerator::GenerateValueInitializer(io::Printer *printer, int index)
 {
   const EnumValueDescriptor *vd = descriptor_->value(index);
   map<string, string> vars;
+  bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+    descriptor_->file()->options().optimize_for() ==
+    FileOptions_OptimizeMode_LITE_RUNTIME;
   vars["enum_value_name"] = vd->name();
   vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name()) + "__" + vd->name();
   vars["value"] = SimpleItoa(vd->number());
-  printer->Print(vars,
-   "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$ },\n");
+  if (lite_runtime)
+    printer->Print(vars, "  { NULL, NULL, $value$ }, /* LITE_RUNTIME */\n");
+  else
+    printer->Print(vars,
+        "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$ },\n");
 }
 
 static int compare_value_indices_by_value_then_index(const void *a, const void *b)
@@ -183,6 +189,10 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   vars["shortname"] = descriptor_->name();
   vars["packagename"] = descriptor_->file()->package();
   vars["value_count"] = SimpleItoa(descriptor_->value_count());
+
+  bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+    descriptor_->file()->options().optimize_for() ==
+    FileOptions_OptimizeMode_LITE_RUNTIME;
 
   // Sort by name and value, dropping duplicate values if they appear later.
   // TODO: use a c++ paradigm for this!
@@ -216,13 +226,13 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
 
   vars["unique_value_count"] = SimpleItoa(n_unique_values);
   printer->Print(vars,
-    "static const ProtobufCEnumValue $lcclassname$__enum_values_by_number[$unique_value_count$] =\n"
-    "{\n");
+      "static const ProtobufCEnumValue $lcclassname$__enum_values_by_number[$unique_value_count$] =\n"
+      "{\n");
   if (descriptor_->value_count() > 0) {
     GenerateValueInitializer(printer, value_index[0].index);
     for (int j = 1; j < descriptor_->value_count(); j++) {
       if (value_index[j-1].value != value_index[j].value) {
-	GenerateValueInitializer(printer, value_index[j].index);
+        GenerateValueInitializer(printer, value_index[j].index);
       }
     }
   }
@@ -236,64 +246,81 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
     int last_value = range_start_value;
     for (int j = 1; j < descriptor_->value_count(); j++) {
       if (value_index[j-1].value != value_index[j].value) {
-	if (last_value + 1 == value_index[j].value) {
-	  range_len++;
-	} else {
-	  // output range
-	  vars["range_start_value"] = SimpleItoa(range_start_value);
-	  vars["orig_index"] = SimpleItoa(range_start);
-	  printer->Print (vars, "{$range_start_value$, $orig_index$},");
-	  range_start_value = value_index[j].value;
-	  range_start += range_len;
-	  range_len = 1;
-	  n_ranges++;
-	}
-	last_value = value_index[j].value;
+        if (last_value + 1 == value_index[j].value) {
+          range_len++;
+        } else {
+          // output range
+          vars["range_start_value"] = SimpleItoa(range_start_value);
+          vars["orig_index"] = SimpleItoa(range_start);
+          printer->Print (vars, "{$range_start_value$, $orig_index$},");
+          range_start_value = value_index[j].value;
+          range_start += range_len;
+          range_len = 1;
+          n_ranges++;
+        }
+        last_value = value_index[j].value;
       }
     }
     {
-    vars["range_start_value"] = SimpleItoa(range_start_value);
-    vars["orig_index"] = SimpleItoa(range_start);
-    printer->Print (vars, "{$range_start_value$, $orig_index$},");
-    range_start += range_len;
-    n_ranges++;
+      vars["range_start_value"] = SimpleItoa(range_start_value);
+      vars["orig_index"] = SimpleItoa(range_start);
+      printer->Print (vars, "{$range_start_value$, $orig_index$},");
+      range_start += range_len;
+      n_ranges++;
     }
     {
-    vars["range_start_value"] = SimpleItoa(0);
-    vars["orig_index"] = SimpleItoa(range_start);
-    printer->Print (vars, "{$range_start_value$, $orig_index$}\n};\n");
+      vars["range_start_value"] = SimpleItoa(0);
+      vars["orig_index"] = SimpleItoa(range_start);
+      printer->Print (vars, "{$range_start_value$, $orig_index$}\n};\n");
     }
   }
   vars["n_ranges"] = SimpleItoa(n_ranges);
 
-  qsort(value_index, descriptor_->value_count(),
+  if (!lite_runtime) {
+    qsort(value_index, descriptor_->value_count(),
         sizeof(ValueIndex), compare_value_indices_by_name);
-  printer->Print(vars,
-    "static const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_name[$value_count$] =\n"
-    "{\n");
-  for (int j = 0; j < descriptor_->value_count(); j++) {
-    vars["index"] = SimpleItoa(value_index[j].final_index);
-    vars["name"] = value_index[j].name;
-    printer->Print (vars, "  { \"$name$\", $index$ },\n");
+    printer->Print(vars,
+        "static const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_name[$value_count$] =\n"
+        "{\n");
+    for (int j = 0; j < descriptor_->value_count(); j++) {
+      vars["index"] = SimpleItoa(value_index[j].final_index);
+      vars["name"] = value_index[j].name;
+      printer->Print (vars, "  { \"$name$\", $index$ },\n");
+    }
+    printer->Print(vars, "};\n");
   }
-  printer->Print(vars, "};\n");
 
-  printer->Print(vars,
-    "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
-    "{\n"
-    "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
-    "  \"$fullname$\",\n"
-    "  \"$shortname$\",\n"
-    "  \"$cname$\",\n"
-    "  \"$packagename$\",\n"
-    "  $unique_value_count$,\n"
-    "  $lcclassname$__enum_values_by_number,\n"
-    "  $value_count$,\n"
-    "  $lcclassname$__enum_values_by_name,\n"
-    "  $n_ranges$,\n"
-    "  $lcclassname$__value_ranges,\n"
-    "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
-    "};\n");
+  if (lite_runtime) {
+    printer->Print(vars,
+        "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
+        "{\n"
+        "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
+        "  NULL,NULL,NULL,NULL, /* LITE_RUNTIME */\n"
+        "  $unique_value_count$,\n"
+        "  $lcclassname$__enum_values_by_number,\n"
+        "  0, NULL, /* LITE_RUNTIME */\n"
+        "  $n_ranges$,\n"
+        "  $lcclassname$__value_ranges,\n"
+        "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
+        "};\n");
+  } else {
+    printer->Print(vars,
+        "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
+        "{\n"
+        "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
+        "  \"$fullname$\",\n"
+        "  \"$shortname$\",\n"
+        "  \"$cname$\",\n"
+        "  \"$packagename$\",\n"
+        "  $unique_value_count$,\n"
+        "  $lcclassname$__enum_values_by_number,\n"
+        "  $value_count$,\n"
+        "  $lcclassname$__enum_values_by_name,\n"
+        "  $n_ranges$,\n"
+        "  $lcclassname$__value_ranges,\n"
+        "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
+        "};\n");
+  }
 
   delete[] value_index;
   delete[] name_index;

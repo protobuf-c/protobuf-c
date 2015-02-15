@@ -387,6 +387,10 @@ GenerateMessageDescriptor(io::Printer* printer) {
     vars["n_fields"] = SimpleItoa(descriptor_->field_count());
     vars["packagename"] = descriptor_->file()->package();
 
+    bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+        descriptor_->file()->options().optimize_for() ==
+        FileOptions_OptimizeMode_LITE_RUNTIME;
+
     for (int i = 0; i < descriptor_->nested_type_count(); i++) {
       nested_generators_[i]->GenerateMessageDescriptor(printer);
     }
@@ -488,21 +492,23 @@ GenerateMessageDescriptor(io::Printer* printer) {
   printer->Outdent();
   printer->Print(vars, "};\n");
 
-  NameIndex *field_indices = new NameIndex [descriptor_->field_count()];
-  for (int i = 0; i < descriptor_->field_count(); i++) {
-    field_indices[i].name = sorted_fields[i]->name().c_str();
-    field_indices[i].index = i;
+  if (!lite_runtime) {
+    NameIndex *field_indices = new NameIndex [descriptor_->field_count()];
+    for (int i = 0; i < descriptor_->field_count(); i++) {
+      field_indices[i].name = sorted_fields[i]->name().c_str();
+      field_indices[i].index = i;
+    }
+    qsort (field_indices, descriptor_->field_count(), sizeof (NameIndex),
+        compare_name_indices_by_name);
+    printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
+    for (int i = 0; i < descriptor_->field_count(); i++) {
+      vars["index"] = SimpleItoa(field_indices[i].index);
+      vars["name"] = field_indices[i].name;
+      printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
+    }
+    printer->Print("};\n");
+    delete[] field_indices;
   }
-  qsort (field_indices, descriptor_->field_count(), sizeof (NameIndex),
-         compare_name_indices_by_name);
-  printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
-  for (int i = 0; i < descriptor_->field_count(); i++) {
-    vars["index"] = SimpleItoa(field_indices[i].index);
-    vars["name"] = field_indices[i].name;
-    printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
-  }
-  printer->Print("};\n");
-  delete[] field_indices;
 
   // create range initializers
   int *values = new int[descriptor_->field_count()];
@@ -526,24 +532,36 @@ GenerateMessageDescriptor(io::Printer* printer) {
         "#define $lcclassname$__field_indices_by_name NULL\n"
         "#define $lcclassname$__number_ranges NULL\n");
     }
-  
+
   printer->Print(vars,
-  "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
-  "{\n"
-  "  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,\n"
-  "  \"$fullname$\",\n"
-  "  \"$shortname$\",\n"
-  "  \"$classname$\",\n"
-  "  \"$packagename$\",\n"
-  "  sizeof($classname$),\n"
-  "  $n_fields$,\n"
-  "  $lcclassname$__field_descriptors,\n"
-  "  $lcclassname$__field_indices_by_name,\n"
-  "  $n_ranges$,"
-  "  $lcclassname$__number_ranges,\n"
-  "  (ProtobufCMessageInit) $lcclassname$__init,\n"
-  "  NULL,NULL,NULL    /* reserved[123] */\n"
-  "};\n");
+      "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
+      "{\n"
+      "  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,\n");
+  if (lite_runtime) {
+    printer->Print("  NULL,NULL,NULL,NULL, /* LITE_RUNTIME */\n");
+  } else {
+    printer->Print(vars,
+        "  \"$fullname$\",\n"
+        "  \"$shortname$\",\n"
+        "  \"$classname$\",\n"
+        "  \"$packagename$\",\n");
+  }
+  printer->Print(vars,
+      "  sizeof($classname$),\n"
+      "  $n_fields$,\n"
+      "  $lcclassname$__field_descriptors,\n");
+  if (lite_runtime) {
+    printer->Print("  NULL, /* LITE_RUNTIME */\n");
+  } else {
+    printer->Print(vars,
+        "  $lcclassname$__field_indices_by_name,\n");
+  }
+  printer->Print(vars,
+      "  $n_ranges$,"
+      "  $lcclassname$__number_ranges,\n"
+      "  (ProtobufCMessageInit) $lcclassname$__init,\n"
+      "  NULL,NULL,NULL    /* reserved[123] */\n"
+      "};\n");
 }
 
 }  // namespace c
