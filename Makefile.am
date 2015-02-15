@@ -111,6 +111,12 @@ protoc_c_protoc_c_LDADD = \
 # protobuf-c tests
 #
 
+if CROSS_COMPILING
+#
+# skip tests on cross-compiling
+#
+else
+
 LOG_COMPILER = $(VALGRIND)
 
 check_PROGRAMS += \
@@ -175,6 +181,7 @@ t_version_version_SOURCES = \
 	t/version/version.c
 t_version_version_LDADD = \
 	protobuf-c/libprotobuf-c.la
+endif # CROSS_COMPILING
 
 endif # BUILD_COMPILER
 
