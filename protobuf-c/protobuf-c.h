@@ -806,7 +806,7 @@ protobuf_c_version_number(void);
  * \return
  *      A `ProtobufCEnumValue` object.
  * \retval NULL
- *      If not found.
+ *      If not found or if the optimize_for = LITE_RUNTIME option was set.
  */
 PROTOBUF_C__API
 const ProtobufCEnumValue *
@@ -846,7 +846,7 @@ protobuf_c_enum_descriptor_get_value(
  * \return
  *      A `ProtobufCFieldDescriptor` object.
  * \retval NULL
- *      If not found.
+ *      If not found or if the optimize_for = LITE_RUNTIME option was set.
  */
 PROTOBUF_C__API
 const ProtobufCFieldDescriptor *
@@ -1020,7 +1020,7 @@ protobuf_c_service_destroy(ProtobufCService *service);
  * \return
  *      A `ProtobufCMethodDescriptor` object.
  * \retval NULL
- *      If not found.
+ *      If not found or if the optimize_for = LITE_RUNTIME option was set.
  */
 PROTOBUF_C__API
 const ProtobufCMethodDescriptor *
