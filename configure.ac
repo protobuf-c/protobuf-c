@@ -67,6 +67,7 @@ else
   PROTOBUF_VERSION="not required, not building compiler"
 fi
 AM_CONDITIONAL([BUILD_COMPILER], [test "x$enable_protoc" != "xno"])
+AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" != "xno"])
 
 gl_LD_VERSION_SCRIPT
 
