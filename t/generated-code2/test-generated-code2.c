@@ -1970,33 +1970,29 @@ static void
 test_field_flags (void)
 {
   const ProtobufCFieldDescriptor *f;
+  const ProtobufCMessageDescriptor *desc = &foo__test_field_flags__descriptor;
 
-  f = protobuf_c_message_descriptor_get_field_by_name(
-    &foo__test_field_flags__descriptor, "no_flags1");
+  f = protobuf_c_message_descriptor_get_field_by_name(desc, "no_flags1");
   assert(f != NULL);
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
 
-  f = protobuf_c_message_descriptor_get_field_by_name(
-    &foo__test_field_flags__descriptor, "no_flags2");
+  f = protobuf_c_message_descriptor_get_field_by_name(desc, "no_flags2");
   assert(f != NULL);
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
 
-  f = protobuf_c_message_descriptor_get_field_by_name(
-    &foo__test_field_flags__descriptor, "no_flags3");
+  f = protobuf_c_message_descriptor_get_field_by_name(desc, "no_flags3");
   assert(f != NULL);
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
 
-  f = protobuf_c_message_descriptor_get_field_by_name(
-    &foo__test_field_flags__descriptor, "packed");
+  f = protobuf_c_message_descriptor_get_field_by_name(desc, "packed");
   assert(f != NULL);
   assert((f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
   assert(!(f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
 
-  f = protobuf_c_message_descriptor_get_field_by_name(
-    &foo__test_field_flags__descriptor, "packed_deprecated");
+  f = protobuf_c_message_descriptor_get_field_by_name(desc, "packed_deprecated");
   assert(f != NULL);
   assert((f->flags & PROTOBUF_C_FIELD_FLAG_PACKED));
   assert((f->flags & PROTOBUF_C_FIELD_FLAG_DEPRECATED));
