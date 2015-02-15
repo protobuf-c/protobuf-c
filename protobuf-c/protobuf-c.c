@@ -3381,6 +3381,9 @@ const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value_by_name(const ProtobufCEnumDescriptor *desc,
 					     const char *name)
 {
+	if (desc == NULL || desc->values_by_name == NULL)
+		return NULL;
+
 	unsigned start = 0;
 	unsigned count = desc->n_value_names;
 
@@ -3416,6 +3419,9 @@ const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field_by_name(const ProtobufCMessageDescriptor *desc,
 						const char *name)
 {
+	if (desc == NULL || desc->fields_sorted_by_name == NULL)
+		return NULL;
+
 	unsigned start = 0;
 	unsigned count = desc->n_fields;
 	const ProtobufCFieldDescriptor *field;
@@ -3455,6 +3461,9 @@ const ProtobufCMethodDescriptor *
 protobuf_c_service_descriptor_get_method_by_name(const ProtobufCServiceDescriptor *desc,
 						 const char *name)
 {
+	if (desc == NULL || desc->method_indices_by_name == NULL)
+		return NULL;
+
 	unsigned start = 0;
 	unsigned count = desc->n_methods;
 
