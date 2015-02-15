@@ -1,6 +1,6 @@
-language:
-    - c
-    - cpp
+# C is enough here
+# If you specify cpp, then Travis failed to found clang++
+language: c
 
 env:
     - PROTOBUF_VERSION=2.6.0
@@ -26,4 +26,4 @@ script:
     - if [ "$CC" = "gcc" ]; then ./configure --enable-code-coverage && make -j2 && make check; fi
 
 after_success:
-    - if [ "$CC" = "gcc" ]; then cpp-coveralls --build-root . --exclude t/ --exclude /usr/include; fi
+    - if [ "$CC" = "gcc" ]; then cpp-coveralls --build-root . --exclude t/ --exclude /usr/include --exclude protobuf-$PROTOBUF_VERSION; fi
