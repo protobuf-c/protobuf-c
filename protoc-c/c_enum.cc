@@ -216,7 +216,7 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
 
   vars["unique_value_count"] = SimpleItoa(n_unique_values);
   printer->Print(vars,
-    "const ProtobufCEnumValue $lcclassname$__enum_values_by_number[$unique_value_count$] =\n"
+    "static const ProtobufCEnumValue $lcclassname$__enum_values_by_number[$unique_value_count$] =\n"
     "{\n");
   if (descriptor_->value_count() > 0) {
     GenerateValueInitializer(printer, value_index[0].index);
@@ -269,7 +269,7 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   qsort(value_index, descriptor_->value_count(),
         sizeof(ValueIndex), compare_value_indices_by_name);
   printer->Print(vars,
-    "const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_name[$value_count$] =\n"
+    "static const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_name[$value_count$] =\n"
     "{\n");
   for (int j = 0; j < descriptor_->value_count(); j++) {
     vars["index"] = SimpleItoa(value_index[j].final_index);
