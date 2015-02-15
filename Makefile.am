@@ -131,7 +131,8 @@ t_generated_code_test_generated_code_LDADD = \
 
 t_generated_code2_test_generated_code2_SOURCES = \
 	t/generated-code2/test-generated-code2.c \
-	t/test-full.pb-c.c
+	t/test-full.pb-c.c \
+	t/test-optimized.pb-c.c
 t_generated_code2_test_generated_code2_LDADD = \
 	protobuf-c/libprotobuf-c.la
 
@@ -151,6 +152,9 @@ t_generated_code2_cxx_generate_packed_data_LDADD = \
 t/test.pb-c.c t/test.pb-c.h: $(top_builddir)/protoc-c/protoc-c$(EXEEXT) $(top_srcdir)/t/test.proto
 	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test.proto
 
+t/test-optimized.pb-c.c t/test-optimized.pb-c.h: $(top_builddir)/protoc-c/protoc-c$(EXEEXT) $(top_srcdir)/t/test-optimized.proto
+	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test-optimized.proto
+
 t/test-full.pb-c.c t/test-full.pb-c.h: $(top_builddir)/protoc-c/protoc-c$(EXEEXT) $(top_srcdir)/t/test-full.proto
 	$(AM_V_GEN)$(top_builddir)/protoc-c/protoc-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test-full.proto
 
@@ -163,6 +167,7 @@ t/generated-code2/test-full-cxx-output.inc: t/generated-code2/cxx-generate-packe
 BUILT_SOURCES += \
 	t/test.pb-c.c t/test.pb-c.h \
 	t/test-full.pb-c.c t/test-full.pb-c.h \
+	t/test-optimized.pb-c.c t/test-optimized.pb-c.h \
 	t/test-full.pb.cc t/test-full.pb.h \
 	t/generated-code2/test-full-cxx-output.inc
 
@@ -176,6 +181,7 @@ endif # BUILD_COMPILER
 EXTRA_DIST += \
 	t/test.proto \
 	t/test-full.proto \
+	t/test-optimized.proto \
 	t/generated-code2/common-test-arrays.h
 
 #

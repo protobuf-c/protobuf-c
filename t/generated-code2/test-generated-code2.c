@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "t/test-full.pb-c.h"
+#include "t/test-optimized.pb-c.h"
 #include "t/generated-code2/test-full-cxx-output.inc"
 
 #define TEST_ENUM_SMALL_TYPE_NAME   Foo__TestEnumSmall
@@ -1565,9 +1566,10 @@ test_enum_descriptor (const ProtobufCEnumDescriptor *desc)
       const ProtobufCEnumValue *vv;
       const ProtobufCEnumValue *vn;
       vv = protobuf_c_enum_descriptor_get_value (desc, sv->value);
-      vn = protobuf_c_enum_descriptor_get_value_by_name (desc, sv->name);
       assert (sv == vv);
-      assert (sv == vn);
+      vn = protobuf_c_enum_descriptor_get_value_by_name (desc, sv->name);
+      if (sv->name != NULL)
+         assert (sv == vn);
     }
   for (i = 0; i < desc->n_value_names; i++)
     {
@@ -1589,11 +1591,30 @@ test_enum_by_name (const ProtobufCEnumDescriptor *desc,
 }
 
 static void
+test_lite_enum (void)
+{
+  const ProtobufCEnumDescriptor *desc = &foo__test_enum_lite__descriptor;
+  const ProtobufCEnumValue *v;
+
+  v = protobuf_c_enum_descriptor_get_value_by_name (desc, "BOO");
+  assert (v == NULL);
+
+  v = protobuf_c_enum_descriptor_get_value (desc, 0);
+  assert (v != NULL);
+  assert (v->value == 0);
+
+  v = protobuf_c_enum_descriptor_get_value (desc, 3);
+  assert (v == NULL);
+}
+
+static void
 test_enum_lookups (void)
 {
   test_enum_descriptor (&foo__test_enum__descriptor);
   test_enum_descriptor (&foo__test_enum_small__descriptor);
   test_enum_descriptor (&foo__test_enum_dup_values__descriptor);
+  test_enum_descriptor (&foo__test_enum_lite__descriptor);
+  test_lite_enum ();
 #define TEST_ENUM_DUP_VALUES(str, shortname) \
   test_enum_by_name (&foo__test_enum_dup_values__descriptor,  \
                      str, FOO__TEST_ENUM_DUP_VALUES__##shortname)
@@ -1618,9 +1639,10 @@ test_message_descriptor (const ProtobufCMessageDescriptor *desc)
       const ProtobufCFieldDescriptor *fv;
       const ProtobufCFieldDescriptor *fn;
       fv = protobuf_c_message_descriptor_get_field (desc, f->id);
-      fn = protobuf_c_message_descriptor_get_field_by_name (desc, f->name);
       assert (f == fv);
-      assert (f == fn);
+      fn = protobuf_c_message_descriptor_get_field_by_name (desc, f->name);
+      if (desc->fields_sorted_by_name != NULL)
+        assert (f == fn);
     }
 }
 static void
@@ -1629,6 +1651,7 @@ test_message_lookups (void)
   test_message_descriptor (&foo__test_mess__descriptor);
   test_message_descriptor (&foo__test_mess_optional__descriptor);
   test_message_descriptor (&foo__test_mess_required_enum__descriptor);
+  test_message_descriptor (&foo__test_mess_lite__descriptor);
 }
 
 static void
