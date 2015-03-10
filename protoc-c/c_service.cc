@@ -197,7 +197,7 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
 {
   int n_methods = descriptor_->method_count();
   MethodIndexAndName *mi_array = new MethodIndexAndName[n_methods];
-  
+
   vars_["n_methods"] = SimpleItoa(n_methods);
   printer->Print(vars_, "static const ProtobufCMethodDescriptor $lcfullname$__method_descriptors[$n_methods$] =\n"
                        "{\n");
@@ -223,6 +223,8 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
     printer->Print(vars_, "  $i$$comma$        /* $name$ */\n");
   }
   printer->Print(vars_, "};\n");
+
+  vars_["name"] = descriptor_->name();
 
   printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"
                        "{\n"
@@ -251,7 +253,7 @@ void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
     vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     vars_["index"] = SimpleItoa(i);
-     
+
     printer->Print(vars_,
                    "void $lcfullname$__$method$(ProtobufCService *service,\n"
                    "     $padddddddddddddddddd$ const $input_typename$ *input,\n"
