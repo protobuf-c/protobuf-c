@@ -1,3 +1,29 @@
+protobuf-c (1.1.1)
+
+  [ Robert Edmonds ]
+  * Release 1.1.1.
+
+  * Use protobuf 2.6.1 in the Travis-CI environment.
+
+  [ Ilya Lipnitskiy ]
+  * Munge C block comment delimiters in protobuf comments, preventing syntax
+    errors in generated header files (Issue #180, #185).
+
+  * Add static qualifier to ProtobufCEnumValue and ProtobufCEnumValueIndex
+    variables in generated output.  
+
+  [ Oleg Efimov ]
+  * Fix -Wpointer-sign compiler diagnostics in the test suite.
+
+  * Check for NULL pointers in protobuf_c_message_free_unpacked()
+    (Issue #177).
+
+  * Exclude protoc-c and downloaded protobuf sources from Coveralls report.
+
+  [ Andrey Myznikov ]
+  * Fix incorrect 'short_name' field values in ProtobufCServiceDescriptor
+    variables in generated output.
+
 protobuf-c (1.1.0)
 
   [ Robert Edmonds ]
