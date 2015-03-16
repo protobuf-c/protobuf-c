@@ -1,8 +1,8 @@
 var group__api =
 [
     [ "ProtobufCAllocator", "structProtobufCAllocator.html", [
-      [ "alloc", "structProtobufCAllocator.html#a5739b61ca067640839703ca4834e9ec5", null ],
-      [ "free", "structProtobufCAllocator.html#ab7c9dac31c2597feeb6287971001a92c", null ],
+      [ "alloc", "structProtobufCAllocator.html#a803d24a21c3fbdd887be88ca69b9d460", null ],
+      [ "free", "structProtobufCAllocator.html#a1cdbf3d0d759abcc4110c69aaacea9e0", null ],
       [ "allocator_data", "structProtobufCAllocator.html#ac58dcb6132a11bd93b5e6878cb3370a9", null ]
     ] ],
     [ "ProtobufCBinaryData", "structProtobufCBinaryData.html", [
@@ -10,7 +10,7 @@ var group__api =
       [ "data", "structProtobufCBinaryData.html#ac6388ec7e374bd23db52cef2d743300f", null ]
     ] ],
     [ "ProtobufCBuffer", "structProtobufCBuffer.html", [
-      [ "append", "structProtobufCBuffer.html#af3a7340a9fc55174a5a89899b1771dee", null ]
+      [ "append", "structProtobufCBuffer.html#aeeb00c0f599dc77f07802abde27e1b99", null ]
     ] ],
     [ "ProtobufCBufferSimple", "structProtobufCBufferSimple.html", [
       [ "base", "structProtobufCBufferSimple.html#a51f397b48e413adb557a0f176cd0735e", null ],
@@ -99,8 +99,8 @@ var group__api =
     ] ],
     [ "ProtobufCService", "structProtobufCService.html", [
       [ "descriptor", "structProtobufCService.html#acb2d90afa9d180b1a8cc1d154a7bf78a", null ],
-      [ "invoke", "structProtobufCService.html#aa4d537e5c190f0b401a56d01b59d767d", null ],
-      [ "destroy", "structProtobufCService.html#a72ab6c170618ee1c4b99e427ae429471", null ]
+      [ "invoke", "structProtobufCService.html#ac4913085bb69a9124a05878f3b42cde4", null ],
+      [ "destroy", "structProtobufCService.html#a52a367c70b34a6edaed3344f3b8dcd21", null ]
     ] ],
     [ "ProtobufCServiceDescriptor", "structProtobufCServiceDescriptor.html", [
       [ "magic", "structProtobufCServiceDescriptor.html#a65d2805d0d37a47692470a07835f9b5f", null ],
