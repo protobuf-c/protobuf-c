@@ -142,8 +142,8 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   printer->Print("{\n");
   if (descriptor_->file()->options().has_optimize_for() &&
         descriptor_->file()->options().optimize_for() ==
-        FileOptions_OptimizeMode_LITE_RUNTIME) {
-     printer->Print("  NULL, /* LITE_RUNTIME */\n");
+        FileOptions_OptimizeMode_CODE_SIZE) {
+     printer->Print("  NULL, /* CODE_SIZE */\n");
   } else {
      printer->Print(variables, "  \"$proto_name$\",\n");
   }

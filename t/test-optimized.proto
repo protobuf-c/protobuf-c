@@ -1,6 +1,6 @@
 package foo;
 
-option optimize_for = LITE_RUNTIME;
+option optimize_for = CODE_SIZE;
 
 enum TestEnumLite {
   LITE = 0;

@@ -198,9 +198,9 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
   int n_methods = descriptor_->method_count();
   MethodIndexAndName *mi_array = new MethodIndexAndName[n_methods];
 
-  bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+  bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
-    FileOptions_OptimizeMode_LITE_RUNTIME;
+    FileOptions_OptimizeMode_CODE_SIZE;
 
   vars_["n_methods"] = SimpleItoa(n_methods);
   printer->Print(vars_, "static const ProtobufCMethodDescriptor $lcfullname$__method_descriptors[$n_methods$] =\n"
@@ -210,9 +210,9 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
     vars_["method"] = method->name();
     vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name()) + "__descriptor";
     vars_["output_descriptor"] = "&" + FullNameToLower(method->output_type()->full_name()) + "__descriptor";
-    if (lite_runtime) {
+    if (optimize_code_size) {
       printer->Print(vars_,
-          "  { NULL, $input_descriptor$, $output_descriptor$ }, /* LITE_RUNTIME */\n");
+          "  { NULL, $input_descriptor$, $output_descriptor$ }, /* CODE_SIZE */\n");
     } else {
       printer->Print(vars_,
           "  { \"$method$\", $input_descriptor$, $output_descriptor$ },\n");
@@ -222,7 +222,7 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
   }
   printer->Print(vars_, "};\n");
 
-  if (!lite_runtime) {
+  if (!optimize_code_size) {
     qsort ((void*)mi_array, n_methods, sizeof (MethodIndexAndName),
         compare_method_index_and_name_by_name);
     printer->Print(vars_, "const unsigned $lcfullname$__method_indices_by_name[] = {\n");
@@ -236,14 +236,14 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
     vars_["name"] = descriptor_->name();
   }
 
-  if (lite_runtime) {
+  if (optimize_code_size) {
     printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"
         "{\n"
         "  PROTOBUF_C__SERVICE_DESCRIPTOR_MAGIC,\n"
-        "  NULL,NULL,NULL,NULL, /* LITE_RUNTIME */\n"
+        "  NULL,NULL,NULL,NULL, /* CODE_SIZE */\n"
         "  $n_methods$,\n"
         "  $lcfullname$__method_descriptors,\n"
-        "  NULL /* LITE_RUNTIME */\n"
+        "  NULL /* CODE_SIZE */\n"
         "};\n");
   } else {
     printer->Print(vars_, "const ProtobufCServiceDescriptor $lcfullname$__descriptor =\n"

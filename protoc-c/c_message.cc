@@ -387,9 +387,9 @@ GenerateMessageDescriptor(io::Printer* printer) {
     vars["n_fields"] = SimpleItoa(descriptor_->field_count());
     vars["packagename"] = descriptor_->file()->package();
 
-    bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+    bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
         descriptor_->file()->options().optimize_for() ==
-        FileOptions_OptimizeMode_LITE_RUNTIME;
+        FileOptions_OptimizeMode_CODE_SIZE;
 
     for (int i = 0; i < descriptor_->nested_type_count(); i++) {
       nested_generators_[i]->GenerateMessageDescriptor(printer);
@@ -492,7 +492,7 @@ GenerateMessageDescriptor(io::Printer* printer) {
   printer->Outdent();
   printer->Print(vars, "};\n");
 
-  if (!lite_runtime) {
+  if (!optimize_code_size) {
     NameIndex *field_indices = new NameIndex [descriptor_->field_count()];
     for (int i = 0; i < descriptor_->field_count(); i++) {
       field_indices[i].name = sorted_fields[i]->name().c_str();
@@ -537,8 +537,8 @@ GenerateMessageDescriptor(io::Printer* printer) {
       "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
       "{\n"
       "  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,\n");
-  if (lite_runtime) {
-    printer->Print("  NULL,NULL,NULL,NULL, /* LITE_RUNTIME */\n");
+  if (optimize_code_size) {
+    printer->Print("  NULL,NULL,NULL,NULL, /* CODE_SIZE */\n");
   } else {
     printer->Print(vars,
         "  \"$fullname$\",\n"
@@ -550,8 +550,8 @@ GenerateMessageDescriptor(io::Printer* printer) {
       "  sizeof($classname$),\n"
       "  $n_fields$,\n"
       "  $lcclassname$__field_descriptors,\n");
-  if (lite_runtime) {
-    printer->Print("  NULL, /* LITE_RUNTIME */\n");
+  if (optimize_code_size) {
+    printer->Print("  NULL, /* CODE_SIZE */\n");
   } else {
     printer->Print(vars,
         "  $lcclassname$__field_indices_by_name,\n");

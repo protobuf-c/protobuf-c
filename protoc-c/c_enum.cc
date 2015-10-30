@@ -150,14 +150,14 @@ void EnumGenerator::GenerateValueInitializer(io::Printer *printer, int index)
 {
   const EnumValueDescriptor *vd = descriptor_->value(index);
   map<string, string> vars;
-  bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+  bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
-    FileOptions_OptimizeMode_LITE_RUNTIME;
+    FileOptions_OptimizeMode_CODE_SIZE;
   vars["enum_value_name"] = vd->name();
   vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name()) + "__" + vd->name();
   vars["value"] = SimpleItoa(vd->number());
-  if (lite_runtime)
-    printer->Print(vars, "  { NULL, NULL, $value$ }, /* LITE_RUNTIME */\n");
+  if (optimize_code_size)
+    printer->Print(vars, "  { NULL, NULL, $value$ }, /* CODE_SIZE */\n");
   else
     printer->Print(vars,
         "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$ },\n");
@@ -190,9 +190,9 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   vars["packagename"] = descriptor_->file()->package();
   vars["value_count"] = SimpleItoa(descriptor_->value_count());
 
-  bool lite_runtime = descriptor_->file()->options().has_optimize_for() &&
+  bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
-    FileOptions_OptimizeMode_LITE_RUNTIME;
+    FileOptions_OptimizeMode_CODE_SIZE;
 
   // Sort by name and value, dropping duplicate values if they appear later.
   // TODO: use a c++ paradigm for this!
@@ -276,7 +276,7 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   }
   vars["n_ranges"] = SimpleItoa(n_ranges);
 
-  if (!lite_runtime) {
+  if (!optimize_code_size) {
     qsort(value_index, descriptor_->value_count(),
         sizeof(ValueIndex), compare_value_indices_by_name);
     printer->Print(vars,
@@ -290,15 +290,15 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
     printer->Print(vars, "};\n");
   }
 
-  if (lite_runtime) {
+  if (optimize_code_size) {
     printer->Print(vars,
         "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
         "{\n"
         "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
-        "  NULL,NULL,NULL,NULL, /* LITE_RUNTIME */\n"
+        "  NULL,NULL,NULL,NULL, /* CODE_SIZE */\n"
         "  $unique_value_count$,\n"
         "  $lcclassname$__enum_values_by_number,\n"
-        "  0, NULL, /* LITE_RUNTIME */\n"
+        "  0, NULL, /* CODE_SIZE */\n"
         "  $n_ranges$,\n"
         "  $lcclassname$__value_ranges,\n"
         "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
