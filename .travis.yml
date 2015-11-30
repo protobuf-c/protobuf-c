@@ -2,27 +2,71 @@ language:
     - c
     - cpp
 
-env:
-    - PROTOBUF_VERSION=2.6.1
+# Use Trusty VM
+sudo: required
+dist: trusty
 
-compiler:
-    - gcc
-    - clang
+matrix:
+  include:
+    # Test clang-3.6
+    # TODO: clang 3.7+ packages from http://llvm.org/apt do not support sanitizers yet, see https://llvm.org/bugs/show_bug.cgi?id=22757
+    - env: CLANG_VERSION=3.6
+      os: linux
+      addons:
+        apt:
+          packages:
+            - valgrind
+            - util-linux
+            - clang-3.6
+            - libclang-common-3.6-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+
+    # Test default gcc
+    - env: GCC_VERSION=4.8
+      os: linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - lcov
+            - valgrind
+
+    # Test gcc-5.0
+    - env: GCC_VERSION=5
+      os: linux
+      addons:
+        apt:
+          packages:
+            - valgrind
+            - g++-5
+            - gcc-5
+          sources:
+            - ubuntu-toolchain-r-test
+env:
+    global:
+        - PROTOBUF_VERSION=2.6.1
+        - PKG_CONFIG_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib/pkgconfig
 
 before_install:
-    - sudo apt-get update -qq
+    - if [ -n "$GCC_VERSION" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}"; fi
+    - if [ -n "$CLANG_VERSION" ]; then export CXX="clang++-${CLANG_VERSION}" CC="clang-${CLANG_VERSION}"; fi
+    - if [ "$GCC_VERSION" == "4.8" ]; then export CXX="g++" CC="gcc"; fi
+    - which $CXX
+    - which $CC
+    - which valgrind
 
 install:
-    - sudo apt-get -q install valgrind lcov
-    - sudo pip install cpp-coveralls
+    - pip install --user cpp-coveralls
     - wget https://github.com/google/protobuf/releases/download/v$PROTOBUF_VERSION/protobuf-$PROTOBUF_VERSION.tar.gz
     - tar xf protobuf-$PROTOBUF_VERSION.tar.gz
-    - ( cd protobuf-$PROTOBUF_VERSION && ./configure && make -j2 && sudo make install && sudo ldconfig )
+    - ( cd protobuf-$PROTOBUF_VERSION && ./configure --prefix=$HOME/protobuf-$PROTOBUF_VERSION-bin && make -j2 && make install )
 
 script:
     - ./autogen.sh
     - ./configure && make -j2 distcheck VERBOSE=1 && make clean
-    - ./configure --enable-valgrind-tests && make -j2 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests" VERBOSE=1 && make clean
+    - if [ "$GCC_VERSION" != "4.8" ]; then ./configure --enable-valgrind-tests CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined" && make -j2 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" VERBOSE=1 && make clean; fi
     - if [ "$CC" = "gcc" ]; then ./configure --enable-code-coverage && make -j2 && make check; fi
 
 after_success:
