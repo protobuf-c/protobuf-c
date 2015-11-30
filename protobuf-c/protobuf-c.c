@@ -258,13 +258,13 @@ get_tag_size(unsigned number)
 static inline size_t
 uint32_size(uint32_t v)
 {
-	if (v < ((uint32_t)1 << 7)) {
+	if (v < (1UL << 7)) {
 		return 1;
-	} else if (v < ((uint32_t)1 << 14)) {
+	} else if (v < (1UL << 14)) {
 		return 2;
-	} else if (v < ((uint32_t)1 << 21)) {
+	} else if (v < (1UL << 21)) {
 		return 3;
-	} else if (v < ((uint32_t)1 << 28)) {
+	} else if (v < (1UL << 28)) {
 		return 4;
 	} else {
 		return 5;
@@ -285,13 +285,13 @@ int32_size(int32_t v)
 {
 	if (v < 0) {
 		return 10;
-	} else if (v < ((uint32_t)1 << 7)) {
+	} else if (v < (1UL << 7)) {
 		return 1;
-	} else if (v < ((uint32_t)1 << 14)) {
+	} else if (v < (1UL << 14)) {
 		return 2;
-	} else if (v < ((uint32_t)1 << 21)) {
+	} else if (v < (1UL << 21)) {
 		return 3;
-	} else if (v < ((uint32_t)1 << 28)) {
+	} else if (v < (1UL << 28)) {
 		return 4;
 	} else {
 		return 5;
@@ -348,15 +348,15 @@ uint64_size(uint64_t v)
 
 	if (upper_v == 0) {
 		return uint32_size((uint32_t) v);
-	} else if (upper_v < ((uint32_t)1 << 3)) {
+	} else if (upper_v < (1UL << 3)) {
 		return 5;
-	} else if (upper_v < ((uint32_t)1 << 10)) {
+	} else if (upper_v < (1UL << 10)) {
 		return 6;
-	} else if (upper_v < ((uint32_t)1 << 17)) {
+	} else if (upper_v < (1UL << 17)) {
 		return 7;
-	} else if (upper_v < ((uint32_t)1 << 24)) {
+	} else if (upper_v < (1UL << 24)) {
 		return 8;
-	} else if (upper_v < ((uint32_t)1 << 31)) {
+	} else if (upper_v < (1UL << 31)) {
 		return 9;
 	} else {
 		return 10;
