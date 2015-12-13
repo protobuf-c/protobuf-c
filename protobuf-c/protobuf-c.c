@@ -311,9 +311,9 @@ static inline uint32_t
 zigzag32(int32_t v)
 {
 	if (v < 0)
-		return ((uint32_t) (-v)) * 2 - 1;
+		return (-(uint32_t)v) * 2 - 1;
 	else
-		return v * 2;
+		return (uint32_t)(v) * 2;
 }
 
 /**
@@ -376,9 +376,9 @@ static inline uint64_t
 zigzag64(int64_t v)
 {
 	if (v < 0)
-		return ((uint64_t) (-v)) * 2 - 1;
+		return (-(uint64_t)v) * 2 - 1;
 	else
-		return v * 2;
+		return (uint64_t)(v) * 2;
 }
 
 /**
