@@ -231,15 +231,15 @@ protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
  *      Number of bytes required.
  */
 static inline size_t
-get_tag_size(unsigned number)
+get_tag_size(uint32_t number)
 {
-	if (number < (1 << 4)) {
+	if (number < (1UL << 4)) {
 		return 1;
-	} else if (number < (1 << 11)) {
+	} else if (number < (1UL << 11)) {
 		return 2;
-	} else if (number < (1 << 18)) {
+	} else if (number < (1UL << 18)) {
 		return 3;
-	} else if (number < (1 << 25)) {
+	} else if (number < (1UL << 25)) {
 		return 4;
 	} else {
 		return 5;
@@ -983,7 +983,7 @@ prefixed_message_pack(const ProtobufCMessage *message, uint8_t *out)
 static size_t
 tag_pack(uint32_t id, uint8_t *out)
 {
-	if (id < (1 << (32 - 3)))
+	if (id < (1UL << (32 - 3)))
 		return uint32_pack(id << 3, out);
 	else
 		return uint64_pack(((uint64_t) id) << 3, out);
@@ -1945,7 +1945,7 @@ parse_tag_and_wiretype(size_t len,
 	return 0; /* error: bad header */
 }
 
-/* sizeof(ScannedMember) must be <= (1<<BOUND_SIZEOF_SCANNED_MEMBER_LOG2) */
+/* sizeof(ScannedMember) must be <= (1UL<<BOUND_SIZEOF_SCANNED_MEMBER_LOG2) */
 #define BOUND_SIZEOF_SCANNED_MEMBER_LOG2 5
 typedef struct _ScannedMember ScannedMember;
 /** Field as it's being read. */
@@ -2850,10 +2850,10 @@ message_init_generic(const ProtobufCMessageDescriptor *desc,
    - FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)
 
 #define REQUIRED_FIELD_BITMAP_SET(index)	\
-	(required_fields_bitmap[(index)/8] |= (1<<((index)%8)))
+	(required_fields_bitmap[(index)/8] |= (1UL<<((index)%8)))
 
 #define REQUIRED_FIELD_BITMAP_IS_SET(index)	\
-	(required_fields_bitmap[(index)/8] & (1<<((index)%8)))
+	(required_fields_bitmap[(index)/8] & (1UL<<((index)%8)))
 
 ProtobufCMessage *
 protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
@@ -2864,7 +2864,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	size_t rem = len;
 	const uint8_t *at = data;
 	const ProtobufCFieldDescriptor *last_field = desc->fields + 0;
-	ScannedMember first_member_slab[1 <<
+	ScannedMember first_member_slab[1UL <<
 					FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2];
 
 	/*
@@ -3012,7 +3012,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			goto error_cleanup_during_scan;
 		}
 
-		if (in_slab_index == (1U <<
+		if (in_slab_index == (1UL <<
 			(which_slab + FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)))
 		{
 			size_t size;
@@ -3110,7 +3110,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 	/* do real parsing */
 	for (i_slab = 0; i_slab <= which_slab; i_slab++) {
 		unsigned max = (i_slab == which_slab) ?
-			in_slab_index : (1U << (i_slab + 4));
+			in_slab_index : (1UL << (i_slab + 4));
 		ScannedMember *slab = scanned_member_slabs[i_slab];
 		unsigned j;
 
