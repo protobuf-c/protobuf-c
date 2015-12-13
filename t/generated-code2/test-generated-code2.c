@@ -96,6 +96,8 @@ binary_data_equals (ProtobufCBinaryData a, ProtobufCBinaryData b)
 {
   if (a.len != b.len)
     return 0;
+  if (a.len == 0 && b.len == 0)
+    return 1;
   return memcmp (a.data, b.data, a.len) == 0;
 }
 
