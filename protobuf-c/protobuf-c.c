@@ -417,8 +417,9 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 	switch (field->type) {
 	case PROTOBUF_C_TYPE_SINT32:
 		return rv + sint32_size(*(const int32_t *) member);
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
-		return rv + int32_size(*(const uint32_t *) member);
+		return rv + int32_size(*(const int32_t *) member);
 	case PROTOBUF_C_TYPE_UINT32:
 		return rv + uint32_size(*(const uint32_t *) member);
 	case PROTOBUF_C_TYPE_SINT64:
@@ -438,9 +439,6 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 		return rv + 4;
 	case PROTOBUF_C_TYPE_DOUBLE:
 		return rv + 8;
-	case PROTOBUF_C_TYPE_ENUM:
-		/* \todo Is this correct for negative-valued enums? */
-		return rv + uint32_size(*(const uint32_t *) member);
 	case PROTOBUF_C_TYPE_STRING: {
 		const char *str = *(char * const *) member;
 		size_t len = str ? strlen(str) : 0;
@@ -559,12 +557,12 @@ repeated_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 		for (i = 0; i < count; i++)
 			rv += sint32_size(((int32_t *) array)[i]);
 		break;
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 		for (i = 0; i < count; i++)
-			rv += int32_size(((uint32_t *) array)[i]);
+			rv += int32_size(((int32_t *) array)[i]);
 		break;
 	case PROTOBUF_C_TYPE_UINT32:
-	case PROTOBUF_C_TYPE_ENUM:
 		for (i = 0; i < count; i++)
 			rv += uint32_size(((uint32_t *) array)[i]);
 		break;
@@ -1013,11 +1011,11 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_SINT32:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
 		return rv + sint32_pack(*(const int32_t *) member, out + rv);
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-		return rv + int32_pack(*(const uint32_t *) member, out + rv);
+		return rv + int32_pack(*(const int32_t *) member, out + rv);
 	case PROTOBUF_C_TYPE_UINT32:
-	case PROTOBUF_C_TYPE_ENUM:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
 		return rv + uint32_pack(*(const uint32_t *) member, out + rv);
 	case PROTOBUF_C_TYPE_SINT64:
@@ -1288,6 +1286,7 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 			copy_to_little_endian_64(payload_at, array, count);
 			payload_at += count * 8;
 			break;
+		case PROTOBUF_C_TYPE_ENUM:
 		case PROTOBUF_C_TYPE_INT32: {
 			const int32_t *arr = (const int32_t *) array;
 			for (i = 0; i < count; i++)
@@ -1306,7 +1305,6 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 				payload_at += sint64_pack(arr[i], payload_at);
 			break;
 		}
-		case PROTOBUF_C_TYPE_ENUM:
 		case PROTOBUF_C_TYPE_UINT32: {
 			const uint32_t *arr = (const uint32_t *) array;
 			for (i = 0; i < count; i++)
@@ -1441,13 +1439,13 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		rv += sint32_pack(*(const int32_t *) member, scratch + rv);
 		buffer->append(buffer, rv, scratch);
 		break;
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 		scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
-		rv += int32_pack(*(const uint32_t *) member, scratch + rv);
+		rv += int32_pack(*(const int32_t *) member, scratch + rv);
 		buffer->append(buffer, rv, scratch);
 		break;
 	case PROTOBUF_C_TYPE_UINT32:
-	case PROTOBUF_C_TYPE_ENUM:
 		scratch[0] |= PROTOBUF_C_WIRE_TYPE_VARINT;
 		rv += uint32_pack(*(const uint32_t *) member, scratch + rv);
 		buffer->append(buffer, rv, scratch);
@@ -1622,6 +1620,7 @@ get_packed_payload_length(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_FIXED64:
 	case PROTOBUF_C_TYPE_DOUBLE:
 		return count * 8;
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32: {
 		const int32_t *arr = (const int32_t *) array;
 		for (i = 0; i < count; i++)
@@ -1634,7 +1633,6 @@ get_packed_payload_length(const ProtobufCFieldDescriptor *field,
 			rv += sint32_size(arr[i]);
 		break;
 	}
-	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_UINT32: {
 		const uint32_t *arr = (const uint32_t *) array;
 		for (i = 0; i < count; i++)
@@ -1714,6 +1712,7 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 		}
 		break;
 #endif
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 		for (i = 0; i < count; i++) {
 			unsigned len = int32_pack(((int32_t *) array)[i], scratch);
@@ -1728,7 +1727,6 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 			rv += len;
 		}
 		break;
-	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_UINT32:
 		for (i = 0; i < count; i++) {
 			unsigned len = uint32_pack(((uint32_t *) array)[i], scratch);
@@ -2216,9 +2214,9 @@ count_packed_elements(ProtobufCType type,
 		}
 		*count_out = len / 8;
 		return TRUE;
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 	case PROTOBUF_C_TYPE_SINT32:
-	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_UINT32:
 	case PROTOBUF_C_TYPE_INT64:
 	case PROTOBUF_C_TYPE_SINT64:
@@ -2348,10 +2346,11 @@ parse_required_member(ScannedMember *scanned_member,
 	ProtobufCWireType wire_type = scanned_member->wire_type;
 
 	switch (scanned_member->field->type) {
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
 			return FALSE;
-		*(uint32_t *) member = parse_int32(len, data);
+		*(int32_t *) member = parse_int32(len, data);
 		return TRUE;
 	case PROTOBUF_C_TYPE_UINT32:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
@@ -2390,11 +2389,6 @@ parse_required_member(ScannedMember *scanned_member,
 		return TRUE;
 	case PROTOBUF_C_TYPE_BOOL:
 		*(protobuf_c_boolean *) member = parse_boolean(len, data);
-		return TRUE;
-	case PROTOBUF_C_TYPE_ENUM:
-		if (wire_type != PROTOBUF_C_WIRE_TYPE_VARINT)
-			return FALSE;
-		*(uint32_t *) member = parse_uint32(len, data);
 		return TRUE;
 	case PROTOBUF_C_TYPE_STRING: {
 		char **pstr = member;
@@ -2623,6 +2617,7 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 		}
 		break;
 #endif
+	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32:
 		while (rem > 0) {
 			unsigned s = scan_varint(rem, at);
@@ -2647,7 +2642,6 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 			rem -= s;
 		}
 		break;
-	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_UINT32:
 		while (rem > 0) {
 			unsigned s = scan_varint(rem, at);

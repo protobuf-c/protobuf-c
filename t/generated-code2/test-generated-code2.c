@@ -132,6 +132,7 @@ static void test_enum_small (void)
 
   assert (sizeof (Foo__TestEnumSmall) == 4);
 
+  DO_TEST(NEG_VALUE);
   DO_TEST(VALUE);
   DO_TEST(OTHER_VALUE);
 
@@ -159,6 +160,8 @@ static void test_enum_big (void)
     free (data); \
   }while(0)
 
+  DO_ONE_TEST(VALUENEG123456, -123456, 10);
+  DO_ONE_TEST(VALUENEG1, -1, 10);
   DO_ONE_TEST(VALUE0, 0, 1);
   DO_ONE_TEST(VALUE127, 127, 1);
   DO_ONE_TEST(VALUE128, 128, 2);
@@ -375,6 +378,7 @@ static void test_required_TestEnum (void)
 #define DO_TEST(value, example_packed_data) \
   DO_TEST_REQUIRED(Enum, ENUM, enum, value, example_packed_data, NUMERIC_EQUALS)
 
+  DO_TEST (FOO__TEST_ENUM__VALUENEG1, test_required_enum_neg1);
   DO_TEST (FOO__TEST_ENUM__VALUE0, test_required_enum_0);
   DO_TEST (FOO__TEST_ENUM__VALUE1, test_required_enum_1);
   DO_TEST (FOO__TEST_ENUM__VALUE127, test_required_enum_127);
@@ -630,6 +634,7 @@ static void test_optional_TestEnum (void)
 #define DO_TEST(value, example_packed_data) \
   DO_TEST_OPTIONAL(test_enum, value, example_packed_data, NUMERIC_EQUALS)
 
+  DO_TEST (FOO__TEST_ENUM__VALUENEG1, test_optional_enum_neg1);
   DO_TEST (FOO__TEST_ENUM__VALUE0, test_optional_enum_0);
   DO_TEST (FOO__TEST_ENUM__VALUE1, test_optional_enum_1);
   DO_TEST (FOO__TEST_ENUM__VALUE127, test_optional_enum_127);
@@ -911,6 +916,7 @@ static void test_oneof_TestEnum (void)
 #define DO_TEST(value, example_packed_data) \
   DO_TEST_ONEOF(test_enum, TEST_ENUM, value, example_packed_data, GENERIC_ASSIGN, NUMERIC_EQUALS)
 
+  DO_TEST (FOO__TEST_ENUM__VALUENEG1, test_optional_enum_neg1);
   DO_TEST (FOO__TEST_ENUM__VALUE0, test_optional_enum_0);
   DO_TEST (FOO__TEST_ENUM__VALUE1, test_optional_enum_1);
   DO_TEST (FOO__TEST_ENUM__VALUE127, test_optional_enum_127);

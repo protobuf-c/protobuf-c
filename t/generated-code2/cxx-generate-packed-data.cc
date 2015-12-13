@@ -69,6 +69,8 @@ static void
 dump_test_enum_small (void)
 {
   TestMessRequiredEnumSmall es;
+  es.set_test(NEG_VALUE);
+  dump_message_bytes(&es, "test_enum_small_NEG_VALUE");
   es.set_test(VALUE);
   dump_message_bytes(&es, "test_enum_small_VALUE");
   es.set_test(OTHER_VALUE);
@@ -78,6 +80,8 @@ static void
 dump_test_enum_big (void)
 {
   TestMessRequiredEnum eb;
+  eb.set_test(VALUENEG123456); dump_message_bytes(&eb, "test_enum_big_VALUENEG123456");
+  eb.set_test(VALUENEG1); dump_message_bytes(&eb, "test_enum_big_VALUENEG1");
   eb.set_test(VALUE0); dump_message_bytes(&eb, "test_enum_big_VALUE0");
   eb.set_test(VALUE127); dump_message_bytes(&eb, "test_enum_big_VALUE127");
   eb.set_test(VALUE128); dump_message_bytes(&eb, "test_enum_big_VALUE128");
@@ -298,6 +302,8 @@ static void dump_test_required_enum_small (void)
 static void dump_test_required_enum (void)
 {
   TestMessRequiredEnum mess;
+  mess.set_test (VALUENEG1);
+  dump_message_bytes (&mess, "test_required_enum_neg1");
   mess.set_test (VALUE0);
   dump_message_bytes (&mess, "test_required_enum_0");
   mess.set_test (VALUE1);
@@ -515,6 +521,8 @@ static void dump_test_optional_bool (void)
 static void dump_test_optional_enum_small (void)
 {
   TestMessOptional opt;
+  opt.set_test_enum_small (NEG_VALUE);
+  dump_message_bytes (&opt, "test_optional_enum_small_neg1");
   opt.set_test_enum_small (VALUE);
   dump_message_bytes (&opt, "test_optional_enum_small_0");
   opt.set_test_enum_small (OTHER_VALUE);
@@ -527,6 +535,8 @@ static void dump_test_optional_enum (void)
 //echo '    opt.set_test_enum (VALUE'$a');
 //dump_message_bytes (&opt, "test_optional_enum_'$a'");'
 //done
+    opt.set_test_enum (VALUENEG1);
+    dump_message_bytes (&opt, "test_optional_enum_neg1");
     opt.set_test_enum (VALUE0);
     dump_message_bytes (&opt, "test_optional_enum_0");
     opt.set_test_enum (VALUE1);
