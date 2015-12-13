@@ -228,8 +228,12 @@ static void dump_test_required_uint64 (void)
   dump_message_bytes (&mess, "test_required_uint64_mill");
   mess.set_test (BILLION);
   dump_message_bytes (&mess, "test_required_uint64_bill");
+  mess.set_test (BILLION*20);
+  dump_message_bytes (&mess, "test_required_uint64_20_bill");
   mess.set_test (TRILLION);
   dump_message_bytes (&mess, "test_required_uint64_tril");
+  mess.set_test (TRILLION*20);
+  dump_message_bytes (&mess, "test_required_uint64_20_tril");
   mess.set_test (QUADRILLION);
   dump_message_bytes (&mess, "test_required_uint64_quad");
   mess.set_test (QUINTILLION);

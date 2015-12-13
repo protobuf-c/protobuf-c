@@ -313,7 +313,9 @@ static void test_required_uint64 (void)
   DO_TEST(THOUSAND, test_required_uint64_thou);
   DO_TEST(MILLION, test_required_uint64_mill);
   DO_TEST(BILLION, test_required_uint64_bill);
+  DO_TEST(BILLION*20, test_required_uint64_20_bill);
   DO_TEST(TRILLION, test_required_uint64_tril);
+  DO_TEST(TRILLION*20, test_required_uint64_20_tril);
   DO_TEST(QUADRILLION, test_required_uint64_quad);
   DO_TEST(QUINTILLION, test_required_uint64_quint);
   DO_TEST(UINT64_MAX, test_required_uint64_max);
@@ -2149,18 +2151,6 @@ test_message_check(void)
   assert(1 == protobuf_c_message_check(&m.base));
 }
 
-static void
-test_large_int_packed_size(void)
-{
-  Foo__TestMessRequiredSInt64 m = FOO__TEST_MESS_REQUIRED_SINT64__INIT;
-
-  m.test = 200;
-  assert(3 == foo__test_mess_required_sint64__get_packed_size(&m));
-
-  m.test = 32000;
-  assert(4 == foo__test_mess_required_sint64__get_packed_size(&m));
-}
-
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -2296,8 +2286,6 @@ static Test tests[] =
   { "test field flags", test_field_flags },
 
   { "test message_check()", test_message_check },
-
-  { "test large int packed size", test_large_int_packed_size },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
