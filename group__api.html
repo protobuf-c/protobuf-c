@@ -26,7 +26,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">protobuf-c
-   &#160;<span id="projectnumber">1.1.1</span>
+   &#160;<span id="projectnumber">1.2.0</span>
    </div>
    <div id="projectbrief">Protocol Buffers implementation in C</div>
   </td>
@@ -116,10 +116,10 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:ga555dc7da9ccda34a7d8f776d5bc77687"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__api.html#ga555dc7da9ccda34a7d8f776d5bc77687">PROTOBUF_C_VERSION</a>&#160;&#160;&#160;&quot;1.1.1&quot;</td></tr>
+<tr class="memitem:ga555dc7da9ccda34a7d8f776d5bc77687"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__api.html#ga555dc7da9ccda34a7d8f776d5bc77687">PROTOBUF_C_VERSION</a>&#160;&#160;&#160;&quot;1.2.0&quot;</td></tr>
 <tr class="memdesc:ga555dc7da9ccda34a7d8f776d5bc77687"><td class="mdescLeft">&#160;</td><td class="mdescRight">The version of the protobuf-c headers, represented as a string using the same format as <a class="el" href="group__api.html#ga031a0a1c34d58d79d2af8b98d8ff76fd" title="Get the version of the protobuf-c library. ">protobuf_c_version()</a>.  <a href="#ga555dc7da9ccda34a7d8f776d5bc77687">More...</a><br /></td></tr>
 <tr class="separator:ga555dc7da9ccda34a7d8f776d5bc77687"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacd37d3d9cc386e0264a15c612fb9c3b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__api.html#gacd37d3d9cc386e0264a15c612fb9c3b1">PROTOBUF_C_VERSION_NUMBER</a>&#160;&#160;&#160;1001001</td></tr>
+<tr class="memitem:gacd37d3d9cc386e0264a15c612fb9c3b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__api.html#gacd37d3d9cc386e0264a15c612fb9c3b1">PROTOBUF_C_VERSION_NUMBER</a>&#160;&#160;&#160;1002000</td></tr>
 <tr class="memdesc:gacd37d3d9cc386e0264a15c612fb9c3b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The version of the protobuf-c headers, represented as an integer using the same format as <a class="el" href="group__api.html#ga9fec84349e6397619265d1058d8f8b20" title="Get the version of the protobuf-c library. ">protobuf_c_version_number()</a>.  <a href="#gacd37d3d9cc386e0264a15c612fb9c3b1">More...</a><br /></td></tr>
 <tr class="separator:gacd37d3d9cc386e0264a15c612fb9c3b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac0556b514daf74c37ce3c7a09b0a196e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__api.html#gac0556b514daf74c37ce3c7a09b0a196e">PROTOBUF_C_MIN_COMPILER_VERSION</a>&#160;&#160;&#160;1000000</td></tr>
@@ -228,7 +228,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>protobuf_c_service_in
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define PROTOBUF_C_VERSION&#160;&#160;&#160;&quot;1.1.1&quot;</td>
+          <td class="memname">#define PROTOBUF_C_VERSION&#160;&#160;&#160;&quot;1.2.0&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -242,7 +242,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>protobuf_c_service_in
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define PROTOBUF_C_VERSION_NUMBER&#160;&#160;&#160;1001001</td>
+          <td class="memname">#define PROTOBUF_C_VERSION_NUMBER&#160;&#160;&#160;1002000</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -564,7 +564,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>protobuf_c_service_in
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structProtobufCEnumValue.html" title="Represents a single value of an enumeration. ">ProtobufCEnumValue</a></code> object. </dd></dl>
 <dl class="retval"><dt>Return values</dt><dd>
   <table class="retval">
-    <tr><td class="paramname">NULL</td><td>If not found. </td></tr>
+    <tr><td class="paramname">NULL</td><td>If not found or if the optimize_for = CODE_SIZE option was set. </td></tr>
   </table>
   </dd>
 </dl>
@@ -648,7 +648,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>protobuf_c_service_in
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structProtobufCFieldDescriptor.html" title="Describes a single field in a message. ">ProtobufCFieldDescriptor</a></code> object. </dd></dl>
 <dl class="retval"><dt>Return values</dt><dd>
   <table class="retval">
-    <tr><td class="paramname">NULL</td><td>If not found. </td></tr>
+    <tr><td class="paramname">NULL</td><td>If not found or if the optimize_for = CODE_SIZE option was set. </td></tr>
   </table>
   </dd>
 </dl>
@@ -1008,7 +1008,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>protobuf_c_service_in
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structProtobufCMethodDescriptor.html" title="Method descriptor. ">ProtobufCMethodDescriptor</a></code> object. </dd></dl>
 <dl class="retval"><dt>Return values</dt><dd>
   <table class="retval">
-    <tr><td class="paramname">NULL</td><td>If not found. </td></tr>
+    <tr><td class="paramname">NULL</td><td>If not found or if the optimize_for = CODE_SIZE option was set. </td></tr>
   </table>
   </dd>
 </dl>
