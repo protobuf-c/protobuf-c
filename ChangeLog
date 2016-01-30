@@ -1,3 +1,24 @@
+protobuf-c (1.2.0)
+
+  [ Robert Edmonds ]
+  * Release 1.2.0.
+
+  [ Ilya Lipnitsky ]
+  * Implement the "optimize_for = CODE_SIZE" option (#183).
+
+  * Eliminate undefined behavior in zigzag functions (#198).
+
+  * Pack negative enum values correctly (#199).
+
+  [ Peter Leschev ]
+  * Fix protobuf_c_message_get_packed_size() on 16-bit systems (#196, #197).
+
+  [ Diego Elio Pettenò ]
+  * Update link to Autotools Mythbuster to canonical site (#201).
+
+  [ Zex Li ]
+  * Skip test suite when cross-compiling (#184).
+
 protobuf-c (1.1.1)
 
   [ Robert Edmonds ]
