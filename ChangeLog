@@ -1,3 +1,9 @@
+protobuf-c (1.2.1) UNRELEASED
+
+  [ Paolo Borelli ]
+  * protoc-c: Generate code that uses the universal zero initializer {0} when
+    initializing a oneof union.
+
 protobuf-c (1.2.0)
 
   [ Robert Edmonds ]

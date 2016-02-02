@@ -236,8 +236,8 @@ GenerateStructDefinition(io::Printer* printer) {
     vars["foneofname"] = FullNameToUpper(oneof->full_name());
     // Initialize the case enum
     printer->Print(vars, ", $foneofname$__NOT_SET");
-    // Initialize the enum
-    printer->Print(", {}");
+    // Initialize the union
+    printer->Print(", {0}");
   }
   printer->Print(" }\n\n\n");
 
