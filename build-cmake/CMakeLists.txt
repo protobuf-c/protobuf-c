@@ -39,31 +39,35 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}) # for generated files
 FIND_PACKAGE(Protobuf REQUIRED)
 INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 
-file(GLOB PROTOC_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
-ADD_EXECUTABLE(protoc-c ${PROTOC_SRC})
+FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
+ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC})
 
-TARGET_LINK_LIBRARIES(protoc-c ${PROTOBUF_PROTOC_LIBRARY} ${PROTOBUF_LIBRARY})
+TARGET_LINK_LIBRARIES(protoc-gen-c ${PROTOBUF_PROTOC_LIBRARY} ${PROTOBUF_LIBRARY})
+
+IF(CMAKE_HOST_UNIX)
+ADD_CUSTOM_COMMAND(TARGET ${PROJECT_NAME} POST_BUILD
+                   COMMAND ln -sf protoc-gen-c protoc-c
+                   DEPENDS protoc-gen-c)
+ENDIF()
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
 ENABLE_TESTING()
 ADD_CUSTOM_COMMAND(OUTPUT t/test.pb-c.c t/test.pb-c.h
-                   COMMAND protoc-c -I${MAIN_DIR} ${TEST_DIR}/test.proto --c_out=${CMAKE_BINARY_DIR}
-                   DEPENDS protoc-c
-                   )
-
+                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                   ARGS --plugin=${CMAKE_CURRENT_BINARY_DIR}/protoc-gen-c -I${MAIN_DIR} ${TEST_DIR}/test.proto --c_out=${CMAKE_BINARY_DIR}
+                   DEPENDS protoc-gen-c)
 
 ADD_EXECUTABLE(test-generated-code ${TEST_DIR}/generated-code/test-generated-code.c t/test.pb-c.c t/test.pb-c.h )
 TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
 
-
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-		   ARGS --cpp_out ${CMAKE_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
+                   ARGS --cpp_out ${CMAKE_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb-c.c t/test-full.pb-c.h
-                   COMMAND protoc-c -I${MAIN_DIR} ${TEST_DIR}/test-full.proto --c_out=${CMAKE_BINARY_DIR}
-                   DEPENDS protoc-c
-                   )
+                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                   ARGS --plugin=${CMAKE_CURRENT_BINARY_DIR}/protoc-gen-c -I${MAIN_DIR} ${TEST_DIR}/test-full.proto --c_out=${CMAKE_BINARY_DIR}
+                   DEPENDS protoc-gen-c)
 
 ADD_EXECUTABLE(cxx-generate-packed-data ${TEST_DIR}/generated-code2/cxx-generate-packed-data.cc t/test-full.pb.h t/test-full.pb.cc)
 TARGET_LINK_LIBRARIES(cxx-generate-packed-data ${PROTOBUF_LIBRARY})
@@ -74,19 +78,27 @@ ADD_CUSTOM_COMMAND(OUTPUT t/generated-code2/test-full-cxx-output.inc
                    DEPENDS cxx-generate-packed-data
                    )
 
-ADD_EXECUTABLE(test-generated-code2 ${TEST_DIR}/generated-code2/test-generated-code2.c t/generated-code2/test-full-cxx-output.inc t/test-full.pb-c.h t/test-full.pb-c.c)
-TARGET_LINK_LIBRARIES(test-generated-code2  protobuf-c)
+ADD_CUSTOM_COMMAND(OUTPUT t/test-optimized.pb-c.c t/test-optimized.pb-c.h
+                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                   ARGS --plugin=${CMAKE_CURRENT_BINARY_DIR}/protoc-gen-c -I${MAIN_DIR} ${TEST_DIR}/test-optimized.proto --c_out=${CMAKE_BINARY_DIR}
+                   DEPENDS protoc-gen-c)
+
+ADD_EXECUTABLE(test-generated-code2 ${TEST_DIR}/generated-code2/test-generated-code2.c t/generated-code2/test-full-cxx-output.inc t/test-full.pb-c.h t/test-full.pb-c.c t/test-optimized.pb-c.h t/test-optimized.pb-c.c)
+TARGET_LINK_LIBRARIES(test-generated-code2 protobuf-c)
 
 ADD_EXECUTABLE(test-version ${TEST_DIR}/version/version.c)
 TARGET_LINK_LIBRARIES(test-version protobuf-c)
 
-
 ENDIF()
 
-
-INSTALL(TARGETS protoc-c protobuf-c RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+INSTALL(TARGETS protoc-gen-c protobuf-c RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
+
+IF(CMAKE_HOST_UNIX)
+INSTALL(CODE "EXECUTE_PROCESS (COMMAND ln -sf protoc-gen-c protoc-c WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)")
+ENDIF()
+
 INCLUDE(Dart)
 
 SET(DART_TESTING_TIMEOUT 5)
