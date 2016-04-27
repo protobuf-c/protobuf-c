@@ -285,13 +285,13 @@ int32_size(int32_t v)
 {
 	if (v < 0) {
 		return 10;
-	} else if (v < (1UL << 7)) {
+	} else if (v < (1L << 7)) {
 		return 1;
-	} else if (v < (1UL << 14)) {
+	} else if (v < (1L << 14)) {
 		return 2;
-	} else if (v < (1UL << 21)) {
+	} else if (v < (1L << 21)) {
 		return 3;
-	} else if (v < (1UL << 28)) {
+	} else if (v < (1L << 28)) {
 		return 4;
 	} else {
 		return 5;
