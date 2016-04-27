@@ -2078,6 +2078,10 @@ merge_messages(ProtobufCMessage *earlier_msg,
 								    latter_msg,
 								    fields[i].
 								    quantifier_offset);
+			protobuf_c_boolean need_to_merge = FALSE;
+			void *earlier_elem;
+			void *latter_elem;
+			const void *def_val;
 
 			if (fields[i].flags & PROTOBUF_C_FIELD_FLAG_ONEOF) {
 				if (*latter_case_p == 0) {
@@ -2099,12 +2103,9 @@ merge_messages(ProtobufCMessage *earlier_msg,
 				field = &fields[i];
 			}
 
-			protobuf_c_boolean need_to_merge = FALSE;
-			void *earlier_elem =
-				STRUCT_MEMBER_P(earlier_msg, field->offset);
-			void *latter_elem =
-				STRUCT_MEMBER_P(latter_msg, field->offset);
-			const void *def_val = field->default_value;
+			earlier_elem = STRUCT_MEMBER_P(earlier_msg, field->offset);
+			latter_elem = STRUCT_MEMBER_P(latter_msg, field->offset);
+			def_val = field->default_value;
 
 			switch (field->type) {
 			case PROTOBUF_C_TYPE_MESSAGE: {
@@ -2487,6 +2488,8 @@ parse_oneof_member (ScannedMember *scanned_member,
 					 *oneof_case);
 		const ProtobufCFieldDescriptor *old_field =
 			message->descriptor->fields + field_index;
+		size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
+
 		switch (old_field->type) {
 	        case PROTOBUF_C_TYPE_STRING: {
 			char **pstr = member;
@@ -2516,7 +2519,6 @@ parse_oneof_member (ScannedMember *scanned_member,
 			break;
 		}
 
-		size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
 		memset (member, 0, el_size);
 	}
 	if (!parse_required_member (scanned_member, member, allocator, TRUE))
@@ -3070,6 +3072,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 					      field->quantifier_offset);
 			if (*n_ptr != 0) {
 				unsigned n = *n_ptr;
+				void *a;
 				*n_ptr = 0;
 				assert(rv->descriptor != NULL);
 #define CLEAR_REMAINING_N_PTRS()                                              \
@@ -3079,7 +3082,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
                   if (field->label == PROTOBUF_C_LABEL_REPEATED)              \
                     STRUCT_MEMBER (size_t, rv, field->quantifier_offset) = 0; \
                 }
-				void *a = do_alloc(allocator, siz * n);
+				a = do_alloc(allocator, siz * n);
 				if (!a) {
 					CLEAR_REMAINING_N_PTRS();
 					goto error_cleanup;
@@ -3152,11 +3155,13 @@ void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)
 {
+	const ProtobufCMessageDescriptor *desc;
+	unsigned f;
+
 	if (message == NULL)
 		return;
 
-	const ProtobufCMessageDescriptor *desc = message->descriptor;
-	unsigned f;
+	desc = message->descriptor;
 
 	ASSERT_IS_MESSAGE(message);
 
@@ -3245,6 +3250,8 @@ protobuf_c_message_init(const ProtobufCMessageDescriptor * descriptor,
 protobuf_c_boolean
 protobuf_c_message_check(const ProtobufCMessage *message)
 {
+	unsigned i;
+
 	if (!message ||
 	    !message->descriptor ||
 	    message->descriptor->magic != PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC)
@@ -3252,7 +3259,6 @@ protobuf_c_message_check(const ProtobufCMessage *message)
 		return FALSE;
 	}
 
-	unsigned i;
 	for (i = 0; i < message->descriptor->n_fields; i++) {
 		const ProtobufCFieldDescriptor *f = message->descriptor->fields + i;
 		ProtobufCType type = f->type;
@@ -3375,11 +3381,13 @@ const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value_by_name(const ProtobufCEnumDescriptor *desc,
 					     const char *name)
 {
+	unsigned start = 0;
+	unsigned count;
+
 	if (desc == NULL || desc->values_by_name == NULL)
 		return NULL;
 
-	unsigned start = 0;
-	unsigned count = desc->n_value_names;
+	count = desc->n_value_names;
 
 	while (count > 1) {
 		unsigned mid = start + count / 2;
@@ -3413,12 +3421,14 @@ const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field_by_name(const ProtobufCMessageDescriptor *desc,
 						const char *name)
 {
+	unsigned start = 0;
+	unsigned count;
+	const ProtobufCFieldDescriptor *field;
+
 	if (desc == NULL || desc->fields_sorted_by_name == NULL)
 		return NULL;
 
-	unsigned start = 0;
-	unsigned count = desc->n_fields;
-	const ProtobufCFieldDescriptor *field;
+	count = desc->n_fields;
 
 	while (count > 1) {
 		unsigned mid = start + count / 2;
@@ -3455,11 +3465,13 @@ const ProtobufCMethodDescriptor *
 protobuf_c_service_descriptor_get_method_by_name(const ProtobufCServiceDescriptor *desc,
 						 const char *name)
 {
+	unsigned start = 0;
+	unsigned count;
+
 	if (desc == NULL || desc->method_indices_by_name == NULL)
 		return NULL;
 
-	unsigned start = 0;
-	unsigned count = desc->n_methods;
+	count = desc->n_methods;
 
 	while (count > 1) {
 		unsigned mid = start + count / 2;
