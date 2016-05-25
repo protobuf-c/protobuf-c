@@ -3152,13 +3152,15 @@ void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)
 {
+	const ProtobufCMessageDescriptor *desc;
+	unsigned f;
+
 	if (message == NULL)
 		return;
 
-	const ProtobufCMessageDescriptor *desc = message->descriptor;
-	unsigned f;
-
 	ASSERT_IS_MESSAGE(message);
+
+	desc = message->descriptor;
 
 	if (allocator == NULL)
 		allocator = &protobuf_c__allocator;
