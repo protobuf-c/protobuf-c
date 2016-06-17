@@ -8,21 +8,6 @@ dist: trusty
 
 matrix:
   include:
-    # Test clang-3.6
-    # TODO: clang 3.7+ packages from http://llvm.org/apt do not support sanitizers yet, see https://llvm.org/bugs/show_bug.cgi?id=22757
-    - env: CLANG_VERSION=3.6
-      os: linux
-      addons:
-        apt:
-          packages:
-            - valgrind
-            - util-linux
-            - clang-3.6
-            - libclang-common-3.6-dev
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
-
     # Test default gcc
     - env: GCC_VERSION=4.8
       os: linux
