@@ -113,7 +113,7 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->containing_oneof() == NULL)
+      if (descriptor_->containing_oneof() == NULL && FieldSyntax(descriptor_) == 2)
         printer->Print(vars, "protobuf_c_boolean has_$name$$deprecated$;\n");
       printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
       break;
@@ -160,7 +160,9 @@ void PrimitiveFieldGenerator::GenerateStaticInit(io::Printer* printer) const
       printer->Print(vars, "$default_value$");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(vars, "0,$default_value$");
+      if (FieldSyntax(descriptor_) == 2)
+        printer->Print(vars, "0, ");
+      printer->Print(vars, "$default_value$");
       break;
     case FieldDescriptor::LABEL_REPEATED:
       printer->Print("0,NULL");
