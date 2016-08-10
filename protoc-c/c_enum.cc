@@ -100,7 +100,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   vars["opt_comma"] = ",";
   vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
   for (int i = 0; i < descriptor_->value_count(); i++) {
-    vars["name"] = descriptor_->value(i)->name();
+    vars["name"] = ToUpper(descriptor_->value(i)->name());
     vars["number"] = SimpleItoa(descriptor_->value(i)->number());
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
