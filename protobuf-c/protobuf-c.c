@@ -3158,6 +3158,9 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 	const ProtobufCMessageDescriptor *desc = message->descriptor;
 	unsigned f;
 
+	if (message == NULL)
+		return;
+
 	ASSERT_IS_MESSAGE(message);
 
 	if (allocator == NULL)
