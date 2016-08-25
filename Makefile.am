@@ -206,7 +206,7 @@ EXTRA_DIST += \
 CLEANFILES += $(BUILT_SOURCES)
 
 dist-hook:
-	rm -vf `find $(top_distdir) -name '*.pb-c.[ch]' -o -name '*.pb.cc' -o -name '*.pb.h'`
+	rm -vf `find $(distdir) -name '*.pb-c.[ch]' -o -name '*.pb.cc' -o -name '*.pb.h'`
 
 install-data-hook:
 	$(MKDIR_P) $(DESTDIR)$(includedir)/google/protobuf-c
