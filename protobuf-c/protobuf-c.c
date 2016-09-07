@@ -174,9 +174,9 @@ do_free(ProtobufCAllocator *allocator, void *data)
  * function.
  */
 static ProtobufCAllocator protobuf_c__allocator = {
-	.alloc = &system_alloc,
-	.free = &system_free,
-	.allocator_data = NULL,
+	&system_alloc,
+	&system_free,
+	NULL,
 };
 
 /* === buffer-simple === */
@@ -2072,6 +2072,10 @@ merge_messages(ProtobufCMessage *earlier_msg,
 			}
 		} else if (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL) {
 			const ProtobufCFieldDescriptor *field;
+			protobuf_c_boolean need_to_merge = FALSE;
+			void *earlier_elem = NULL;
+			void *latter_elem = NULL;
+			const void *def_val = NULL;
 			uint32_t *earlier_case_p = STRUCT_MEMBER_PTR(uint32_t,
 								     earlier_msg,
 								     fields[i].
@@ -2080,10 +2084,6 @@ merge_messages(ProtobufCMessage *earlier_msg,
 								    latter_msg,
 								    fields[i].
 								    quantifier_offset);
-			protobuf_c_boolean need_to_merge = FALSE;
-			void *earlier_elem;
-			void *latter_elem;
-			const void *def_val;
 
 			if (fields[i].flags & PROTOBUF_C_FIELD_FLAG_ONEOF) {
 				if (*latter_case_p == 0) {
@@ -2484,14 +2484,13 @@ parse_oneof_member (ScannedMember *scanned_member,
 	/* If we have already parsed a member of this oneof, free it. */
 	if (*oneof_case != 0) {
 		/* lookup field */
+		size_t el_size;
 		int field_index =
 			int_range_lookup(message->descriptor->n_field_ranges,
 					 message->descriptor->field_ranges,
 					 *oneof_case);
 		const ProtobufCFieldDescriptor *old_field =
 			message->descriptor->fields + field_index;
-		size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
-
 		switch (old_field->type) {
 	        case PROTOBUF_C_TYPE_STRING: {
 			char **pstr = member;
@@ -2520,7 +2519,8 @@ parse_oneof_member (ScannedMember *scanned_member,
 		default:
 			break;
 		}
-
+				
+		el_size = sizeof_elt_in_repeated_array(old_field->type);
 		memset (member, 0, el_size);
 	}
 	if (!parse_required_member (scanned_member, member, allocator, TRUE))
@@ -3073,8 +3073,8 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			    STRUCT_MEMBER_PTR(size_t, rv,
 					      field->quantifier_offset);
 			if (*n_ptr != 0) {
+				void *a = NULL;
 				unsigned n = *n_ptr;
-				void *a;
 				*n_ptr = 0;
 				assert(rv->descriptor != NULL);
 #define CLEAR_REMAINING_N_PTRS()                                              \
@@ -3157,7 +3157,7 @@ void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)
 {
-	const ProtobufCMessageDescriptor *desc;
+	const ProtobufCMessageDescriptor *desc = NULL;
 	unsigned f;
 
 	if (message == NULL)
@@ -3425,7 +3425,7 @@ protobuf_c_message_descriptor_get_field_by_name(const ProtobufCMessageDescriptor
 {
 	unsigned start = 0;
 	unsigned count;
-	const ProtobufCFieldDescriptor *field;
+	const ProtobufCFieldDescriptor *field = NULL;
 
 	if (desc == NULL || desc->fields_sorted_by_name == NULL)
 		return NULL;
