@@ -337,7 +337,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message)\n"
 		 "{\n"
-		 "  static $classname$ init_value = $ucclassname$__INIT;\n"
+		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
 		 "}\n");
   if (!is_submessage) {
