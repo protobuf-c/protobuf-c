@@ -31,7 +31,7 @@ matrix:
             - ubuntu-toolchain-r-test
 env:
     global:
-        - PROTOBUF_VERSION=2.6.1
+        - PROTOBUF_VERSION=3.0.2
         - PKG_CONFIG_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib/pkgconfig
 
 before_install:
@@ -44,9 +44,9 @@ before_install:
 
 install:
     - pip install --user cpp-coveralls
-    - wget https://github.com/google/protobuf/releases/download/v$PROTOBUF_VERSION/protobuf-$PROTOBUF_VERSION.tar.gz
-    - tar xf protobuf-$PROTOBUF_VERSION.tar.gz
-    - ( cd protobuf-$PROTOBUF_VERSION && ./configure --prefix=$HOME/protobuf-$PROTOBUF_VERSION-bin && make -j2 && make install )
+    - wget https://github.com/google/protobuf/archive/v$PROTOBUF_VERSION.tar.gz
+    - tar xf v$PROTOBUF_VERSION.tar.gz
+    - ( cd protobuf-$PROTOBUF_VERSION && ./autogen.sh && ./configure --prefix=$HOME/protobuf-$PROTOBUF_VERSION-bin && make -j2 && make install )
 
 script:
     - ./autogen.sh
