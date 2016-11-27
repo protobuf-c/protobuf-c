@@ -148,6 +148,7 @@ GenerateStructDefinition(io::Printer* printer) {
   }
 
   // Generate the case enums for unions
+  vars["opt_comma"] = ",";
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
     vars["oneofname"] = FullNameToUpper(oneof->name());
@@ -160,8 +161,13 @@ GenerateStructDefinition(io::Printer* printer) {
       const FieldDescriptor *field = oneof->field(j);
       vars["fieldname"] = FullNameToUpper(field->name());
       vars["fieldnum"] = SimpleItoa(field->number());
-      printer->Print(vars, "$ucclassname$__$oneofname$_$fieldname$ = $fieldnum$,\n");
+      bool isLast = j == oneof->field_count() - 1;
+      if (isLast) {
+        vars["opt_comma"] = "";
+      }
+      printer->Print(vars, "$ucclassname$__$oneofname$_$fieldname$ = $fieldnum$$opt_comma$\n");
     }
+    printer->Print(vars, "  PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE($ucclassname$)\n");
     printer->Outdent();
     printer->Print(vars, "} $foneofname$Case;\n\n");
   }
@@ -331,7 +337,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message)\n"
 		 "{\n"
-		 "  static $classname$ init_value = $ucclassname$__INIT;\n"
+		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
 		 "}\n");
   if (!is_submessage) {

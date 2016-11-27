@@ -28,9 +28,9 @@ See the [online Doxygen documentation here](http://lib.protobuf-c.io) or [the Wi
 
 ## Synopsis
 
-Use the `protoc-c` command to generate `.pb-c.c` and `.pb-c.h` output files from your `.proto` input file.
+Use the `protoc` command to generate `.pb-c.c` and `.pb-c.h` output files from your `.proto` input file. The `--c_out` options instructs `protoc` to use the protobuf-c plugin.
 
-    protoc-c --c_out=. example.proto
+    protoc --c_out=. example.proto
 
 Include the `.pb-c.h` file from your C source code.
 
