@@ -139,7 +139,7 @@ Foo__Bar__BazBah *
 ~~~
  *
  * - `free_unpacked()`. Frees a message object obtained with the `unpack()`
- *   method.
+ *   method. Freeing `NULL` is allowed (the same as with `free()`).
  *
 ~~~{.c}
 void   foo__bar__baz_bah__free_unpacked

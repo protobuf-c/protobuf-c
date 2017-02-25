@@ -2181,6 +2181,12 @@ test_message_check(void)
   assert(1 == protobuf_c_message_check(&m.base));
 }
 
+static void
+test_message_free_null (void)
+{
+  foo__sub_mess__free_unpacked (NULL, NULL);
+}
+
 /* === simple testing framework === */
 
 typedef void (*TestFunc) (void);
@@ -2316,6 +2322,8 @@ static Test tests[] =
   { "test field flags", test_field_flags },
 
   { "test message_check()", test_message_check },
+
+  { "test freeing NULL", test_message_free_null },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
