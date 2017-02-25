@@ -286,7 +286,7 @@ typedef enum {
 	PROTOBUF_C_LABEL_REPEATED,
 
 	/**
-	 * This field has no label. This is valid  only in proto3 and is
+	 * This field has no label. This is valid only in proto3 and is
 	 * equivalent to OPTIONAL but no "has" quantifier will be consulted.
 	 */
 	PROTOBUF_C_LABEL_NONE,
