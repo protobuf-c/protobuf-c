@@ -101,7 +101,7 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->containing_oneof() == NULL)
+      if (descriptor_->containing_oneof() == NULL && FieldSyntax(descriptor_) == 2)
         printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
@@ -142,7 +142,9 @@ void BytesFieldGenerator::GenerateStaticInit(io::Printer* printer) const
       printer->Print(variables_, "$default_value$");
       break;
     case FieldDescriptor::LABEL_OPTIONAL:
-      printer->Print(variables_, "0,$default_value$");
+      if (FieldSyntax(descriptor_) == 2)
+        printer->Print(variables_, "0, ");
+      printer->Print(variables_, "$default_value$");
       break;
     case FieldDescriptor::LABEL_REPEATED:
       // no support for default?

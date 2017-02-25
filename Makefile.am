@@ -185,6 +185,29 @@ BUILT_SOURCES += \
 	t/test-full.pb.cc t/test-full.pb.h \
 	t/generated-code2/test-full-cxx-output.inc
 
+if BUILD_PROTO3
+
+check_PROGRAMS += \
+	t/generated-code3/test-generated-code3
+
+TESTS += \
+	t/generated-code3/test-generated-code3
+
+t_generated_code3_test_generated_code3_LDADD = \
+	protobuf-c/libprotobuf-c.la
+
+t_generated_code3_test_generated_code3_SOURCES = \
+	t/generated-code/test-generated-code.c \
+	t/test-proto3.pb-c.c
+
+t/test-proto3.pb-c.c t/test-proto3.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/test-proto3.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test-proto3.proto
+
+BUILT_SOURCES += \
+	t/test-proto3.pb-c.c t/test-proto3.pb-c.h
+
+endif # BUILD_PROTO3
+
 t_version_version_SOURCES = \
 	t/version/version.c
 t_version_version_LDADD = \
@@ -232,6 +255,7 @@ EXTRA_DIST += \
 	t/test.proto \
 	t/test-full.proto \
 	t/test-optimized.proto \
+	t/test-proto3.proto \
 	t/generated-code2/common-test-arrays.h
 
 #

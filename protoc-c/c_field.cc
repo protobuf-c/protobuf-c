@@ -107,7 +107,6 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 							  const string &descriptor_addr) const
 {
   map<string, string> variables;
-  variables["LABEL"] = CamelToUpper(GetLabelName(descriptor_->label()));
   variables["TYPE"] = type_macro;
   variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
   variables["name"] = FieldName(descriptor_);
@@ -117,6 +116,14 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   const OneofDescriptor *oneof = descriptor_->containing_oneof();
   if (oneof != NULL)
     variables["oneofname"] = FullNameToLower(oneof->name());
+
+  if (FieldSyntax(descriptor_) == 3 &&
+    descriptor_->label() == FieldDescriptor::LABEL_OPTIONAL) {
+    variables["LABEL"] = "NONE";
+    optional_uses_has = false;
+  } else {
+    variables["LABEL"] = CamelToUpper(GetLabelName(descriptor_->label()));
+  }
 
   if (descriptor_->has_default_value()) {
     variables["default_value"] = string("&")

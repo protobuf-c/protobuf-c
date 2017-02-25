@@ -179,6 +179,16 @@ struct NameIndex
 };
 int compare_name_indices_by_name(const void*, const void*);
 
+// Return the syntax version of the file containing the field.
+// This wrapper is needed to be able to compile against protobuf2.
+inline int FieldSyntax(const FieldDescriptor* field) {
+#ifdef HAVE_PROTO3
+  return field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 ? 3 : 2;
+#else
+  return 2;
+#endif
+}
+
 }  // namespace c
 }  // namespace compiler
 }  // namespace protobuf

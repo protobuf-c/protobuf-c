@@ -43,11 +43,17 @@ if test -n "$PKG_CONFIG"; then
     fi
 fi
 
+proto3_supported="no"
+
 AC_ARG_ENABLE([protoc],
   AS_HELP_STRING([--disable-protoc], [Disable building protoc_c (also disables tests)]))
 if test "x$enable_protoc" != "xno"; then
   AC_LANG_PUSH([C++])
-  PKG_CHECK_MODULES([protobuf], [protobuf >= 2.6.0])
+
+  PKG_CHECK_MODULES([protobuf], [protobuf >= 3.0.0],
+    [proto3_supported=yes],
+    [PKG_CHECK_MODULES([protobuf], [protobuf >= 2.6.0])]
+  )
 
   save_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$save_CPPFLAGS $protobuf_CFLAGS"
@@ -62,12 +68,18 @@ if test "x$enable_protoc" != "xno"; then
   if test -z "$PROTOC"; then
     AC_MSG_ERROR([Please install the protobuf compiler from https://code.google.com/p/protobuf/.])
   fi
+
   PROTOBUF_VERSION="$($PROTOC --version)"
+
 else
   PROTOBUF_VERSION="not required, not building compiler"
 fi
+
 AM_CONDITIONAL([BUILD_COMPILER], [test "x$enable_protoc" != "xno"])
+AM_CONDITIONAL([BUILD_PROTO3], [test "x$proto3_supported" != "xno"])
 AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" != "xno"])
+
+AM_COND_IF([BUILD_PROTO3], [AC_DEFINE([HAVE_PROTO3], [1], [Support proto3 syntax])])
 
 gl_LD_VERSION_SCRIPT
 
