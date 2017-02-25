@@ -7,6 +7,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
 
 PROJECT(protobuf-c)
 
+#options
+option(MSVC_STATIC_BUILD "MSVC_STATIC_BUILD" OFF)
+
 INCLUDE(TestBigEndian)
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
@@ -39,6 +42,20 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}) # for generated files
 FIND_PACKAGE(Protobuf REQUIRED)
 INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 
+if (MSVC AND MSVC_STATIC_BUILD)
+	# In case we are building static libraries, link also the runtime library statically
+	# so that MSVCR*.DLL is not required at runtime.
+	# https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx
+	# This is achieved by replacing msvc option /MD with /MT and /MDd with /MTd
+	# http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_build_my_MSVC_application_with_a_static_runtime.3F
+	foreach(flag_var
+		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+		CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+	  if(${flag_var} MATCHES "/MD")
+		string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+	  endif(${flag_var} MATCHES "/MD")
+	endforeach(flag_var)
+endif (MSVC AND MSVC_STATIC_BUILD)
 FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
 ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC})
 
