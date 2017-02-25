@@ -376,6 +376,8 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 		 "                     ($classname$ *message,\n"
 		 "                      ProtobufCAllocator *allocator)\n"
 		 "{\n"
+		 "  if(!message)\n"
+		 "    return;\n"
 		 "  assert(message->base.descriptor == &$lcclassname$__descriptor);\n"
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
 		 "}\n"

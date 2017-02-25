@@ -139,7 +139,7 @@ Foo__Bar__BazBah *
 ~~~
  *
  * - `free_unpacked()`. Frees a message object obtained with the `unpack()`
- *   method.
+ *   method. Freeing `NULL` is allowed (the same as with `free()`).
  *
 ~~~{.c}
 void   foo__bar__baz_bah__free_unpacked
@@ -956,7 +956,7 @@ protobuf_c_message_unpack(
  * protobuf_c_message_unpack().
  *
  * \param message
- *      The message object to free.
+ *      The message object to free. May be NULL.
  * \param allocator
  *      `ProtobufCAllocator` to use for memory deallocation. May be NULL to
  *      specify the default allocator.
