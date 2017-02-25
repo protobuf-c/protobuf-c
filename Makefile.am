@@ -178,6 +178,22 @@ t/test-full.pb.cc t/test-full.pb.h: @PROTOC@ $(top_srcdir)/t/test-full.proto
 t/generated-code2/test-full-cxx-output.inc: t/generated-code2/cxx-generate-packed-data$(EXEEXT)
 	$(AM_V_GEN)$(top_builddir)/t/generated-code2/cxx-generate-packed-data$(EXEEXT) > $(top_builddir)/t/generated-code2/test-full-cxx-output.inc
 
+check_PROGRAMS += \
+	t/issue220/issue220
+TESTS += \
+	t/issue220/issue220
+t_issue220_issue220_SOURCES = \
+	t/issue220/issue220.c \
+	t/issue220/issue220.pb-c.c
+t_issue220_issue220_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/issue220/issue220.pb-c.c t/issue220/issue220.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue220/issue220.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue220/issue220.proto
+BUILT_SOURCES += \
+	t/issue220/issue220.pb-c.c t/issue220/issue220.pb-c.h
+EXTRA_DIST += \
+	t/issue220/issue220.proto
+
 BUILT_SOURCES += \
 	t/test.pb-c.c t/test.pb-c.h \
 	t/test-full.pb-c.c t/test-full.pb-c.h \
