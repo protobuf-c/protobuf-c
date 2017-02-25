@@ -148,9 +148,10 @@ GenerateStructDefinition(io::Printer* printer) {
   }
 
   // Generate the case enums for unions
-  vars["opt_comma"] = ",";
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
+    vars["opt_comma"] = ",";
+
     vars["oneofname"] = FullNameToUpper(oneof->name());
     vars["foneofname"] = FullNameToC(oneof->full_name());
 
