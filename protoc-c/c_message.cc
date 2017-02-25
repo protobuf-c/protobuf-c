@@ -148,9 +148,10 @@ GenerateStructDefinition(io::Printer* printer) {
   }
 
   // Generate the case enums for unions
-  vars["opt_comma"] = ",";
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
+    vars["opt_comma"] = ",";
+
     vars["oneofname"] = FullNameToUpper(oneof->name());
     vars["foneofname"] = FullNameToC(oneof->full_name());
 
@@ -167,7 +168,7 @@ GenerateStructDefinition(io::Printer* printer) {
       }
       printer->Print(vars, "$ucclassname$__$oneofname$_$fieldname$ = $fieldnum$$opt_comma$\n");
     }
-    printer->Print(vars, "  PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE($ucclassname$)\n");
+    printer->Print(vars, "  PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE($ucclassname$__$oneofname$)\n");
     printer->Outdent();
     printer->Print(vars, "} $foneofname$Case;\n\n");
   }
