@@ -24,6 +24,32 @@ LT_INIT
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([Makefile protobuf-c/libprotobuf-c.pc])
 
+my_CFLAGS="\
+-Wall \
+-Wchar-subscripts \
+-Wdeclaration-after-statement \
+-Wformat-security \
+-Wmissing-declarations \
+-Wmissing-prototypes \
+-Wnested-externs \
+-Wpointer-arith \
+-Wshadow \
+-Wsign-compare \
+-Wstrict-prototypes \
+-Wtype-limits \
+"
+#AX_CHECK_COMPILE_FLAG(["-Wc90-c99-compat"],
+#                      [my_CFLAGS="$my_CFLAGS -Wc90-c99-compat"])
+AX_CHECK_COMPILE_FLAG(["-Wc99-c11-compat"],
+                      [my_CFLAGS="$my_CFLAGS -Wc99-c11-compat"])
+AX_CHECK_COMPILE_FLAG(["-Werror=incompatible-pointer-types"],
+                      [my_CFLAGS="$my_CFLAGS -Werror=incompatible-pointer-types"])
+AX_CHECK_COMPILE_FLAG(["-Werror=int-conversion"],
+                      [my_CFLAGS="$my_CFLAGS -Werror=int-conversion"])
+AX_CHECK_COMPILE_FLAG(["-Wnull-dereference"],
+                      [my_CFLAGS="$my_CFLAGS -Wnull-dereference"])
+AC_SUBST([my_CFLAGS])
+
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 AM_CONDITIONAL([HAVE_DOXYGEN],
                [test -n "$DOXYGEN"])
