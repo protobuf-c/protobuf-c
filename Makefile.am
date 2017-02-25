@@ -178,6 +178,19 @@ t/test-full.pb.cc t/test-full.pb.h: @PROTOC@ $(top_srcdir)/t/test-full.proto
 t/generated-code2/test-full-cxx-output.inc: t/generated-code2/cxx-generate-packed-data$(EXEEXT)
 	$(AM_V_GEN)$(top_builddir)/t/generated-code2/cxx-generate-packed-data$(EXEEXT) > $(top_builddir)/t/generated-code2/test-full-cxx-output.inc
 
+BUILT_SOURCES += \
+	t/test.pb-c.c t/test.pb-c.h \
+	t/test-full.pb-c.c t/test-full.pb-c.h \
+	t/test-optimized.pb-c.c t/test-optimized.pb-c.h \
+	t/test-full.pb.cc t/test-full.pb.h \
+	t/generated-code2/test-full-cxx-output.inc
+
+t_version_version_SOURCES = \
+	t/version/version.c
+t_version_version_LDADD = \
+	protobuf-c/libprotobuf-c.la
+
+# Issue #220
 check_PROGRAMS += \
 	t/issue220/issue220
 TESTS += \
@@ -194,17 +207,23 @@ BUILT_SOURCES += \
 EXTRA_DIST += \
 	t/issue220/issue220.proto
 
-BUILT_SOURCES += \
-	t/test.pb-c.c t/test.pb-c.h \
-	t/test-full.pb-c.c t/test-full.pb-c.h \
-	t/test-optimized.pb-c.c t/test-optimized.pb-c.h \
-	t/test-full.pb.cc t/test-full.pb.h \
-	t/generated-code2/test-full-cxx-output.inc
-
-t_version_version_SOURCES = \
-	t/version/version.c
-t_version_version_LDADD = \
+# Issue #251
+check_PROGRAMS += \
+	t/issue251/issue251
+TESTS += \
+	t/issue251/issue251
+t_issue251_issue251_SOURCES = \
+	t/issue251/issue251.c \
+	t/issue251/issue251.pb-c.c
+t_issue251_issue251_LDADD = \
 	protobuf-c/libprotobuf-c.la
+t/issue251/issue251.pb-c.c t/issue251/issue251.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue251/issue251.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue251/issue251.proto
+BUILT_SOURCES += \
+	t/issue251/issue251.pb-c.c t/issue251/issue251.pb-c.h
+EXTRA_DIST += \
+	t/issue251/issue251.proto
+
 endif # CROSS_COMPILING
 
 endif # BUILD_COMPILER
