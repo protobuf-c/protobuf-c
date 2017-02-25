@@ -3213,7 +3213,6 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 		unsigned max = (i_slab == which_slab) ?
 			in_slab_index : (1UL << (i_slab + 4));
 		ScannedMember *slab = scanned_member_slabs[i_slab];
-		unsigned j;
 
 		for (j = 0; j < max; j++) {
 			if (!parse_member(slab + j, rv, allocator)) {
