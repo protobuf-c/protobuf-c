@@ -956,7 +956,7 @@ protobuf_c_message_unpack(
  * protobuf_c_message_unpack().
  *
  * \param message
- *      The message object to free.
+ *      The message object to free. May be NULL.
  * \param allocator
  *      `ProtobufCAllocator` to use for memory deallocation. May be NULL to
  *      specify the default allocator.
