@@ -2165,7 +2165,7 @@ merge_messages(ProtobufCMessage *earlier_msg,
 				*p_earlier = 0;
 			}
 		} else if (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL ||
-			   fields[i].label == PROTOBUF_C_LABEL_NONE) { // FIXME to check
+			   fields[i].label == PROTOBUF_C_LABEL_NONE) {
 			const ProtobufCFieldDescriptor *field;
 			uint32_t *earlier_case_p = STRUCT_MEMBER_PTR(uint32_t,
 								     earlier_msg,
