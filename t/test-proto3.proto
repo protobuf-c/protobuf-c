@@ -14,8 +14,13 @@ message Person {
   }
 
   message PhoneNumber {
+    message Comment {
+      string comment = 1;
+    }
+
     string number = 1;
     PhoneType type = 2;
+    Comment comment = 3;
   }
 
   repeated PhoneNumber phone = 4;
