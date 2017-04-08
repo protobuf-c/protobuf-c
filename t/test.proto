@@ -12,8 +12,13 @@ message Person {
   }
 
   message PhoneNumber {
+    message Comment {
+      required string comment = 1;
+    }
+
     required string number = 1;
     optional PhoneType type = 2 [default = HOME];
+    optional Comment comment = 3;
   }
 
   repeated PhoneNumber phone = 4;
