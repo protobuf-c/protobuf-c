@@ -193,6 +193,9 @@ check_PROGRAMS += \
 TESTS += \
 	t/generated-code3/test-generated-code3
 
+t_generated_code3_test_generated_code3_CPPFLAGS = \
+	-DPROTO3
+
 t_generated_code3_test_generated_code3_LDADD = \
 	protobuf-c/libprotobuf-c.la
 
