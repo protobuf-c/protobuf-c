@@ -466,7 +466,7 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
  * \param field
  *      Field descriptor for member.
  * \param oneof_case
- *      A pointer to the case enum that selects the field in the oneof.
+ *      Enum value that selects the field in the oneof.
  * \param member
  *      Field to encode.
  * \return
@@ -474,19 +474,18 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
  */
 static size_t
 oneof_field_get_packed_size(const ProtobufCFieldDescriptor *field,
-			    const uint32_t *oneof_case,
+			    uint32_t oneof_case,
 			    const void *member)
 {
-	if (*oneof_case == field->id) {
-		if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
-		    field->type == PROTOBUF_C_TYPE_STRING)
-		{
-			const void *ptr = *(const void * const *) member;
-			if (ptr == NULL || ptr == field->default_value)
-				return 0;
-		}
-	} else {
+	if (oneof_case != field->id) {
 		return 0;
+	}
+	if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+	    field->type == PROTOBUF_C_TYPE_STRING)
+	{
+		const void *ptr = *(const void * const *) member;
+		if (ptr == NULL || ptr == field->default_value)
+			return 0;
 	}
 	return required_field_get_packed_size(field, member);
 }
@@ -678,7 +677,11 @@ size_t protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 		} else if ((field->label == PROTOBUF_C_LABEL_OPTIONAL ||
 			    field->label == PROTOBUF_C_LABEL_NONE) &&
 			   (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF))) {
-			rv += oneof_field_get_packed_size(field, qmember, member);
+			rv += oneof_field_get_packed_size(
+				field,
+				*(const uint32_t *) qmember,
+				member
+			);
 		} else if (field->label == PROTOBUF_C_LABEL_OPTIONAL) {
 			rv += optional_field_get_packed_size(
 				field,
@@ -1093,7 +1096,7 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
  * \param field
  *      Field descriptor.
  * \param oneof_case
- *      A pointer to the case enum that selects the field in the oneof.
+ *      Enum value that selects the field in the oneof.
  * \param member
  *      The field member.
  * \param[out] out
@@ -1103,19 +1106,18 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
  */
 static size_t
 oneof_field_pack(const ProtobufCFieldDescriptor *field,
-		 const uint32_t *oneof_case,
+		 uint32_t oneof_case,
 		 const void *member, uint8_t *out)
 {
-	if (*oneof_case == field->id) {
-		if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
-		    field->type == PROTOBUF_C_TYPE_STRING)
-		{
-			const void *ptr = *(const void * const *) member;
-			if (ptr == NULL || ptr == field->default_value)
-				return 0;
-		}
-	} else {
+	if (oneof_case != field->id) {
 		return 0;
+	}
+	if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+	    field->type == PROTOBUF_C_TYPE_STRING)
+	{
+		const void *ptr = *(const void * const *) member;
+		if (ptr == NULL || ptr == field->default_value)
+			return 0;
 	}
 	return required_field_pack(field, member, out);
 }
@@ -1449,7 +1451,12 @@ protobuf_c_message_pack(const ProtobufCMessage *message, uint8_t *out)
 		} else if ((field->label == PROTOBUF_C_LABEL_OPTIONAL ||
 			    field->label == PROTOBUF_C_LABEL_NONE) &&
 			   (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF))) {
-			rv += oneof_field_pack (field, qmember, member, out + rv);
+			rv += oneof_field_pack(
+				field,
+				*(const uint32_t *) qmember,
+				member,
+				out + rv
+			);
 		} else if (field->label == PROTOBUF_C_LABEL_OPTIONAL) {
 			rv += optional_field_pack(
 				field,
@@ -1598,7 +1605,7 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
  * \param field
  *      Field descriptor.
  * \param oneof_case
- *      A pointer to the case enum that selects the field in the oneof.
+ *      Enum value that selects the field in the oneof.
  * \param member
  *      The element to be packed.
  * \param[out] buffer
@@ -1608,19 +1615,18 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
  */
 static size_t
 oneof_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
-			   const uint32_t *oneof_case,
+			   uint32_t oneof_case,
 			   const void *member, ProtobufCBuffer *buffer)
 {
-	if (*oneof_case == field->id) {
-		if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
-		    field->type == PROTOBUF_C_TYPE_STRING)
-		{
-			const void *ptr = *(const void *const *) member;
-			if (ptr == NULL || ptr == field->default_value)
-				return 0;
-		}
-	} else {
+	if (oneof_case != field->id) {
 		return 0;
+	}
+	if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+	    field->type == PROTOBUF_C_TYPE_STRING)
+	{
+		const void *ptr = *(const void *const *) member;
+		if (ptr == NULL || ptr == field->default_value)
+			return 0;
 	}
 	return required_field_pack_to_buffer(field, member, buffer);
 }
@@ -1930,7 +1936,7 @@ protobuf_c_message_pack_to_buffer(const ProtobufCMessage *message,
 			   (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF))) {
 			rv += oneof_field_pack_to_buffer(
 				field,
-				qmember,
+				*(const uint32_t *) qmember,
 				member,
 				buffer
 			);
