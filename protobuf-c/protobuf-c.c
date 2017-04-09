@@ -523,6 +523,20 @@ optional_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 	return required_field_get_packed_size(field, member);
 }
 
+static protobuf_c_boolean
+field_is_zeroish(const ProtobufCFieldDescriptor *field,
+		 const void *member)
+{
+	if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+	    field->type == PROTOBUF_C_TYPE_STRING)
+	{
+	    const void *ptr = *(const void * const *) member;
+	    if (ptr == NULL)
+		    return TRUE;
+	}
+	return member == NULL;
+}
+
 /**
  * Calculate the serialized size of a single unlabeled message field, including
  * the space needed by the preceding tag. Returns 0 if the field isn't set or
@@ -540,10 +554,8 @@ static size_t
 unlabeled_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 				const void *member)
 {
-	const void *ptr = *(const void * const *) member;
-	if (ptr == NULL) {
+	if (field_is_zeroish(field, member))
 		return 0;
-	}
 	return required_field_get_packed_size(field, member);
 }
 
@@ -1168,10 +1180,8 @@ static size_t
 unlabeled_field_pack(const ProtobufCFieldDescriptor *field,
 		     const void *member, uint8_t *out)
 {
-	const void *ptr = *(const void * const *) member;
-	if (ptr == NULL) {
+	if (field_is_zeroish(field, member))
 		return 0;
-	}
 	return required_field_pack(field, member, out);
 }
 
@@ -1673,10 +1683,8 @@ static size_t
 unlabeled_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 			       const void *member, ProtobufCBuffer *buffer)
 {
-	const void *ptr = *(const void *const *) member;
-	if (ptr == NULL) {
+	if (field_is_zeroish(field, member))
 		return 0;
-	}
 	return required_field_pack_to_buffer(field, member, buffer);
 }
 
