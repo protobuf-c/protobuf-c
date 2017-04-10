@@ -526,14 +526,44 @@ static protobuf_c_boolean
 field_is_zeroish(const ProtobufCFieldDescriptor *field,
 		 const void *member)
 {
-	if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
-	    field->type == PROTOBUF_C_TYPE_STRING)
-	{
-	    const void *ptr = *(const void * const *) member;
-	    if (ptr == NULL)
-		    return TRUE;
+	protobuf_c_boolean ret = FALSE;
+
+	switch (field->type) {
+	case PROTOBUF_C_TYPE_BOOL:
+		ret = (0 == *(const protobuf_c_boolean *) member);
+		break;
+	case PROTOBUF_C_TYPE_ENUM:
+	case PROTOBUF_C_TYPE_SINT32:
+	case PROTOBUF_C_TYPE_INT32:
+	case PROTOBUF_C_TYPE_UINT32:
+	case PROTOBUF_C_TYPE_SFIXED32:
+	case PROTOBUF_C_TYPE_FIXED32:
+		ret = (0 == *(const uint32_t *) member);
+		break;
+	case PROTOBUF_C_TYPE_SINT64:
+	case PROTOBUF_C_TYPE_INT64:
+	case PROTOBUF_C_TYPE_UINT64:
+	case PROTOBUF_C_TYPE_SFIXED64:
+	case PROTOBUF_C_TYPE_FIXED64:
+		ret = (0 == *(const uint64_t *) member);
+		break;
+	case PROTOBUF_C_TYPE_FLOAT:
+		ret = (0 == *(const float *) member);
+		break;
+	case PROTOBUF_C_TYPE_DOUBLE:
+		ret = (0 == *(const double *) member);
+		break;
+	case PROTOBUF_C_TYPE_STRING:
+	case PROTOBUF_C_TYPE_BYTES:
+	case PROTOBUF_C_TYPE_MESSAGE:
+		ret = (NULL == *(const void * const *) member);
+		break;
+	default:
+		ret = TRUE;
+		break;
 	}
-	return member == NULL;
+
+	return ret;
 }
 
 /**
