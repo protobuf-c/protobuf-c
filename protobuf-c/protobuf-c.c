@@ -60,6 +60,12 @@
 # define inline __inline
 #endif
 
+/* Only some old ARM processors use this, default to non-mixed endian. */
+#ifndef IEEE_DOUBLE_MIXED_ENDIAN
+# define IEEE_DOUBLE_MIXED_ENDIAN 0
+#endif
+
+
 /**
  * \defgroup internal Internal functions and macros
  *
@@ -951,6 +957,34 @@ fixed64_pack(uint64_t value, void *out)
 }
 
 /**
+ * Pack a 64-bit double value.
+ * (This is separate from fixed64_pack because some older platforms
+ * have different double memory layout (32bit words swapped),
+ * for example NS9210)
+ *
+ * \param value
+ *      Value to encode.
+ * \param[out] out
+ *      Packed value.
+ * \return
+ *      Number of bytes written to `out`.
+*/
+static inline size_t
+double64_pack (uint64_t value, void *out)
+{
+#if !IEEE_DOUBLE_MIXED_ENDIAN
+  /* double has same memory layout as uint64_t */
+  return fixed64_pack(value, out);
+#else
+  /* double has swapped order of 32bit words, big-endian at 32bit word level */
+  fixed32_pack (value>>32, out);
+  fixed32_pack (value, ((char*)out)+4);
+  return 8;
+#endif
+}
+
+
+/**
  * Pack a boolean value as an integer and return the number of bytes written.
  *
  * \todo Perhaps on some platforms *out = !!value would be a better impl, b/c
@@ -1109,9 +1143,14 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_FLOAT:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
 		return rv + fixed32_pack(*(const uint32_t *) member, out + rv);
+  case PROTOBUF_C_TYPE_DOUBLE:
+#if IEEE_DOUBLE_MIXED_ENDIAN
+    /* need separate handling for swapped longword DOUBLEs; otherwise treat like SFIXED64 and FIXED64 */
+    out[0] |= PROTOBUF_C_WIRE_TYPE_64BIT;
+    return rv + double64_pack (*(const uint64_t *) member, out + rv);
+#endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
 		out[0] |= PROTOBUF_C_WIRE_TYPE_64BIT;
 		return rv + fixed64_pack(*(const uint64_t *) member, out + rv);
 	case PROTOBUF_C_TYPE_BOOL:
@@ -1305,6 +1344,32 @@ copy_to_little_endian_64(void *out, const void *in, const unsigned n)
 }
 
 /**
+ * Pack an array of 64-bit doubles.
+ *
+ * \param[out] out
+ *      Destination.
+ * \param[in] in
+ *      Source.
+ * \param[in] n
+ *      Number of elements in the source array.
+ */
+static void
+copy_double_to_little_endian_64 (void *out, const void *in, unsigned N)
+{
+#if !IEEE_DOUBLE_MIXED_ENDIAN
+  /* double has same memory layout as uint64_t */
+  copy_to_little_endian_64(out, in, N);
+#else
+  /* double has swapped order of 32bit words, big-endian at 32bit word level */
+  unsigned i;
+  const uint64_t *ini = in;
+  for (i = 0; i < N; i++)
+    double64_pack (ini[i], (uint64_t*)out + i);
+#endif
+}
+
+
+/**
  * Get the minimum number of bytes required to pack a field value of a
  * particular type.
  *
@@ -1379,9 +1444,15 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 			copy_to_little_endian_32(payload_at, array, count);
 			payload_at += count * 4;
 			break;
+    case PROTOBUF_C_TYPE_DOUBLE:
+#if IEEE_DOUBLE_MIXED_ENDIAN
+      /* need separate handling for swapped longword DOUBLEs; otherwise treat like SFIXED64 and FIXED64 */
+      copy_double_to_little_endian_64(payload_at, array, count);
+      payload_at += count * 8;
+      break;
+#endif
 		case PROTOBUF_C_TYPE_SFIXED64:
 		case PROTOBUF_C_TYPE_FIXED64:
-		case PROTOBUF_C_TYPE_DOUBLE:
 			copy_to_little_endian_64(payload_at, array, count);
 			payload_at += count * 8;
 			break;
@@ -1830,9 +1901,18 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 		}
 		break;
 #endif
+  case PROTOBUF_C_TYPE_DOUBLE:
+#if IEEE_DOUBLE_MIXED_ENDIAN
+    /* need separate handling for swapped longword DOUBLEs; otherwise treat like SFIXED64 and FIXED64 */
+    for (i = 0; i < count; i++) {
+      unsigned len = double64_pack(((uint64_t*)array)[i], scratch);
+      buffer->append(buffer, len, scratch);
+      rv += len;
+    }
+    break;
+#endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
 #if !defined(WORDS_BIGENDIAN)
 		rv = count * 8;
 		goto no_packing_needed;
@@ -2467,6 +2547,19 @@ parse_fixed_uint64(const uint8_t *data)
 #endif
 }
 
+static inline uint64_t
+parse_fixed_double64 (const uint8_t *data)
+{
+#if !IEEE_DOUBLE_MIXED_ENDIAN
+  /* double has same memory layout as uint64_t */
+  return parse_fixed_uint64(data);
+#else
+  /* double has swapped order of 32bit words, big-endian at 32bit word level */
+  return (uint64_t)parse_fixed_uint32(data+4)
+      | (((uint64_t)parse_fixed_uint32(data)) << 32);
+#endif
+}
+
 static protobuf_c_boolean
 parse_boolean(unsigned len, const uint8_t *data)
 {
@@ -2522,9 +2615,16 @@ parse_required_member(ScannedMember *scanned_member,
 			return FALSE;
 		*(int64_t *) member = unzigzag64(parse_uint64(len, data));
 		return TRUE;
+  case PROTOBUF_C_TYPE_DOUBLE:
+#if IEEE_DOUBLE_MIXED_ENDIAN
+    /* need separate handling for swapped longword DOUBLEs; otherwise treat like SFIXED64 and FIXED64 */
+    if (wire_type != PROTOBUF_C_WIRE_TYPE_64BIT)
+      return FALSE;
+    *(uint64_t*)member = parse_fixed_double64 (data);
+    return TRUE;
+#endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_64BIT)
 			return FALSE;
 		*(uint64_t *) member = parse_fixed_uint64(data);
@@ -2747,9 +2847,18 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 		}
 		break;
 #endif
+  case PROTOBUF_C_TYPE_DOUBLE:
+#if IEEE_DOUBLE_MIXED_ENDIAN
+    /* need separate handling for swapped longword DOUBLEs; otherwise treat like SFIXED64 and FIXED64 */
+    count = (scanned_member->len - scanned_member->length_prefix_len) / 8;
+    for (i = 0; i < count; i++) {
+      ((uint64_t*)array)[i] = parse_fixed_double64(at);
+      at += 8;
+    }
+    break;
+#endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
 		count = (scanned_member->len - scanned_member->length_prefix_len) / 8;
 #if !defined(WORDS_BIGENDIAN)
 		goto no_unpacking_needed;
