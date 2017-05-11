@@ -1761,9 +1761,11 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 	}
 	return rv;
 
+#if !defined(WORDS_BIGENDIAN)
 no_packing_needed:
 	buffer->append(buffer, rv, array);
 	return rv;
+#endif
 }
 
 static size_t
