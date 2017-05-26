@@ -21,3 +21,8 @@ global:
 local:
         *;
 };
+
+LIBPROTOBUF_C_1.3.0 {
+global:
+        protobuf_c_empty_string;
+} LIBPROTOBUF_C_1.0.0;
