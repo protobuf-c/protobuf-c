@@ -84,7 +84,7 @@ class EnumFieldGenerator : public FieldGenerator {
   void GenerateStaticInit(io::Printer* printer) const;
 
  private:
-  map<string, string> variables_;
+  std::map<string, string> variables_;
 
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(EnumFieldGenerator);
 };

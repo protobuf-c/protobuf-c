@@ -83,7 +83,7 @@ MessageFieldGenerator::~MessageFieldGenerator() {}
 
 void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
-  map<string, string> vars;
+  std::map<string, string> vars;
   vars["name"] = FieldName(descriptor_);
   vars["type"] = FullNameToC(descriptor_->message_type()->full_name());
   vars["deprecated"] = FieldDeprecated(descriptor_);

@@ -106,7 +106,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 							  const string &type_macro,
 							  const string &descriptor_addr) const
 {
-  map<string, string> variables;
+  std::map<string, string> variables;
   variables["TYPE"] = type_macro;
   variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
   variables["name"] = FieldName(descriptor_);

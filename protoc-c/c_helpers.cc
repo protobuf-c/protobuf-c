@@ -268,7 +268,7 @@ const char* const kKeywordList[] = {
 };
 
 std::set<string> MakeKeywordsMap() {
-  set<string> result;
+  std::set<string> result;
   for (int i = 0; i < GOOGLE_ARRAYSIZE(kKeywordList); i++) {
     result.insert(kKeywordList[i]);
   }
@@ -365,7 +365,7 @@ string GetLabelName(FieldDescriptor::Label label) {
 unsigned
 WriteIntRanges(io::Printer* printer, int n_values, const int *values, const string &name)
 {
-  map<string, string> vars;
+  std::map<string, string> vars;
   vars["name"] = name;
   if (n_values > 0) {
     int n_ranges = 1;
@@ -504,7 +504,7 @@ void SplitStringToIteratorUsing(const string& full,
 void SplitStringUsing(const string& full,
                       const char* delim,
                       vector<string>* result) {
-  back_insert_iterator< vector<string> > it(*result);
+  std::back_insert_iterator< vector<string> > it(*result);
   SplitStringToIteratorUsing(full, delim, it);
 }
 
