@@ -84,6 +84,8 @@
 # define PROTOBUF_C_UNPACK_ERROR(...)
 #endif
 
+const char protobuf_c_empty_string[] = "";
+
 /**
  * Internal `ProtobufCMessage` manipulation macro.
  *
@@ -554,6 +556,9 @@ field_is_zeroish(const ProtobufCFieldDescriptor *field,
 		ret = (0 == *(const double *) member);
 		break;
 	case PROTOBUF_C_TYPE_STRING:
+		ret = (NULL == *(const char * const *) member) ||
+		      ('\0' == **(const char * const *) member);
+		break;
 	case PROTOBUF_C_TYPE_BYTES:
 	case PROTOBUF_C_TYPE_MESSAGE:
 		ret = (NULL == *(const void * const *) member);

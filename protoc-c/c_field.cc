@@ -129,6 +129,9 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
     variables["default_value"] = string("&")
                                + FullNameToLower(descriptor_->full_name())
 			       + "__default_value";
+  } else if (FieldSyntax(descriptor_) == 3 &&
+    descriptor_->type() == FieldDescriptor::TYPE_STRING) {
+    variables["default_value"] = "&protobuf_c_empty_string";
   } else {
     variables["default_value"] = "NULL";
   }

@@ -125,8 +125,10 @@ void StringFieldGenerator::GenerateStaticInit(io::Printer* printer) const
   std::map<string, string> vars;
   if (descriptor_->has_default_value()) {
     vars["default"] = GetDefaultValue();
-  } else {
+  } else if (FieldSyntax(descriptor_) == 2) {
     vars["default"] = "NULL";
+  } else {
+    vars["default"] = "(char *)protobuf_c_empty_string";
   }
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:

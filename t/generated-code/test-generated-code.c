@@ -51,6 +51,11 @@ int main(void)
   person2 = foo__person__unpack (NULL, size, packed);
   assert (person2 != NULL);
   assert (person2->id == 42);
+#ifndef PROTO3
+  assert (person2->email == NULL);
+#else
+  assert (strcmp (person2->email, "") == 0);
+#endif
   assert (strcmp (person2->name, "dave b") == 0);
   assert (person2->n_phone == 1);
   assert (strcmp (person2->phone[0]->number, "1234") == 0);
