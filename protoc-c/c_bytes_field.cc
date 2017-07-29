@@ -74,7 +74,7 @@ namespace c {
 using internal::WireFormat;
 
 void SetBytesVariables(const FieldDescriptor* descriptor,
-                        map<string, string>* variables) {
+                        std::map<string, string>* variables) {
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["default"] =
     "\"" + CEscape(descriptor->default_value_string()) + "\"";
