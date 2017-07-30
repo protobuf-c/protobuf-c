@@ -1,3 +1,77 @@
+protobuf-c (1.3.0)
+
+  [ Robert Edmonds ]
+  * Release 1.3.0.
+
+  * Add test case for the issue in #220 (#254).
+
+  * Fix issue #251, "Bad enums with multiple oneofs" (#256).
+
+  * Add warning flags to my_CFLAGS (#257).
+
+  * Fix namespace errors when compiled with latest protobuf (#280).
+
+  * Bump minimum required header version for proto3 syntax (#282).
+
+  [ Paolo Borelli ]
+  * Turn the compiler into a protoc plugin (#206). This allows the protobuf-c
+    compiler to be invoked as "protoc --c_out=...". For backwards
+    compatibility, we still ship a protoc-c command, but it's a symlink to the
+    protoc-gen-c binary.
+
+  * proto3 support (#228).
+
+  * Remove leftover FIXME comment (#258).
+
+  * Fix proto3 "is zeroish" evaluation (#264).
+
+  * Small cleanup in oneof handling (#265).
+
+  * Rework is_zeroish one more time (#267).
+
+  * proto3: make strings default to "" instead of NULL (#274).
+
+  [ Tomek Wasilczyk ]
+  * Fix -Wsign-compare warnings (#213).
+
+  * Fix ISO C90 -Wdeclaration-after-statement warnings (#214).
+
+  * Fix bigendian -Wunused-label warning (#215).
+
+  [ Ilya Lipnitsky ]
+  * protoc-c/c_message.cc: Force int size on oneof enums (#221). Fixes wrong
+    enum generation and handling for onceof cases (#220).
+
+  [ Adnan ]
+  * Fix cmake build if built as part of an external project (#231).
+
+  [ Gregory Detal ]
+  * Remove .pb.{cc,h} in distdir instead of top_distdir in order to prevent
+    removing files from other projects when protobuf-c is included as an
+    autotools subproject (#232).
+
+  [ Ben Farnham ]
+  * Relax autoconf constraint from v2.64 to v2.63 so that it works on older
+    Linux distros (#233).
+
+  [ Thomas Köckerbauer ]
+  * rm argument fix for Solaris (#234).
+
+  * Add 'const' qualifier to 'init_value' variable in generated files (#236).
+
+  [ Richard Kettlewell ]
+  * Document and extend the effect of passing NULL to ..._free_unpacked
+    functions (#255).
+
+  [ Alex Milich ]
+  * CMake: Workaround for static builds that use MSVC (#243).
+
+  [ Josh Junon ]
+  * CMake: Allow protobuf-c to be included via include_subdirectory (#245).
+
+  [ Alexei Kasatkin ]
+  * CMake: Windows fixes (#266).
+
 protobuf-c (1.2.1)
 
   [ Robert Edmonds ]
@@ -40,7 +114,7 @@ protobuf-c (1.1.1)
     errors in generated header files (Issue #180, #185).
 
   * Add static qualifier to ProtobufCEnumValue and ProtobufCEnumValueIndex
-    variables in generated output.  
+    variables in generated output.
 
   [ Oleg Efimov ]
   * Fix -Wpointer-sign compiler diagnostics in the test suite.
