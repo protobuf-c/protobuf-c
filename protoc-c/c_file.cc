@@ -119,7 +119,10 @@ FileGenerator::~FileGenerator() {}
 void FileGenerator::GenerateHeader(io::Printer* printer) {
   string filename_identifier = FilenameIdentifier(file_->name());
 
-  static const int min_header_version = 1000000;
+  int min_header_version = 1000000;
+  if (file_->syntax() == FileDescriptor::SYNTAX_PROTO3) {
+    min_header_version = 1003000;
+  }
 
   // Generate top of header.
   printer->Print(

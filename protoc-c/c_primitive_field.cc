@@ -80,7 +80,7 @@ PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {}
 void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
   string c_type;
-  map<string, string> vars;
+  std::map<string, string> vars;
   switch (descriptor_->type()) {
     case FieldDescriptor::TYPE_SINT32  : 
     case FieldDescriptor::TYPE_SFIXED32: 
@@ -149,7 +149,7 @@ string PrimitiveFieldGenerator::GetDefaultValue() const
 }
 void PrimitiveFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
-  map<string, string> vars;
+  std::map<string, string> vars;
   if (descriptor_->has_default_value()) {
     vars["default_value"] = GetDefaultValue();
   } else {

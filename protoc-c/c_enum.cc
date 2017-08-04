@@ -81,7 +81,7 @@ EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor,
 EnumGenerator::~EnumGenerator() {}
 
 void EnumGenerator::GenerateDefinition(io::Printer* printer) {
-  map<string, string> vars;
+  std::map<string, string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["shortname"] = descriptor_->name();
   vars["uc_name"] = FullNameToUpper(descriptor_->full_name());
@@ -126,7 +126,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
 }
 
 void EnumGenerator::GenerateDescriptorDeclarations(io::Printer* printer) {
-  map<string, string> vars;
+  std::map<string, string> vars;
   if (dllexport_decl_.empty()) {
     vars["dllexport"] = "";
   } else {
@@ -149,7 +149,7 @@ struct ValueIndex
 void EnumGenerator::GenerateValueInitializer(io::Printer *printer, int index)
 {
   const EnumValueDescriptor *vd = descriptor_->value(index);
-  map<string, string> vars;
+  std::map<string, string> vars;
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
     FileOptions_OptimizeMode_CODE_SIZE;
@@ -182,7 +182,7 @@ static int compare_value_indices_by_name(const void *a, const void *b)
 }
 
 void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
-  map<string, string> vars;
+  std::map<string, string> vars;
   vars["fullname"] = descriptor_->full_name();
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   vars["cname"] = FullNameToC(descriptor_->full_name());

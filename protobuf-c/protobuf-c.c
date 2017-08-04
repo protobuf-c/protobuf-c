@@ -84,7 +84,6 @@
 # define PROTOBUF_C_UNPACK_ERROR(...) protobuf_c_error_handler.callback(protobuf_c_error_handler.data, PROTOBUF_C_ERROR_CODE_UNPACK, __VA_ARGS__)
 #endif
 
-
 /**
  * Internal `ProtobufCMessage` manipulation macro.
  *
@@ -603,6 +602,9 @@ field_is_zeroish(const ProtobufCFieldDescriptor *field,
 		ret = (0 == *(const double *) member);
 		break;
 	case PROTOBUF_C_TYPE_STRING:
+		ret = (NULL == *(const char * const *) member) ||
+		      ('\0' == **(const char * const *) member);
+		break;
 	case PROTOBUF_C_TYPE_BYTES:
 	case PROTOBUF_C_TYPE_MESSAGE:
 		ret = (NULL == *(const void * const *) member);

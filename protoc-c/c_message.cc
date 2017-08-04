@@ -388,7 +388,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 
 void MessageGenerator::
 GenerateMessageDescriptor(io::Printer* printer) {
-    map<string, string> vars;
+    std::map<string, string> vars;
     vars["fullname"] = descriptor_->full_name();
     vars["classname"] = FullNameToC(descriptor_->full_name());
     vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
