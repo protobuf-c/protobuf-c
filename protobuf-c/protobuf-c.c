@@ -81,10 +81,8 @@
 #define MAX_UINT64_ENCODED_SIZE		10
 
 #ifndef PROTOBUF_C_UNPACK_ERROR
-# define PROTOBUF_C_UNPACK_ERROR(...)
+# define PROTOBUF_C_UNPACK_ERROR(...) protobuf_c_error_handler.callback(protobuf_c_error_handler.data, PROTOBUF_C_ERROR_CODE_UNPACK, __VA_ARGS__)
 #endif
-
-const char protobuf_c_empty_string[] = "";
 
 /**
  * Internal `ProtobufCMessage` manipulation macro.
@@ -129,6 +127,46 @@ const char protobuf_c_empty_string[] = "";
 
 /**@}*/
 
+/* --- error handling --- */
+
+/**
+ * Callback with optional data that is passed along in every call
+ */
+struct ProtobufCErrorHandler {
+	ProtobufCErrorCallback callback;
+	void *data;
+};
+typedef struct ProtobufCErrorHandler ProtobufCErrorHandler;
+
+/**
+ * Default callback that does nothing
+ */
+static inline void
+protobuf_c_error_callback_default(void *data, ProtobufCErrorCode errorcode, const char *const format, ...) {
+	/* nothing */
+}
+
+/**
+ * Global variable that holds the single error handler.
+ */
+ProtobufCErrorHandler protobuf_c_error_handler = { protobuf_c_error_callback_default, 0 };
+
+void
+protobuf_c_error_handler_set(ProtobufCErrorCallback callback, void *data) {
+	protobuf_c_error_handler.callback = callback;
+	protobuf_c_error_handler.data = data;
+}
+
+void
+protobuf_c_error_handler_get(ProtobufCErrorCallback *callback, void **data) {
+	if (callback) {
+		*callback = protobuf_c_error_handler.callback;
+	}
+	if (data) {
+		*data = protobuf_c_error_handler.data;
+	}
+}
+
 /* --- version --- */
 
 const char *
@@ -160,7 +198,15 @@ system_free(void *allocator_data, void *data)
 static inline void *
 do_alloc(ProtobufCAllocator *allocator, size_t size)
 {
-	return allocator->alloc(allocator->allocator_data, size);
+	void *data = allocator->alloc(allocator->allocator_data, size);
+	if (!data) {
+		protobuf_c_error_handler.callback(
+			protobuf_c_error_handler.data,
+			PROTOBUF_C_ERROR_CODE_ALLOCATION,
+			"could not allocate %zu bytes",
+			size);
+	}
+	return data;
 }
 
 static inline void

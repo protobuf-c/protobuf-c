@@ -339,6 +339,16 @@ typedef enum {
 	PROTOBUF_C_WIRE_TYPE_32BIT = 5,
 } ProtobufCWireType;
 
+/**
+ * Error codes.
+ */
+typedef enum {
+	PROTOBUF_C_ERROR_CODE_OK = 0,
+
+	PROTOBUF_C_ERROR_CODE_UNPACK = 1,
+	PROTOBUF_C_ERROR_CODE_ALLOCATION = 2,
+} ProtobufCErrorCode;
+
 struct ProtobufCAllocator;
 struct ProtobufCBinaryData;
 struct ProtobufCBuffer;
@@ -377,6 +387,12 @@ typedef int protobuf_c_boolean;
 typedef void (*ProtobufCClosure)(const ProtobufCMessage *, void *closure_data);
 typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
 typedef void (*ProtobufCServiceDestroy)(ProtobufCService *);
+
+/**
+ * Callback for error handling.
+ */
+typedef void(*ProtobufCErrorCallback)(void *data, ProtobufCErrorCode errorcode, const char *const format, ...);
+
 
 /**
  * Structure for defining a custom memory allocator.
@@ -1098,6 +1114,24 @@ protobuf_c_service_invoke_internal(
 	const ProtobufCMessage *input,
 	ProtobufCClosure closure,
 	void *closure_data);
+
+/**
+ * Sets the single global error callback.
+ */
+PROTOBUF_C__API
+void
+protobuf_c_error_handler_set(
+	ProtobufCErrorCallback callback,
+	void *callback_data);
+
+/**
+ * Gets the currently set error callback.
+ */
+PROTOBUF_C__API
+void
+protobuf_c_error_handler_get(
+	ProtobufCErrorCallback *callback,
+	void **callback_data);
 
 /**@}*/
 
