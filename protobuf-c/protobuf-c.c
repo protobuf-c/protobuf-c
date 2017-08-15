@@ -3298,6 +3298,25 @@ error_cleanup_during_scan:
 }
 
 void
+protobuf_c_message_free_unknown_fields (ProtobufCMessage *message,
+					 ProtobufCAllocator *allocator)
+{
+	unsigned f;
+
+	if (message == NULL)
+		return;
+
+	for (f = 0; f < message->n_unknown_fields; f++)
+		do_free (allocator, message->unknown_fields[f].data);
+
+	if (message->unknown_fields != NULL)
+		do_free (allocator, message->unknown_fields);
+
+	message->n_unknown_fields = 0;
+	message->unknown_fields = NULL;
+}
+
+void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)
 {
@@ -3378,11 +3397,7 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 		}
 	}
 
-	for (f = 0; f < message->n_unknown_fields; f++)
-		do_free(allocator, message->unknown_fields[f].data);
-	if (message->unknown_fields != NULL)
-		do_free(allocator, message->unknown_fields);
-
+	protobuf_c_message_free_unknown_fields (message, allocator);
 	do_free(allocator, message);
 }
 

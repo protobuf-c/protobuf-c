@@ -25,4 +25,5 @@ local:
 LIBPROTOBUF_C_1.3.0 {
 global:
         protobuf_c_empty_string;
+        protobuf_c_message_free_unknown_fields;
 } LIBPROTOBUF_C_1.0.0;

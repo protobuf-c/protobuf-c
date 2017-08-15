@@ -1099,6 +1099,11 @@ protobuf_c_service_invoke_internal(
 	ProtobufCClosure closure,
 	void *closure_data);
 
+PROTOBUF_C__API
+void protobuf_c_message_free_unknown_fields (
+	ProtobufCMessage *message,
+	ProtobufCAllocator *allocator);
+
 /**@}*/
 
 PROTOBUF_C__END_DECLS
