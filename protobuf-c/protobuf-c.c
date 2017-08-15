@@ -3622,36 +3622,48 @@ protobuf_c_message_descriptor_get_field(const ProtobufCMessageDescriptor *desc,
 	return desc->fields + rv;
 }
 
+unsigned
+protobuf_c_service_descriptor_get_method_index_by_name(const ProtobufCServiceDescriptor *desc,
+						 const char *name)
+{
+	unsigned start = 0;
+ 	unsigned count;
+
+ 	if (desc == NULL || desc->method_indices_by_name == NULL)
+		return UNDEFINED_METHOD;
+ 
+ 	count = desc->n_methods;
+ 
+ 	while (count > 1) {
+ 		unsigned mid = start + count / 2;
+ 		unsigned mid_index = desc->method_indices_by_name[mid];
+ 		const char *mid_name = desc->methods[mid_index].name;
+ 		int rv = strcmp(mid_name, name);
+ 
+ 		if (rv == 0)
+			return desc->method_indices_by_name[mid];
+ 		if (rv < 0) {
+ 			count = start + count - (mid + 1);
+ 			start = mid + 1;
+ 		} else {
+ 			count = mid - start;
+ 		}
+ 	}
+ 	if (count == 0)
+		return UNDEFINED_METHOD;
+ 	if (strcmp(desc->methods[desc->method_indices_by_name[start]].name, name) == 0)
+		return desc->method_indices_by_name[start];
+	return UNDEFINED_METHOD;
+}
+
 const ProtobufCMethodDescriptor *
 protobuf_c_service_descriptor_get_method_by_name(const ProtobufCServiceDescriptor *desc,
 						 const char *name)
 {
-	unsigned start = 0;
-	unsigned count;
+	unsigned index = protobuf_c_service_descriptor_get_method_index_by_name(desc, name);
 
-	if (desc == NULL || desc->method_indices_by_name == NULL)
-		return NULL;
+	if (index != UNDEFINED_METHOD)
+		return desc->methods + desc->method_indices_by_name[index];
 
-	count = desc->n_methods;
-
-	while (count > 1) {
-		unsigned mid = start + count / 2;
-		unsigned mid_index = desc->method_indices_by_name[mid];
-		const char *mid_name = desc->methods[mid_index].name;
-		int rv = strcmp(mid_name, name);
-
-		if (rv == 0)
-			return desc->methods + desc->method_indices_by_name[mid];
-		if (rv < 0) {
-			count = start + count - (mid + 1);
-			start = mid + 1;
-		} else {
-			count = mid - start;
-		}
-	}
-	if (count == 0)
-		return NULL;
-	if (strcmp(desc->methods[desc->method_indices_by_name[start]].name, name) == 0)
-		return desc->methods + desc->method_indices_by_name[start];
 	return NULL;
 }

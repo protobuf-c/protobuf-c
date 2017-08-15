@@ -237,6 +237,8 @@ PROTOBUF_C__BEGIN_DECLS
 #define PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC    0x28aaeef9
 #define PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC       0x114315af
 
+#define UNDEFINED_METHOD 0xffffffff
+
 /* Empty string used for initializers */
 extern const char protobuf_c_empty_string[];
 
@@ -1103,6 +1105,12 @@ PROTOBUF_C__API
 void protobuf_c_message_free_unknown_fields (
 	ProtobufCMessage *message,
 	ProtobufCAllocator *allocator);
+
+PROTOBUF_C__API
+unsigned
+protobuf_c_service_descriptor_get_method_index_by_name(
+	const ProtobufCServiceDescriptor *desc,
+	const char *name);
 
 /**@}*/
 

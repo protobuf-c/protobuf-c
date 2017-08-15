@@ -26,4 +26,5 @@ LIBPROTOBUF_C_1.3.0 {
 global:
         protobuf_c_empty_string;
         protobuf_c_message_free_unknown_fields;
+        protobuf_c_service_descriptor_get_method_index_by_name;
 } LIBPROTOBUF_C_1.0.0;
