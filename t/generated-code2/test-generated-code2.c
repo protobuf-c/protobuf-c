@@ -967,6 +967,9 @@ static void test_oneof_SubMess (void)
 static void test_oneof_merge (void)
 {
   Foo__TestMessOneof *msg;
+  Foo__SubMess submess = FOO__SUB_MESS__INIT;
+  ProtobufCBinaryData bd_hello = { 5, (uint8_t*)"hello" };
+
 #define DO_TEST(value, member, MEMBER, equals_func, example_packed_data) \
   msg = foo__test_mess_oneof__unpack (NULL, sizeof (example_packed_data), example_packed_data); \
   assert (msg); \
@@ -979,11 +982,9 @@ static void test_oneof_merge (void)
   DO_TEST (666, test_int32, TEST_INT32, NUMERIC_EQUALS, test_oneof_merge_int32);
   DO_TEST ("", test_string, TEST_STRING, STRING_EQUALS, test_oneof_merge_string);
 
-  Foo__SubMess submess = FOO__SUB_MESS__INIT;
   submess.test = 42;
   DO_TEST (&submess, test_message, TEST_MESSAGE, submesses_equals, test_oneof_merge_submess);
 
-  ProtobufCBinaryData bd_hello = { 5, (uint8_t*)"hello" };
   DO_TEST(bd_hello, test_bytes, TEST_BYTES, binary_data_equals, test_oneof_merge_bytes);
 #undef DO_TEST
 }
@@ -1753,6 +1754,8 @@ test_optional_default_values (void)
 {
   Foo__DefaultOptionalValues mess = FOO__DEFAULT_OPTIONAL_VALUES__INIT;
   Foo__DefaultOptionalValues *mess2;
+  Foo__TestMessOptional mess3 = FOO__TEST_MESS_OPTIONAL__INIT;
+
   size_t len; uint8_t *data;
   assert_optional_default_values_are_default (&mess);
   mess2 = test_compare_pack_methods (&mess.base, &len, &data);
@@ -1761,7 +1764,6 @@ test_optional_default_values (void)
   assert_optional_default_values_are_default (mess2);
   foo__default_optional_values__free_unpacked (mess2, NULL);
 
-  Foo__TestMessOptional mess3 = FOO__TEST_MESS_OPTIONAL__INIT;
   assert_unspecified_default_values_are_correct (&mess3);
 }
 
@@ -1792,7 +1794,18 @@ test_field_merge (void)
    Foo__TestMessOptional msg1 = FOO__TEST_MESS_OPTIONAL__INIT;
    Foo__SubMess sub1 = FOO__SUB_MESS__INIT;
    Foo__SubMess__SubSubMess subsub1 = FOO__SUB_MESS__SUB_SUB_MESS__INIT;
+   
+   size_t msg_size;
+   
+   Foo__TestMessOptional msg2 = FOO__TEST_MESS_OPTIONAL__INIT;
+   Foo__SubMess sub2 = FOO__SUB_MESS__INIT;
+   Foo__SubMess__SubSubMess subsub2 = FOO__SUB_MESS__SUB_SUB_MESS__INIT;
 
+   int32_t arr1[] = {0, 1};
+   int32_t arr2[] = {2, 3, 4};
+   /* Repeated fields should get concatenated */
+   int32_t merged_arr[] = {0, 1, 2, 3, 4};
+   
    msg1.has_test_int32 = 1;
    msg1.test_int32 = 12345;
    msg1.has_test_sint32 = 1;
@@ -1805,8 +1818,8 @@ test_field_merge (void)
    sub1.val1 = 4;
    sub1.has_val2 = 1;
    sub1.val2 = 5;
-   int32_t arr1[] = {0, 1};
-   sub1.n_rep = 2;
+
+   sub1.n_rep = N_ELEMENTS(arr1);
    sub1.rep = arr1;
    sub1.sub1 = &subsub1;
    sub1.sub2 = &subsub1;
@@ -1814,11 +1827,7 @@ test_field_merge (void)
    subsub1.rep = arr1;
    subsub1.str1 = "test";
 
-   size_t msg_size = foo__test_mess_optional__get_packed_size (&msg1);
-
-   Foo__TestMessOptional msg2 = FOO__TEST_MESS_OPTIONAL__INIT;
-   Foo__SubMess sub2 = FOO__SUB_MESS__INIT;
-   Foo__SubMess__SubSubMess subsub2 = FOO__SUB_MESS__SUB_SUB_MESS__INIT;
+   msg_size = foo__test_mess_optional__get_packed_size (&msg1);
 
    msg2.has_test_int64 = 1;
    msg2.test_int64 = 2;
@@ -1828,8 +1837,7 @@ test_field_merge (void)
    msg2.test_message = &sub2;
    sub2.has_val2 = 1;
    sub2.val2 = 666;
-   int32_t arr2[] = {2, 3, 4};
-   sub2.n_rep = 3;
+   sub2.n_rep = N_ELEMENTS(arr2);
    sub2.rep = arr2;
    sub2.sub1 = &subsub2;
    subsub2.has_val1 = 1;
@@ -1837,40 +1845,41 @@ test_field_merge (void)
 
    msg_size += foo__test_mess_optional__get_packed_size (&msg2);
 
-   uint8_t *packed_buffer = (uint8_t *)malloc (msg_size);
+   {
+      uint8_t *packed_buffer = (uint8_t *)malloc (msg_size);
+      Foo__TestMessOptional *merged;
 
-   size_t packed_size = foo__test_mess_optional__pack (&msg1, packed_buffer);
-   packed_size += foo__test_mess_optional__pack (&msg2, packed_buffer + packed_size);
+      size_t packed_size = foo__test_mess_optional__pack (&msg1, packed_buffer);
+      packed_size += foo__test_mess_optional__pack (&msg2, packed_buffer + packed_size);
 
-   assert (packed_size == msg_size);
+      assert (packed_size == msg_size);
 
-   Foo__TestMessOptional *merged = foo__test_mess_optional__unpack
-      (NULL, msg_size, packed_buffer);
+      merged = foo__test_mess_optional__unpack
+          (NULL, msg_size, packed_buffer);
 
-   assert (merged->has_test_int32 && merged->test_int32 == msg1.test_int32);
-   assert (merged->has_test_sint32 && merged->test_sint32 == msg1.test_sint32);
-   assert (merged->has_test_int64 && merged->test_int64 == msg2.test_int64);
-   assert (merged->has_test_enum && merged->test_enum == msg2.test_enum);
-   assert (strcmp (merged->test_string, msg2.test_string) == 0);
-   assert (merged->test_message->has_val1 && merged->test_message->val1 == sub1.val1);
-   assert (merged->test_message->has_val2 && merged->test_message->val2 == sub2.val2);
-   /* Repeated fields should get concatenated */
-   int32_t merged_arr[] = {0, 1, 2, 3, 4};
-   assert (merged->test_message->n_rep == 5 &&
-           memcmp(merged->test_message->rep, merged_arr, sizeof(merged_arr)) == 0);
+      assert (merged->has_test_int32 && merged->test_int32 == msg1.test_int32);
+      assert (merged->has_test_sint32 && merged->test_sint32 == msg1.test_sint32);
+      assert (merged->has_test_int64 && merged->test_int64 == msg2.test_int64);
+      assert (merged->has_test_enum && merged->test_enum == msg2.test_enum);
+      assert (strcmp (merged->test_string, msg2.test_string) == 0);
+      assert (merged->test_message->has_val1 && merged->test_message->val1 == sub1.val1);
+      assert (merged->test_message->has_val2 && merged->test_message->val2 == sub2.val2);
+      /* Repeated fields should get concatenated */
+      assert (merged->test_message->n_rep == N_ELEMENTS(merged_arr) &&
+              memcmp(merged->test_message->rep, merged_arr, sizeof(merged_arr)) == 0);
+      assert (merged->test_message->sub1->val1 == subsub2.val1);
+      assert (memcmp(merged->test_message->sub1->bytes1.data,
+               subsub2.bytes1.data, subsub2.bytes1.len) == 0);
+      assert (strcmp(merged->test_message->sub1->str1, subsub1.str1) == 0);
+      assert (merged->test_message->sub1->n_rep == subsub1.n_rep &&
+              memcmp(merged->test_message->sub1->rep, arr1, sizeof(arr1)) == 0);
 
-   assert (merged->test_message->sub1->val1 == subsub2.val1);
-   assert (memcmp(merged->test_message->sub1->bytes1.data,
-            subsub2.bytes1.data, subsub2.bytes1.len) == 0);
-   assert (strcmp(merged->test_message->sub1->str1, subsub1.str1) == 0);
-   assert (merged->test_message->sub1->n_rep == subsub1.n_rep &&
-           memcmp(merged->test_message->sub1->rep, arr1, sizeof(arr1)) == 0);
+      assert (!merged->test_message->sub2->has_val1
+            && merged->test_message->sub2->val1 == subsub1.val1);
 
-   assert (!merged->test_message->sub2->has_val1
-         && merged->test_message->sub2->val1 == subsub1.val1);
-
-   free (packed_buffer);
-   foo__test_mess_optional__free_unpacked (merged, NULL);
+      free (packed_buffer);
+      foo__test_mess_optional__free_unpacked (merged, NULL);
+   }
 }
 
 static void
@@ -1933,11 +1942,8 @@ static void test_free (void *allocator_data, void *data)
     ad->alloc_count--;
 }
 
-static ProtobufCAllocator test_allocator = {
-  .alloc = test_alloc,
-  .free = test_free,
-  .allocator_data = &test_allocator_data,
-};
+static ProtobufCAllocator test_allocator = \
+    ProtobufCAllocator_INIT(test_alloc, test_free, &test_allocator_data);
 
 #define SETUP_TEST_ALLOC_BUFFER(pbuf, len)					\
   uint8_t bytes[] = "some bytes", *pbuf;						\
