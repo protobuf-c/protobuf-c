@@ -227,6 +227,12 @@ typedef __int64 int64_t;
 #include <stdint.h>
 #endif
 
+#ifndef _MSC_VER
+#define NAMED_STRUCT_FIELD(name, value) .name = value
+#else
+#define NAMED_STRUCT_FIELD(name, value) value
+#endif
+
 #ifdef __cplusplus
 # define PROTOBUF_C__BEGIN_DECLS	extern "C" {
 # define PROTOBUF_C__END_DECLS		}
@@ -380,6 +386,13 @@ struct ProtobufCMessageUnknownField;
 struct ProtobufCMethodDescriptor;
 struct ProtobufCService;
 struct ProtobufCServiceDescriptor;
+
+#define ProtobufCAllocator_INIT(alloc_val, free_val, allocator_data_val) \
+    {                                                           \
+        NAMED_STRUCT_FIELD(alloc, alloc_val),                   \
+        NAMED_STRUCT_FIELD(free, free_val),                     \
+        NAMED_STRUCT_FIELD(allocator_data, allocator_data_val), \
+    }
 
 typedef struct ProtobufCAllocator ProtobufCAllocator;
 typedef struct ProtobufCBinaryData ProtobufCBinaryData;
