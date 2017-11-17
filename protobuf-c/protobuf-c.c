@@ -175,11 +175,19 @@ do_free(ProtobufCAllocator *allocator, void *data)
  * allocator used if NULL is passed as the ProtobufCAllocator to an exported
  * function.
  */
+#ifndef _MSC_VER
+#define STRUCT_FIELD(name, value) .name = value
+#else
+#define STRUCT_FIELD(name, value) value
+#endif
+ 
 static ProtobufCAllocator protobuf_c__allocator = {
-	.alloc = &system_alloc,
-	.free = &system_free,
-	.allocator_data = NULL,
+	STRUCT_FIELD(alloc, &system_alloc),
+	STRUCT_FIELD(free, &system_free),
+	STRUCT_FIELD(allocator_data, NULL),
 };
+
+#undef STRUCT_FIELD
 
 /* === buffer-simple === */
 
