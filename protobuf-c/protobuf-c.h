@@ -200,7 +200,7 @@ size_t foo__bar__baz_bah__pack_to_buffer
 #include <limits.h>
 #include <stddef.h>
 
-#if _MSC_VER <= 1600
+#if defined(_MSC_VER) && _MSC_VER <= 1600
 // define used stuff from stdint manually
 typedef unsigned __int8 uint8_t;
 typedef __int8 int8_t;
