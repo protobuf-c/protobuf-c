@@ -2125,7 +2125,7 @@ scan_length_prefixed_data(size_t len, const uint8_t *data,
 	}
 	hdr_len = i + 1;
 	*prefix_len_out = hdr_len;
-	if (hdr_len + val > len) {
+	if (hdr_len > len || val > len - hdr_len) {
 		PROTOBUF_C_UNPACK_ERROR("data too short after length-prefix of %u", val);
 		return 0;
 	}
