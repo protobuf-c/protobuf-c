@@ -80,13 +80,13 @@ namespace c {
 //   "foo=bar,baz,qux=corge"
 // parses to the pairs:
 //   ("foo", "bar"), ("baz", ""), ("qux", "corge")
-void ParseOptions(const string& text, vector<pair<string, string> >* output) {
-  vector<string> parts;
+void ParseOptions(const string& text, std::vector<std::pair<string, string> >* output) {
+  std::vector<string> parts;
   SplitStringUsing(text, ",", &parts);
 
   for (unsigned i = 0; i < parts.size(); i++) {
     string::size_type equals_pos = parts[i].find_first_of('=');
-    pair<string, string> value;
+    std::pair<string, string> value;
     if (equals_pos == string::npos) {
       value.first = parts[i];
       value.second = "";
@@ -105,7 +105,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
                             const string& parameter,
                             OutputDirectory* output_directory,
                             string* error) const {
-  vector<pair<string, string> > options;
+  std::vector<std::pair<string, string> > options;
   ParseOptions(parameter, &options);
 
   // -----------------------------------------------------------------
