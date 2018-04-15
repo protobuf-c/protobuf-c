@@ -2239,6 +2239,8 @@ merge_messages(ProtobufCMessage *earlier_msg,
 							latter_msg->descriptor
 							->field_ranges,
 							*earlier_case_p);
+					if (field_index < 0)
+						return FALSE;
 					field = latter_msg->descriptor->fields +
 						field_index;
 				} else {
@@ -2632,6 +2634,8 @@ parse_oneof_member (ScannedMember *scanned_member,
 			int_range_lookup(message->descriptor->n_field_ranges,
 					 message->descriptor->field_ranges,
 					 *oneof_case);
+		if (field_index < 0)
+			return FALSE;
 		const ProtobufCFieldDescriptor *old_field =
 			message->descriptor->fields + field_index;
 		size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
