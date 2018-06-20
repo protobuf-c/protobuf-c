@@ -559,7 +559,7 @@ static int CEscapeInternal(const char* src, int src_len, char* dest,
 }
 string CEscape(const string& src) {
   const int dest_length = src.size() * 4 + 1; // Maximum possible expansion
-  scoped_array<char> dest(new char[dest_length]);
+  std::unique_ptr<char[]> dest(new char[dest_length]);
   const int len = CEscapeInternal(src.data(), src.size(),
                                   dest.get(), dest_length, false);
   GOOGLE_DCHECK_GE(len, 0);
