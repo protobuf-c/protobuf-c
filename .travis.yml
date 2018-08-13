@@ -13,7 +13,7 @@ addons:
 
 env:
   global:
-    - PROTOBUF_VERSION=3.0.2
+    - PROTOBUF_VERSION=3.6.1
     - PKG_CONFIG_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib/pkgconfig
 
 install:
