@@ -2119,12 +2119,12 @@ scan_length_prefixed_data(size_t len, const uint8_t *data,
 		if ((data[i] & 0x80) == 0)
 			break;
 	}
+	hdr_len = i + 1;
+	*prefix_len_out = hdr_len;
 	if (i == hdr_max) {
 		PROTOBUF_C_UNPACK_ERROR("error parsing length for length-prefixed data");
 		return 0;
 	}
-	hdr_len = i + 1;
-	*prefix_len_out = hdr_len;
 	if (hdr_len + val > len) {
 		PROTOBUF_C_UNPACK_ERROR("data too short after length-prefix of %u", val);
 		return 0;
