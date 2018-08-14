@@ -76,6 +76,8 @@ AC_ARG_ENABLE([protoc],
 if test "x$enable_protoc" != "xno"; then
   AC_LANG_PUSH([C++])
 
+  AX_CXX_COMPILE_STDCXX(11, noext, mandatory)
+
   PKG_CHECK_MODULES([protobuf], [protobuf >= 3.0.0],
     [proto3_supported=yes],
     [PKG_CHECK_MODULES([protobuf], [protobuf >= 2.6.0])]
