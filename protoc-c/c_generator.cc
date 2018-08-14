@@ -62,6 +62,7 @@
 
 #include <protoc-c/c_generator.h>
 
+#include <memory>
 #include <vector>
 #include <utility>
 
@@ -149,7 +150,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
 
   // Generate header.
   {
-    scoped_ptr<io::ZeroCopyOutputStream> output(
+    std::unique_ptr<io::ZeroCopyOutputStream> output(
       output_directory->Open(basename + ".h"));
     io::Printer printer(output.get(), '$');
     file_generator.GenerateHeader(&printer);
@@ -157,7 +158,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
 
   // Generate cc file.
   {
-    scoped_ptr<io::ZeroCopyOutputStream> output(
+    std::unique_ptr<io::ZeroCopyOutputStream> output(
       output_directory->Open(basename + ".c"));
     io::Printer printer(output.get(), '$');
     file_generator.GenerateSource(&printer);

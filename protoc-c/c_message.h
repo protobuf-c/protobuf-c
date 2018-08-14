@@ -63,6 +63,7 @@
 #ifndef GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
 #define GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
 
+#include <memory>
 #include <string>
 #include <google/protobuf/stubs/common.h>
 #include <protoc-c/c_field.h>
@@ -126,9 +127,9 @@ class MessageGenerator {
   const Descriptor* descriptor_;
   string dllexport_decl_;
   FieldGeneratorMap field_generators_;
-  scoped_array<scoped_ptr<MessageGenerator> > nested_generators_;
-  scoped_array<scoped_ptr<EnumGenerator> > enum_generators_;
-  scoped_array<scoped_ptr<ExtensionGenerator> > extension_generators_;
+  std::unique_ptr<std::unique_ptr<MessageGenerator>[]> nested_generators_;
+  std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
+  std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
 
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(MessageGenerator);
 };
