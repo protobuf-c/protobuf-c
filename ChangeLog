@@ -1,3 +1,29 @@
+protobuf-c (1.3.1)
+
+  [ Robert Edmonds ]
+  * Release 1.3.1.
+
+  * Restore protobuf-2.x compatibility (#284, #285).
+
+  * Use xenial and protobuf 3.6.1 in the Travis-CI environment (#332).
+
+  * Convert uses of protobuf's scoped_ptr.h to C++11 std::unique_ptr, needed
+    to compile against protobuf 3.6.1 (#320, #333).
+
+  * Use AX_CXX_COMPILE_STDCXX macro to enable C++11 support in old compilers
+    (#312, #317, #327, #334).
+
+  [ Fredrik Gustafsson ]
+  * Add std:: to some types (#294, #305, #309).
+
+  [ Sam Collinson ]
+  * Check the return value of int_range_lookup before using as an array index;
+    it can return -1 (#315).
+
+  [ Matthias Dittrich ]
+  * Fix compilation on mingw by using explicit protoc --plugin=NAME=PATH syntax
+    in Makefile.am (#289, #290).
+
 protobuf-c (1.3.0)
 
   [ Robert Edmonds ]
