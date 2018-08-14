@@ -175,12 +175,10 @@ do_free(ProtobufCAllocator *allocator, void *data)
  * allocator used if NULL is passed as the ProtobufCAllocator to an exported
  * function.
  */
-static ProtobufCAllocator protobuf_c__allocator = {
-	.alloc = &system_alloc,
-	.free = &system_free,
-	.allocator_data = NULL,
-};
-
+ 
+static ProtobufCAllocator protobuf_c__allocator = \
+    ProtobufCAllocator_INIT(&system_alloc, &system_free, NULL);
+ 
 /* === buffer-simple === */
 
 void
