@@ -13,6 +13,7 @@ addons:
 
 env:
   global:
+    - CXX="g++ -std=c++11"
     - PROTOBUF_VERSION=3.6.1
     - PKG_CONFIG_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib/pkgconfig
 
