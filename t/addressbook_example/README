@@ -1,0 +1,15 @@
+This test is based on protobuf 3.5.0 examples.
+
+I think protobuf-c should support this kind of test, which ties with protobuf example.
+When you build this source, there will be two executable binaries. 
+
+First one is add_person, which receives personal information. I modified from protobuf 3.5.0 c++ example, just a little. 
+second one is list_people, which shows the list of personal information, using simple code. 
+
+To compile it, you should modify the Makefile to let your compiler know where the protobuf-c library is installed. 
+Please notice that I just wanted you to consider adding this kind of test. I don't mind you to reject it, but, somebody may make this kind of test well, somedays.
+
+When you execute 'add_person' binary, it will require input information. It works with exactly same way with protobuf example. 
+When you execute 'list_people' binary, (I just hard coded the file name, so you should modify the list file name first.) it shows unstable results. 
+
+There must be a wrong code, but I don't know how to fix it. 
