@@ -2370,7 +2370,7 @@ static Test tests[] =
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 
-int main ()
+int main(void)
 {
   unsigned i;
   for (i = 0; i < n_tests; i++)
