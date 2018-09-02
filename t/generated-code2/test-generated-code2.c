@@ -3,7 +3,7 @@
 #include <string.h>
 #include "t/test-full.pb-c.h"
 #include "t/test-optimized.pb-c.h"
-#include "t/generated-code2/test-full-cxx-output.inc"
+#include "test-full-cxx-output.inc"
 
 #define TEST_ENUM_SMALL_TYPE_NAME   Foo__TestEnumSmall
 #define TEST_ENUM_SMALL(shortname)   FOO__TEST_ENUM_SMALL__##shortname
