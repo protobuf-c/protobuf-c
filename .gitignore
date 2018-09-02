@@ -17,6 +17,7 @@
 /aclocal.m4
 /autom4te.cache
 /build-aux
+/build/
 /config.*
 /configure
 /doxygen-doc
