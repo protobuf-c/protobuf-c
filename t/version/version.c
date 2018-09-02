@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "protobuf-c.h"
+#include "protobuf-c/protobuf-c.h"
 
 int
 main(int argc, char **argv)

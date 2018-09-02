@@ -70,7 +70,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/descriptor.pb.h>
 
-#include "protobuf-c.h"
+#include "protobuf-c/protobuf-c.h"
 
 namespace google {
 namespace protobuf {
