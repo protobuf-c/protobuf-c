@@ -234,7 +234,7 @@ void PrintComment (io::Printer* printer, std::string comment)
       std::vector<std::string> comment_lines;
       SplitStringUsing (comment, "\r\n", &comment_lines);
       printer->Print ("/*\n");
-      for (int i = 0; i < comment_lines.size(); i++)
+      for (size_t i = 0; i < comment_lines.size(); i++)
       {
          if (!comment_lines[i].empty())
          {
@@ -286,7 +286,7 @@ const char* const kKeywordList[] = {
 
 std::set<std::string> MakeKeywordsMap() {
   std::set<std::string> result;
-  for (int i = 0; i < GOOGLE_ARRAYSIZE(kKeywordList); i++) {
+  for (size_t i = 0; i < GOOGLE_ARRAYSIZE(kKeywordList); i++) {
     result.insert(kKeywordList[i]);
   }
   return result;
