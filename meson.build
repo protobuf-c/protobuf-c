@@ -199,7 +199,8 @@ if get_option('build-compiler') and get_option('run-tests')
       executable('cxx-generate-packed-data', 't/generated-code2/cxx-generate-packed-data.cc',
         gen_protobuf.process('t/test-full.proto',
           preserve_path_from : meson.current_source_dir()),
-        dependencies : protobuf),
+        dependencies : protobuf,
+        build_rpath : protobuf.get_pkgconfig_variable('libdir')),
     capture : true)
 
   test('generated-code2',

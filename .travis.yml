@@ -19,7 +19,6 @@ env:
   global:
     - PROTOBUF_VERSION=3.6.1
     - PKG_CONFIG_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib/pkgconfig
-    - LD_LIBRARY_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib
 
 install:
     - pip3 install meson
