@@ -12,23 +12,24 @@ project('protobuf-c',
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 pkgconfig = import('pkgconfig')
+conf = configuration_data()
 
-possible_cc_flags = '''
--Wchar-subscripts
--Wdeclaration-after-statement
--Werror=incompatible-pointer-types
--Werror=int-conversion
--Wformat-security
--Wmissing-declarations
--Wmissing-prototypes
--Wnested-externs
--Wnull-dereference
--Wpointer-arith
--Wshadow
--Wsign-compare
--Wstrict-prototypes
--Wtype-limits
-'''.split()
+possible_cc_flags = [
+  '-Wchar-subscripts',
+  '-Wdeclaration-after-statement',
+  '-Werror=incompatible-pointer-types',
+  '-Werror=int-conversion',
+  '-Wformat-security',
+  '-Wmissing-declarations',
+  '-Wmissing-prototypes',
+  '-Wnested-externs',
+  '-Wnull-dereference',
+  '-Wpointer-arith',
+  '-Wshadow',
+  '-Wsign-compare',
+  '-Wstrict-prototypes',
+  '-Wtype-limits',
+]
 add_project_arguments(cc.get_supported_arguments(possible_cc_flags), language : 'c')
 
 #
@@ -40,11 +41,11 @@ add_project_arguments(cc.get_supported_arguments(possible_cc_flags), language : 
 if get_option('build-compiler')
   protobuf = dependency('protobuf',
     version : '>= 2.6.0',
-    required : true,
     native : true)
 
+  conf.set('HAVE_PROTO3', protobuf.version().version_compare('>= 3.0.0'))
+
   libprotoc = cpp.find_library('protoc',
-    required : true,
     dirs : protobuf.get_pkgconfig_variable('libdir'))
 endif
 
@@ -54,13 +55,10 @@ endif
 ##
 #
 
-conf = configuration_data()
-
 conf.set_quoted('PACKAGE_STRING',   meson.project_name() + ' ' + meson.project_version())
 conf.set_quoted('PACKAGE_VERSION',  meson.project_version())
 
 conf.set('WORDS_BIGENDIAN', host_machine.endian() == 'big')
-conf.set('HAVE_PROTO3', protobuf.version().version_compare('>= 3.0.0'))
 
 configure_file(output : 'config.h', configuration : conf)
 
@@ -108,35 +106,35 @@ endif
 #
 
 if get_option('build-compiler')
-  protoc_gen_c_sources = files('''
-    protoc-c/c_bytes_field.cc
-    protoc-c/c_bytes_field.h
-    protoc-c/c_enum.cc
-    protoc-c/c_enum.h
-    protoc-c/c_enum_field.cc
-    protoc-c/c_enum_field.h
-    protoc-c/c_extension.cc
-    protoc-c/c_extension.h
-    protoc-c/c_field.cc
-    protoc-c/c_field.h
-    protoc-c/c_file.cc
-    protoc-c/c_file.h
-    protoc-c/c_generator.cc
-    protoc-c/c_generator.h
-    protoc-c/c_helpers.cc
-    protoc-c/c_helpers.h
-    protoc-c/c_message.cc
-    protoc-c/c_message.h
-    protoc-c/c_message_field.cc
-    protoc-c/c_message_field.h
-    protoc-c/c_primitive_field.cc
-    protoc-c/c_primitive_field.h
-    protoc-c/c_service.cc
-    protoc-c/c_service.h
-    protoc-c/c_string_field.cc
-    protoc-c/c_string_field.h
-    protoc-c/main.cc
-  '''.split())
+  protoc_gen_c_sources = [
+    'protoc-c/c_bytes_field.cc',
+    'protoc-c/c_bytes_field.h',
+    'protoc-c/c_enum.cc',
+    'protoc-c/c_enum.h',
+    'protoc-c/c_enum_field.cc',
+    'protoc-c/c_enum_field.h',
+    'protoc-c/c_extension.cc',
+    'protoc-c/c_extension.h',
+    'protoc-c/c_field.cc',
+    'protoc-c/c_field.h',
+    'protoc-c/c_file.cc',
+    'protoc-c/c_file.h',
+    'protoc-c/c_generator.cc',
+    'protoc-c/c_generator.h',
+    'protoc-c/c_helpers.cc',
+    'protoc-c/c_helpers.h',
+    'protoc-c/c_message.cc',
+    'protoc-c/c_message.h',
+    'protoc-c/c_message_field.cc',
+    'protoc-c/c_message_field.h',
+    'protoc-c/c_primitive_field.cc',
+    'protoc-c/c_primitive_field.h',
+    'protoc-c/c_service.cc',
+    'protoc-c/c_service.h',
+    'protoc-c/c_string_field.cc',
+    'protoc-c/c_string_field.h',
+    'protoc-c/main.cc',
+  ]
 
   protoc_c = executable('protoc-c',
     protoc_gen_c_sources,
