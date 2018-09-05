@@ -16,7 +16,6 @@ EXTRA_DIST += README.md
 
 AM_CPPFLAGS = \
 	-include $(top_builddir)/config.h \
-	-I${top_srcdir}/protobuf-c \
 	-I${top_builddir} \
 	-I${top_srcdir}
 AM_CFLAGS = ${my_CFLAGS}

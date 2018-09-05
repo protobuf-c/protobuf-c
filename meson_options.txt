@@ -1,0 +1,3 @@
+option('build-compiler', type : 'boolean', description : 'Build protoc-gen-c / protoc_c (required by tests)')
+option('build-docs', type : 'boolean', value : false, description : 'Build Doxygen documentation')
+option('run-tests', type : 'boolean', description : 'Run test suite')

@@ -8,7 +8,11 @@ dist: xenial
 addons:
   apt:
     packages:
-      - lcov
+      - python3
+      - python3-pip
+      - python3-setuptools
+      - python3-wheel
+      - ninja-build
       - valgrind
 
 env:
@@ -17,15 +21,10 @@ env:
     - PKG_CONFIG_PATH=$HOME/protobuf-$PROTOBUF_VERSION-bin/lib/pkgconfig
 
 install:
-    - pip install --user cpp-coveralls
+    - pip3 install meson
     - wget https://github.com/google/protobuf/archive/v$PROTOBUF_VERSION.tar.gz
     - tar xf v$PROTOBUF_VERSION.tar.gz
     - ( cd protobuf-$PROTOBUF_VERSION && ./autogen.sh && ./configure --prefix=$HOME/protobuf-$PROTOBUF_VERSION-bin && make -j2 && make install )
 
 script:
-    - ./autogen.sh
-    - ./configure && make -j2 distcheck VERBOSE=1 && make clean
-    - ./configure --enable-valgrind-tests CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined" && make -j2 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" VERBOSE=1 && make clean
-
-after_success:
-    - cpp-coveralls --build-root . --exclude t/ --exclude /usr/include --exclude protobuf-$PROTOBUF_VERSION --exclude protoc-c
+    - meson build && ninja -v -C build && meson test -C build && meson test -C build --setup=valgrind
