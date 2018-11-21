@@ -37,6 +37,7 @@ t/generated-code2/test-full-cxx-output.inc
 t/generated-code2/test-generated-code2
 t/generated-code3/test-generated-code3
 t/version/version
+t/parser/test-parser
 *.pb-c.c
 *.pb-c.h
 *.pb.cc

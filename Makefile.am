@@ -21,6 +21,7 @@ AM_CPPFLAGS = \
 	-I${top_srcdir}
 AM_CFLAGS = ${my_CFLAGS}
 AM_LDFLAGS =
+AM_YFLAGS = --defines
 
 # code coverage
 
@@ -51,6 +52,13 @@ protobuf_c_libprotobuf_c_la_SOURCES = \
 protobuf_c_libprotobuf_c_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBPROTOBUF_C_CURRENT):$(LIBPROTOBUF_C_REVISION):$(LIBPROTOBUF_C_AGE) \
 	-no-undefined
+
+if USE_C_PARSER
+protobuf_c_libprotobuf_c_la_SOURCES += \
+        protobuf-c/protobuf-yacc.y \
+        protobuf-c/protobuf-lex.l  \
+		protobuf-c/protobuf-c-list.c 
+endif
 
 if HAVE_LD_VERSION_SCRIPT
 protobuf_c_libprotobuf_c_la_LDFLAGS += \
@@ -136,6 +144,19 @@ TESTS += \
 	t/generated-code/test-generated-code \
 	t/generated-code2/test-generated-code2 \
 	t/version/version
+
+if USE_C_PARSER
+check_PROGRAMS += t/parser/test-parser
+
+TESTS  += t/parser/test-parser
+
+t_parser_test_parser_SOURCES = \
+        t/parser/test-parser.c \
+		t/test.pb-c.c
+
+t_parser_test_parser_LDADD = \
+	protobuf-c/libprotobuf-c.la
+endif
 
 t_generated_code_test_generated_code_SOURCES = \
 	t/generated-code/test-generated-code.c \

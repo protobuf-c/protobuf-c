@@ -47,6 +47,9 @@
 
 #include <stdlib.h>	/* for malloc, free */
 #include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
+#ifdef USE_C_PARSER
+       #include <stdio.h>
+#endif
 
 #include "protobuf-c.h"
 
@@ -3644,3 +3647,29 @@ protobuf_c_service_descriptor_get_method_by_name(const ProtobufCServiceDescripto
 		return desc->methods + desc->method_indices_by_name[start];
 	return NULL;
 }
+
+#ifdef USE_C_PARSER
+extern FILE* yyin;
+ProtobufCAllocator* _allocator = NULL;
+ProtobufCFileDescriptor* _file_descriptor = NULL;
+
+const ProtobufCFileDescriptor* protobuf_c_proto_load_file(const char* str, ProtobufCAllocator* allocator)
+{
+	FILE* f;
+	if( allocator == NULL )
+	{
+		allocator = &protobuf_c__allocator;
+	}
+	f=fopen(str, "r");
+	if ( f == NULL)
+	{
+		return NULL;
+	}
+	yyin = f;
+	_file_descriptor = allocator->alloc(allocator->allocator_data, sizeof(ProtobufCFileDescriptor));
+	_file_descriptor->name = strdup(str);
+	_allocator = allocator;
+	yyparse();
+	return _file_descriptor;
+}
+#endif

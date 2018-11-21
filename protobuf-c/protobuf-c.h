@@ -354,6 +354,9 @@ struct ProtobufCMessageUnknownField;
 struct ProtobufCMethodDescriptor;
 struct ProtobufCService;
 struct ProtobufCServiceDescriptor;
+#ifdef USE_C_PARSER
+struct ProtobufCFileDescriptor;
+#endif
 
 typedef struct ProtobufCAllocator ProtobufCAllocator;
 typedef struct ProtobufCBinaryData ProtobufCBinaryData;
@@ -370,6 +373,9 @@ typedef struct ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
 typedef struct ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
 typedef struct ProtobufCService ProtobufCService;
 typedef struct ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
+#ifdef USE_C_PARSER
+typedef struct ProtobufCFileDescriptor ProtobufCFileDescriptor;
+#endif
 
 /** Boolean type. */
 typedef int protobuf_c_boolean;
@@ -699,6 +705,41 @@ struct ProtobufCMessageDescriptor {
 	/** Reserved for future use. */
 	void				*reserved3;
 };
+
+#ifdef USE_C_PARSER
+
+enum Syntax
+{
+	SYNTAX_UNKNOWN = 0,
+	SYNTAX_PROTO2 = 2,		
+	SYNTAX_PROTO3 = 3	
+};
+
+/**
+ * Describes a proto file
+ */
+struct ProtobufCFileDescriptor
+{
+	/** The filename relative to source tree
+	 * 	foo/bar/bar.proto */
+	const char			*name;
+	/** The dot-separated namespace. */
+	const char			*package_name;
+
+	/** number of messages in this proto file */
+	unsigned n_messages;
+	/** message descriptors */
+	const ProtobufCMessageDescriptor* messages;
+
+	/** number of enums in this proto file */
+	unsigned n_enums;
+	/** message descriptors */
+	const ProtobufCEnumDescriptor* enums;
+
+	/** syntax of this proto file */
+	enum Syntax syntax;
+};
+#endif
 
 /**
  * An unknown message field.
@@ -1100,6 +1141,12 @@ protobuf_c_service_invoke_internal(
 	void *closure_data);
 
 /**@}*/
+
+#ifdef USE_C_PARSER
+PROTOBUF_C__API
+const ProtobufCFileDescriptor* 
+protobuf_c_proto_load_file(const char* filename, ProtobufCAllocator* allocator);
+#endif
 
 PROTOBUF_C__END_DECLS
 

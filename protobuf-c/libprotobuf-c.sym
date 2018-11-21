@@ -18,6 +18,7 @@ global:
         protobuf_c_service_invoke_internal;
         protobuf_c_version;
         protobuf_c_version_number;
+        protobuf_c_proto_load_file;
 local:
         *;
 };

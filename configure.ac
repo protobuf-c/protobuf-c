@@ -69,6 +69,16 @@ if test -n "$PKG_CONFIG"; then
     fi
 fi
 
+AC_ARG_ENABLE([c-parser],
+  AS_HELP_STRING([--enable-c-parser], [Enable the C parser for dynamic loading of proto files]))
+
+if test "x$enable_c_parser" = "xyes"; then
+    AC_PROG_LEX
+    AC_PROG_YACC
+fi
+AM_CONDITIONAL([USE_C_PARSER], [test "x$enable_c_parser" = "xyes"])
+AM_COND_IF([USE_C_PARSER], [AC_DEFINE([USE_C_PARSER], [1], [Use C Parser])])
+
 proto3_supported="no"
 
 AC_ARG_ENABLE([protoc],
