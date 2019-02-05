@@ -3414,6 +3414,13 @@ protobuf_c_message_check(const ProtobufCMessage *message)
 		ProtobufCType type = f->type;
 		ProtobufCLabel label = f->label;
 		void *field = STRUCT_MEMBER_P (message, f->offset);
+		
+		if (f->flags & PROTOBUF_C_FIELD_FLAG_ONEOF) {
+			const uint32_t *oneof_case = STRUCT_MEMBER_P (message, f->quantifier_offset);
+			if (f->id != *oneof_case) {
+				continue; //Do not check if it is an unpopulated oneof member.
+			}
+		}
 
 		if (label == PROTOBUF_C_LABEL_REPEATED) {
 			size_t *quantity = STRUCT_MEMBER_P (message, f->quantifier_offset);
