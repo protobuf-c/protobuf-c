@@ -443,7 +443,13 @@ GenerateMessageDescriptor(io::Printer* printer) {
 	  vars["field_dv_ctype"] = "float";
 	  break;
 	case FieldDescriptor::CPPTYPE_DOUBLE:
-	  vars["field_dv_ctype"] = "double";
+	  vars["field_dv_ctype"] = "\n#if (__DBL_MANT_DIG__ != 53 && __LDBL_MANT_DIG__ == 53)\n"
+                                   "long double /* The target environment's native double type is not 64-bit, but its long double type is; use that. */\n"
+                                   "#elif (__DBL_MANT_DIG__ != 53)\n"
+                                   "#error: unable to locate a native 64-bit floating point type to support protobuf doubles!\n"
+                                   "#else\n"
+                                   "double\n"
+                                   "#endif\n";
 	  break;
 	case FieldDescriptor::CPPTYPE_BOOL:
 	  vars["field_dv_ctype"] = "protobuf_c_boolean";

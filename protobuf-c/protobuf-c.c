@@ -553,7 +553,21 @@ field_is_zeroish(const ProtobufCFieldDescriptor *field,
 		ret = (0 == *(const float *) member);
 		break;
 	case PROTOBUF_C_TYPE_DOUBLE:
+#if (__DBL_MANT_DIG__ != 53 && __LDBL_MANT_DIG__ == 53)
+/*
+ * Some embedded compilers can be configured for 32-bit doubles, but a native
+ * 64-bit type is needed to support the 64-bit protobuf double type.  If the
+ * preprocessor is activating this block, the target environment falls into
+ * this category: the target environment's native double type is not 64-bit.
+ * But if __LDBL_MANT_DIG__ == 53, the target's long double type is 64-bit.
+ * Therefore, use long double to represent 64-bit protobuf doubles.
+ */
+		ret = (0 == *(const long double *) member);
+#elif (__DBL_MANT_DIG__ != 53)
+#error unable find a native 64-bit type for the protobuf double!
+#else
 		ret = (0 == *(const double *) member);
+#endif
 		break;
 	case PROTOBUF_C_TYPE_STRING:
 		ret = (NULL == *(const char * const *) member) ||

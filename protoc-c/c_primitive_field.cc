@@ -93,7 +93,14 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
     case FieldDescriptor::TYPE_UINT64  : 
     case FieldDescriptor::TYPE_FIXED64 : c_type = "uint64_t"; break;
     case FieldDescriptor::TYPE_FLOAT   : c_type = "float"; break;
-    case FieldDescriptor::TYPE_DOUBLE  : c_type = "double"; break;
+    case FieldDescriptor::TYPE_DOUBLE  : c_type =
+        "\n#if (__DBL_MANT_DIG__ != 53 && __LDBL_MANT_DIG__ == 53)\n"
+        "long double /* The target environment's native double type is not 64-bit, but its long double type is; use that. */\n"
+        "#elif (__DBL_MANT_DIG__ != 53)\n"
+        "#error: unable to locate a native 64-bit floating point type to support protobuf doubles!\n"
+        "#else\n"
+        "double\n"
+        "#endif\n"; break;
     case FieldDescriptor::TYPE_BOOL    : c_type = "protobuf_c_boolean"; break;
     case FieldDescriptor::TYPE_ENUM    : 
     case FieldDescriptor::TYPE_STRING  :
