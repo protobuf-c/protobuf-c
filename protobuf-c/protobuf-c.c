@@ -2636,40 +2636,42 @@ parse_oneof_member (ScannedMember *scanned_member,
 					 *oneof_case);
 		if (field_index < 0)
 			return FALSE;
-		const ProtobufCFieldDescriptor *old_field =
-			message->descriptor->fields + field_index;
-		size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
+        {
+            const ProtobufCFieldDescriptor *old_field =
+			    message->descriptor->fields + field_index;
+		    size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
 
-		switch (old_field->type) {
-	        case PROTOBUF_C_TYPE_STRING: {
-			char **pstr = member;
-			const char *def = old_field->default_value;
-			if (*pstr != NULL && *pstr != def)
-				do_free(allocator, *pstr);
-			break;
-	        }
-		case PROTOBUF_C_TYPE_BYTES: {
-			ProtobufCBinaryData *bd = member;
-			const ProtobufCBinaryData *def_bd = old_field->default_value;
-			if (bd->data != NULL &&
-			   (def_bd == NULL || bd->data != def_bd->data))
-			{
-				do_free(allocator, bd->data);
-			}
-			break;
-	        }
-		case PROTOBUF_C_TYPE_MESSAGE: {
-			ProtobufCMessage **pmessage = member;
-			const ProtobufCMessage *def_mess = old_field->default_value;
-			if (*pmessage != NULL && *pmessage != def_mess)
-				protobuf_c_message_free_unpacked(*pmessage, allocator);
-			break;
-	        }
-		default:
-			break;
-		}
+		    switch (old_field->type) {
+	            case PROTOBUF_C_TYPE_STRING: {
+			    char **pstr = member;
+			    const char *def = old_field->default_value;
+			    if (*pstr != NULL && *pstr != def)
+				    do_free(allocator, *pstr);
+			    break;
+	            }
+		    case PROTOBUF_C_TYPE_BYTES: {
+			    ProtobufCBinaryData *bd = member;
+			    const ProtobufCBinaryData *def_bd = old_field->default_value;
+			    if (bd->data != NULL &&
+			        (def_bd == NULL || bd->data != def_bd->data))
+			    {
+				    do_free(allocator, bd->data);
+			    }
+			    break;
+	            }
+		    case PROTOBUF_C_TYPE_MESSAGE: {
+			    ProtobufCMessage **pmessage = member;
+			    const ProtobufCMessage *def_mess = old_field->default_value;
+			    if (*pmessage != NULL && *pmessage != def_mess)
+				    protobuf_c_message_free_unpacked(*pmessage, allocator);
+			    break;
+	            }
+		    default:
+			    break;
+		    }
 
-		memset (member, 0, el_size);
+		    memset (member, 0, el_size); 
+        }
 	}
 	if (!parse_required_member (scanned_member, member, allocator, TRUE))
 		return FALSE;
