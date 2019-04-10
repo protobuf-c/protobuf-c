@@ -2629,7 +2629,8 @@ parse_oneof_member (ScannedMember *scanned_member,
 
 	/* If we have already parsed a member of this oneof, free it. */
 	if (*oneof_case != 0) {
-		const ProtobufCFieldDescriptor *old_field; size_t el_size;
+		const ProtobufCFieldDescriptor *old_field;
+		size_t el_size;
 		/* lookup field */
 		int field_index =
 			int_range_lookup(message->descriptor->n_field_ranges,
