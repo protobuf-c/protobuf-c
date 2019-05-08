@@ -245,7 +245,7 @@ GenerateStructDefinition(io::Printer* printer) {
     // Initialize the case enum
     printer->Print(vars, ", $foneofname$__NOT_SET");
     // Initialize the union
-    printer->Print(", {0}");
+    printer->Print(", {{0}}");
   }
   printer->Print(" }\n\n\n");
 
