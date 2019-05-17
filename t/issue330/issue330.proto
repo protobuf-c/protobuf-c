@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message pbr_route {
+repeated int32 acl_id = 10;
+}
