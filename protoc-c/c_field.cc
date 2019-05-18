@@ -140,8 +140,14 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 
   if (descriptor_->label() == FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
-   && descriptor_->options().packed())
+   && descriptor_->options().packed()) {
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
+  } else if (descriptor_->label() == FieldDescriptor::LABEL_REPEATED
+   && is_packable_type (descriptor_->type())
+   && FieldSyntax(descriptor_) == 3
+   && !descriptor_->options().has_packed()) {
+    variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
+  }
 
   if (descriptor_->options().deprecated())
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_DEPRECATED";

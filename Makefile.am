@@ -250,6 +250,23 @@ BUILT_SOURCES += \
 EXTRA_DIST += \
 	t/issue251/issue251.proto
 
+# Issue #330
+check_PROGRAMS += \
+	t/issue330/issue330
+TESTS += \
+	t/issue330/issue330
+t_issue330_issue330_SOURCES = \
+	t/issue330/issue330.c \
+	t/issue330/issue330.pb-c.c
+t_issue330_issue330_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue330/issue330.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue330/issue330.proto
+BUILT_SOURCES += \
+	t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h
+EXTRA_DIST += \
+	t/issue330/issue330.proto
+
 # Issue #375
 check_PROGRAMS += \
 	t/issue375/issue375
