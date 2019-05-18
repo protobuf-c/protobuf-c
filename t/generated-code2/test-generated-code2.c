@@ -964,6 +964,15 @@ static void test_oneof_SubMess (void)
   DO_TEST (&submess, test_optional_submess_42);
 #undef DO_TEST
 }
+
+static void test_oneof_message_check(void)
+{
+	Foo__TestMessOneof msg = FOO__TEST_MESS_ONEOF__INIT;
+	msg.test_oneof_case = FOO__TEST_MESS_ONEOF__TEST_ONEOF_TEST_STRING;
+	msg.test_string = "Hello, world!";
+	assert(protobuf_c_message_check((ProtobufCMessage *)&msg));
+}
+
 static void test_oneof_merge (void)
 {
   Foo__TestMessOneof *msg;
@@ -2260,6 +2269,7 @@ static Test tests[] =
   { "test oneof string", test_oneof_string },
   { "test oneof bytes", test_oneof_bytes },
   { "test oneof SubMess", test_oneof_SubMess },
+  { "test oneof message check", test_oneof_message_check },
   { "test merged oneof unpack", test_oneof_merge },
 
   { "test empty repeated" ,test_empty_repeated },
