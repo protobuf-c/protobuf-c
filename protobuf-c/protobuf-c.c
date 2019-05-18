@@ -2072,6 +2072,11 @@ parse_tag_and_wiretype(size_t len,
 	unsigned shift = 4;
 	unsigned rv;
 
+	/* 0 is not a valid tag value */
+	if ((data[0] & 0xf8) == 0) {
+		return 0;
+	}
+
 	*wiretype_out = data[0] & 7;
 	if ((data[0] & 0x80) == 0) {
 		*tag_out = tag;
