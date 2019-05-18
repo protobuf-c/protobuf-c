@@ -2103,18 +2103,18 @@ struct _ScannedMember {
 	const uint8_t *data;       /**< Pointer to field data. */
 };
 
-static inline uint32_t
+static inline size_t
 scan_length_prefixed_data(size_t len, const uint8_t *data,
 			  size_t *prefix_len_out)
 {
 	unsigned hdr_max = len < 5 ? len : 5;
 	unsigned hdr_len;
-	uint32_t val = 0;
+	size_t val = 0;
 	unsigned i;
 	unsigned shift = 0;
 
 	for (i = 0; i < hdr_max; i++) {
-		val |= (data[i] & 0x7f) << shift;
+		val |= ((size_t)data[i] & 0x7f) << shift;
 		shift += 7;
 		if ((data[i] & 0x80) == 0)
 			break;
@@ -2125,8 +2125,15 @@ scan_length_prefixed_data(size_t len, const uint8_t *data,
 	}
 	hdr_len = i + 1;
 	*prefix_len_out = hdr_len;
+	if (val > INT_MAX) {
+		// Protobuf messages should always be less than 2 GiB in size.
+		// We also want to return early here so that hdr_len + val does
+		// not overflow on 32-bit systems.
+		PROTOBUF_C_UNPACK_ERROR("length prefix of %lu is too large", val);
+		return 0;
+	}
 	if (hdr_len + val > len) {
-		PROTOBUF_C_UNPACK_ERROR("data too short after length-prefix of %u", val);
+		PROTOBUF_C_UNPACK_ERROR("data too short after length-prefix of %lu", val);
 		return 0;
 	}
 	return hdr_len + val;
