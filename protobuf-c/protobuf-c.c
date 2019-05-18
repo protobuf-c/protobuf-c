@@ -2636,6 +2636,8 @@ parse_oneof_member (ScannedMember *scanned_member,
 
 	/* If we have already parsed a member of this oneof, free it. */
 	if (*oneof_case != 0) {
+		const ProtobufCFieldDescriptor *old_field;
+		size_t el_size;
 		/* lookup field */
 		int field_index =
 			int_range_lookup(message->descriptor->n_field_ranges,
@@ -2643,9 +2645,8 @@ parse_oneof_member (ScannedMember *scanned_member,
 					 *oneof_case);
 		if (field_index < 0)
 			return FALSE;
-		const ProtobufCFieldDescriptor *old_field =
-			message->descriptor->fields + field_index;
-		size_t el_size = sizeof_elt_in_repeated_array(old_field->type);
+		old_field = message->descriptor->fields + field_index;
+		el_size = sizeof_elt_in_repeated_array(old_field->type);
 
 		switch (old_field->type) {
 	        case PROTOBUF_C_TYPE_STRING: {
