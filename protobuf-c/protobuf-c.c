@@ -2099,7 +2099,7 @@ typedef struct _ScannedMember ScannedMember;
 /** Field as it's being read. */
 struct _ScannedMember {
 	uint32_t tag;              /**< Field tag. */
-	uint8_t wire_type;         /**< Field type. */
+	ProtobufCWireType wire_type; /**< Field type. */
 	uint8_t length_prefix_len; /**< Prefix length. */
 	const ProtobufCFieldDescriptor *field; /**< Field descriptor. */
 	size_t len;                /**< Field length. */
