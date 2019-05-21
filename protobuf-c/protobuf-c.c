@@ -2075,7 +2075,7 @@ parse_tag_and_wiretype(size_t len,
 		return 0;
 	}
 
-	*wiretype_out = data[0] & 7;
+	*wiretype_out = (ProtobufCWireType)(data[0] & 7);
 	if ((data[0] & 0x80) == 0) {
 		*tag_out = tag;
 		return 1;
