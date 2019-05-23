@@ -45,8 +45,27 @@
  * \todo Use size_t consistently.
  */
 
-#include <stdlib.h>	/* for malloc, free */
-#include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
+#ifndef __KERNEL__
+# include <stdlib.h>	/* for malloc, free */
+# include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
+#else /* __KERNEL__ */
+# include <linux/module.h>
+# include <linux/slab.h>
+# include <linux/string.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+static int __init init_protobuf_c(void)
+{
+	return 0;
+}
+
+static void __exit exit_protobuf_c(void)
+{
+}
+
+module_init(init_protobuf_c);
+module_exit(exit_protobuf_c);
+#endif /* __KERNEL__ */
 
 #include "protobuf-c.h"
 
@@ -145,6 +164,7 @@ protobuf_c_version_number(void)
 
 /* --- allocator --- */
 
+#ifndef __KERNEL__
 static void *
 system_alloc(void *allocator_data, size_t size)
 {
@@ -156,6 +176,20 @@ system_free(void *allocator_data, void *data)
 {
 	free(data);
 }
+
+#else /* __KERNEL__ */
+static void *
+system_alloc(void *allocator_data, size_t size)
+{
+	return kmalloc(size, GFP_KERNEL);
+}
+
+static void
+system_free(void *allocator_data, void *data)
+{
+	kfree(data);
+}
+#endif /* __KERNEL__ */
 
 static inline void *
 do_alloc(ProtobufCAllocator *allocator, size_t size)
@@ -182,6 +216,19 @@ static ProtobufCAllocator protobuf_c__allocator = {
 };
 
 /* === buffer-simple === */
+
+void
+protobuf_c_buffer_simple_clear(ProtobufCBufferSimple *simp)
+{
+	if (simp->must_free_data) {
+		if (simp->allocator != NULL)
+			simp->allocator->free(
+					simp->allocator,
+					simp->data);
+		else
+			system_free(NULL, simp->data);
+	}
+}
 
 void
 protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
@@ -437,10 +484,12 @@ required_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 		return rv + 8;
 	case PROTOBUF_C_TYPE_BOOL:
 		return rv + 1;
+#ifndef __KERNEL__
 	case PROTOBUF_C_TYPE_FLOAT:
 		return rv + 4;
 	case PROTOBUF_C_TYPE_DOUBLE:
 		return rv + 8;
+#endif /* __KERNEL__ */
 	case PROTOBUF_C_TYPE_STRING: {
 		const char *str = *(char * const *) member;
 		size_t len = str ? strlen(str) : 0;
@@ -549,12 +598,14 @@ field_is_zeroish(const ProtobufCFieldDescriptor *field,
 	case PROTOBUF_C_TYPE_FIXED64:
 		ret = (0 == *(const uint64_t *) member);
 		break;
+#ifndef __KERNEL__
 	case PROTOBUF_C_TYPE_FLOAT:
 		ret = (0 == *(const float *) member);
 		break;
 	case PROTOBUF_C_TYPE_DOUBLE:
 		ret = (0 == *(const double *) member);
 		break;
+#endif /* __KERNEL__ */
 	case PROTOBUF_C_TYPE_STRING:
 		ret = (NULL == *(const char * const *) member) ||
 		      ('\0' == **(const char * const *) member);
@@ -647,12 +698,16 @@ repeated_field_get_packed_size(const ProtobufCFieldDescriptor *field,
 		break;
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
+#ifndef __KERNEL__
 	case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		rv += 4 * count;
 		break;
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		rv += 8 * count;
 		break;
 	case PROTOBUF_C_TYPE_BOOL:
@@ -752,6 +807,10 @@ size_t protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 		rv += unknown_field_get_packed_size(&message->unknown_fields[i]);
 	return rv;
 }
+
+#ifdef __KERNEL__
+EXPORT_SYMBOL(protobuf_c_message_get_packed_size);
+#endif /* __KERNEL__ */
 
 /**
  * \defgroup pack protobuf_c_message_pack() implementation
@@ -1111,12 +1170,16 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 		return rv + uint64_pack(*(const uint64_t *) member, out + rv);
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
-	case PROTOBUF_C_TYPE_FLOAT:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		out[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
 		return rv + fixed32_pack(*(const uint32_t *) member, out + rv);
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
+#ifndef __KERNEL__
 	case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		out[0] |= PROTOBUF_C_WIRE_TYPE_64BIT;
 		return rv + fixed64_pack(*(const uint64_t *) member, out + rv);
 	case PROTOBUF_C_TYPE_BOOL:
@@ -1241,7 +1304,9 @@ sizeof_elt_in_repeated_array(ProtobufCType type)
 	case PROTOBUF_C_TYPE_UINT32:
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
+#ifndef __KERNEL__
 	case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 	case PROTOBUF_C_TYPE_ENUM:
 		return 4;
 	case PROTOBUF_C_TYPE_SINT64:
@@ -1249,7 +1314,9 @@ sizeof_elt_in_repeated_array(ProtobufCType type)
 	case PROTOBUF_C_TYPE_UINT64:
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		return 8;
 	case PROTOBUF_C_TYPE_BOOL:
 		return sizeof(protobuf_c_boolean);
@@ -1322,14 +1389,20 @@ static unsigned
 get_type_min_size(ProtobufCType type)
 {
 	if (type == PROTOBUF_C_TYPE_SFIXED32 ||
-	    type == PROTOBUF_C_TYPE_FIXED32 ||
-	    type == PROTOBUF_C_TYPE_FLOAT)
+	    type == PROTOBUF_C_TYPE_FIXED32
+#ifndef __KERNEL__
+		|| type == PROTOBUF_C_TYPE_FLOAT
+#endif /* __KERNEL__ */
+		)
 	{
 		return 4;
 	}
 	if (type == PROTOBUF_C_TYPE_SFIXED64 ||
-	    type == PROTOBUF_C_TYPE_FIXED64 ||
-	    type == PROTOBUF_C_TYPE_DOUBLE)
+	    type == PROTOBUF_C_TYPE_FIXED64
+#ifndef __KERNEL__
+		|| type == PROTOBUF_C_TYPE_DOUBLE
+#endif /* __KERNEL__ */
+		)
 	{
 		return 8;
 	}
@@ -1380,13 +1453,17 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 		switch (field->type) {
 		case PROTOBUF_C_TYPE_SFIXED32:
 		case PROTOBUF_C_TYPE_FIXED32:
+#ifndef __KERNEL__
 		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 			copy_to_little_endian_32(payload_at, array, count);
 			payload_at += count * 4;
 			break;
 		case PROTOBUF_C_TYPE_SFIXED64:
 		case PROTOBUF_C_TYPE_FIXED64:
+#ifndef __KERNEL__
 		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 			copy_to_little_endian_64(payload_at, array, count);
 			payload_at += count * 8;
 			break;
@@ -1521,6 +1598,10 @@ protobuf_c_message_pack(const ProtobufCMessage *message, uint8_t *out)
 	return rv;
 }
 
+#ifdef __KERNEL__
+EXPORT_SYMBOL(protobuf_c_message_pack);
+#endif /* __KERNEL__ */
+
 /**
  * \defgroup packbuf protobuf_c_message_pack_to_buffer() implementation
  *
@@ -1580,14 +1661,18 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		break;
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
+#ifndef __KERNEL__
 	case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		scratch[0] |= PROTOBUF_C_WIRE_TYPE_32BIT;
 		rv += fixed32_pack(*(const uint32_t *) member, scratch + rv);
 		buffer->append(buffer, rv, scratch);
 		break;
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		scratch[0] |= PROTOBUF_C_WIRE_TYPE_64BIT;
 		rv += fixed64_pack(*(const uint64_t *) member, scratch + rv);
 		buffer->append(buffer, rv, scratch);
@@ -1635,7 +1720,7 @@ required_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		buffer->append(buffer, rv, scratch);
 		buffer->append(buffer, sublen, simple_buffer.data);
 		rv += sublen;
-		PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&simple_buffer);
+		protobuf_c_buffer_simple_clear(&simple_buffer);
 		break;
 	}
 	default:
@@ -1751,11 +1836,15 @@ get_packed_payload_length(const ProtobufCFieldDescriptor *field,
 	switch (field->type) {
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
-	case PROTOBUF_C_TYPE_FLOAT:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		return count * 4;
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		return count * 8;
 	case PROTOBUF_C_TYPE_ENUM:
 	case PROTOBUF_C_TYPE_INT32: {
@@ -1823,7 +1912,9 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 	switch (field->type) {
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
-	case PROTOBUF_C_TYPE_FLOAT:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 #if !defined(WORDS_BIGENDIAN)
 		rv = count * 4;
 		goto no_packing_needed;
@@ -1837,8 +1928,10 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 #endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
-#if !defined(WORDS_BIGENDIAN)
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
+		#if !defined(WORDS_BIGENDIAN)
 		rv = count * 8;
 		goto no_packing_needed;
 #else
@@ -2010,6 +2103,10 @@ protobuf_c_message_pack_to_buffer(const ProtobufCMessage *message,
 
 	return rv;
 }
+
+#ifdef __KERNEL__
+EXPORT_SYMBOL(protobuf_c_message_pack_to_buffer);
+#endif /* __KERNEL__ */
 
 /**
  * \defgroup unpack unpacking implementation
@@ -2347,7 +2444,9 @@ count_packed_elements(ProtobufCType type,
 	switch (type) {
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
-	case PROTOBUF_C_TYPE_FLOAT:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		if (len % 4 != 0) {
 			PROTOBUF_C_UNPACK_ERROR("length must be a multiple of 4 for fixed-length 32-bit types");
 			return FALSE;
@@ -2356,7 +2455,9 @@ count_packed_elements(ProtobufCType type,
 		return TRUE;
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		if (len % 8 != 0) {
 			PROTOBUF_C_UNPACK_ERROR("length must be a multiple of 8 for fixed-length 64-bit types");
 			return FALSE;
@@ -2513,7 +2614,9 @@ parse_required_member(ScannedMember *scanned_member,
 		return TRUE;
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
-	case PROTOBUF_C_TYPE_FLOAT:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_32BIT)
 			return FALSE;
 		*(uint32_t *) member = parse_fixed_uint32(data);
@@ -2531,7 +2634,9 @@ parse_required_member(ScannedMember *scanned_member,
 		return TRUE;
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_64BIT)
 			return FALSE;
 		*(uint64_t *) member = parse_fixed_uint64(data);
@@ -2745,7 +2850,9 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 	switch (field->type) {
 	case PROTOBUF_C_TYPE_SFIXED32:
 	case PROTOBUF_C_TYPE_FIXED32:
-	case PROTOBUF_C_TYPE_FLOAT:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 		count = (scanned_member->len - scanned_member->length_prefix_len) / 4;
 #if !defined(WORDS_BIGENDIAN)
 		goto no_unpacking_needed;
@@ -2758,7 +2865,9 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 #endif
 	case PROTOBUF_C_TYPE_SFIXED64:
 	case PROTOBUF_C_TYPE_FIXED64:
-	case PROTOBUF_C_TYPE_DOUBLE:
+#ifndef __KERNEL__
+		case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 		count = (scanned_member->len - scanned_member->length_prefix_len) / 8;
 #if !defined(WORDS_BIGENDIAN)
 		goto no_unpacking_needed;
@@ -2947,7 +3056,9 @@ message_init_generic(const ProtobufCMessageDescriptor *desc,
 			case PROTOBUF_C_TYPE_SFIXED32:
 			case PROTOBUF_C_TYPE_UINT32:
 			case PROTOBUF_C_TYPE_FIXED32:
+#ifndef  __KERNEL__
 			case PROTOBUF_C_TYPE_FLOAT:
+#endif /* __KERNEL__ */
 			case PROTOBUF_C_TYPE_ENUM:
 				memcpy(field, dv, 4);
 				break;
@@ -2956,7 +3067,9 @@ message_init_generic(const ProtobufCMessageDescriptor *desc,
 			case PROTOBUF_C_TYPE_SFIXED64:
 			case PROTOBUF_C_TYPE_UINT64:
 			case PROTOBUF_C_TYPE_FIXED64:
+#ifndef  __KERNEL__
 			case PROTOBUF_C_TYPE_DOUBLE:
+#endif /* __KERNEL__ */
 				memcpy(field, dv, 8);
 				break;
 			case PROTOBUF_C_TYPE_BOOL:
@@ -3301,6 +3414,10 @@ error_cleanup_during_scan:
 	return NULL;
 }
 
+#ifdef __KERNEL__
+EXPORT_SYMBOL(protobuf_c_message_unpack);
+#endif /* __KERNEL__ */
+
 void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)
@@ -3389,6 +3506,10 @@ protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 
 	do_free(allocator, message);
 }
+
+#ifdef __KERNEL__
+EXPORT_SYMBOL(protobuf_c_message_free_unpacked);
+#endif /* __KERNEL__ */
 
 void
 protobuf_c_message_init(const ProtobufCMessageDescriptor * descriptor,
