@@ -196,10 +196,17 @@ size_t foo__bar__baz_bah__pack_to_buffer
 #ifndef PROTOBUF_C_H
 #define PROTOBUF_C_H
 
-#include <assert.h>
-#include <limits.h>
-#include <stddef.h>
-#include <stdint.h>
+#ifdef __KERNEL__
+# include <linux/bug.h>
+# include <linux/kernel.h>
+# include <linux/types.h>
+# define assert(exp) WARN_ON(!(exp))
+#else /* __KERNEL__ */
+# include <assert.h>
+# include <limits.h>
+# include <stddef.h>
+# include <stdint.h>
+#endif /* __KERNEL__ */
 
 #ifdef __cplusplus
 # define PROTOBUF_C__BEGIN_DECLS	extern "C" {
@@ -314,8 +321,10 @@ typedef enum {
 	PROTOBUF_C_TYPE_FIXED32,    /**< unsigned int32 (4 bytes) */
 	PROTOBUF_C_TYPE_UINT64,     /**< unsigned int64 */
 	PROTOBUF_C_TYPE_FIXED64,    /**< unsigned int64 (8 bytes) */
+#ifndef __KERNEL__
 	PROTOBUF_C_TYPE_FLOAT,      /**< float */
 	PROTOBUF_C_TYPE_DOUBLE,     /**< double */
+#endif /* __KERNEL__ */
 	PROTOBUF_C_TYPE_BOOL,       /**< boolean */
 	PROTOBUF_C_TYPE_ENUM,       /**< enumerated type */
 	PROTOBUF_C_TYPE_STRING,     /**< UTF-8 or ASCII string */
@@ -465,14 +474,14 @@ ProtobufCBuffer *buffer = (ProtobufCBuffer *) &simple;
  * serialized data bytes can be accessed from the `.data` field.
  *
  * To free the memory allocated by a `ProtobufCBufferSimple` object, if any,
- * call PROTOBUF_C_BUFFER_SIMPLE_CLEAR() on the object, for example:
+ * call protobuf_c_buffer_simple_clear() on the object, for example:
  *
 ~~~{.c}
-PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&simple);
+protobuf_c_buffer_simple_clear(&simple);
 ~~~
  *
  * \see PROTOBUF_C_BUFFER_SIMPLE_INIT
- * \see PROTOBUF_C_BUFFER_SIMPLE_CLEAR
+ * \see protobuf_c_buffer_simple_clear
  */
 struct ProtobufCBufferSimple {
 	/** "Base class". */
@@ -1053,17 +1062,9 @@ protobuf_c_service_descriptor_get_method_by_name(
 /**
  * Clear a `ProtobufCBufferSimple` object, freeing any allocated memory.
  */
-#define PROTOBUF_C_BUFFER_SIMPLE_CLEAR(simp_buf)                        \
-do {                                                                    \
-	if ((simp_buf)->must_free_data) {                               \
-		if ((simp_buf)->allocator != NULL)                      \
-			(simp_buf)->allocator->free(                    \
-				(simp_buf)->allocator,                  \
-				(simp_buf)->data);			\
-		else                                                    \
-			free((simp_buf)->data);                         \
-	}                                                               \
-} while (0)
+PROTOBUF_C__API
+void
+protobuf_c_buffer_simple_clear(ProtobufCBufferSimple *simp);
 
 /**
  * The `append` method for `ProtobufCBufferSimple`.
