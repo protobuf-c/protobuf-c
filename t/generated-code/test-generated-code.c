@@ -46,7 +46,7 @@ int main(void)
   assert (bs.len == size);
   assert (memcmp (bs.data, packed, size) == 0);
 
-  PROTOBUF_C_BUFFER_SIMPLE_CLEAR (&bs);
+  protobuf_c_buffer_simple_clear (&bs);
 
   person2 = foo__person__unpack (NULL, size, packed);
   assert (person2 != NULL);

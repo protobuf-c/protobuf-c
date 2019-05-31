@@ -77,7 +77,7 @@ test_compare_pack_methods (ProtobufCMessage *message,
   assert (memcmp (bs.data, packed1, siz1) == 0);
   rv = protobuf_c_message_unpack (message->descriptor, NULL, siz1, packed1);
   assert (rv != NULL);
-  PROTOBUF_C_BUFFER_SIMPLE_CLEAR (&bs);
+  protobuf_c_buffer_simple_clear (&bs);
   *packed_len_out = siz1;
   *packed_out = packed1;
   return rv;
