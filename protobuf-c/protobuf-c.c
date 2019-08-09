@@ -312,10 +312,7 @@ int32_size(int32_t v)
 static inline uint32_t
 zigzag32(int32_t v)
 {
-	if (v < 0)
-		return (-(uint32_t)v) * 2 - 1;
-	else
-		return (uint32_t)(v) * 2;
+	return ((uint32_t)v << 1) ^ (((uint32_t)v >> 31));
 }
 
 /**
@@ -377,7 +374,7 @@ uint64_size(uint64_t v)
 static inline uint64_t
 zigzag64(int64_t v)
 {
-	return (((uint64_t)v) << 1) ^ ((uint64_t)(v >> 63));
+	return ((uint64_t)v << 1) ^ (((uint64_t)v >> 63));
 }
 
 /**
@@ -2461,7 +2458,7 @@ parse_uint64(unsigned len, const uint8_t *data)
 static inline int64_t
 unzigzag64(uint64_t v)
 {
-	return (int32_t)((v >> 1) ^ (~(v & 1) + 1));
+	return (int64_t)((v >> 1) ^ (~(v & 1) + 1));
 }
 
 static inline uint64_t
