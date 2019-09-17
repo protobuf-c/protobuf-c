@@ -47,6 +47,7 @@
 
 #include <stdlib.h>	/* for malloc, free */
 #include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
+#include <endian.h>	/* htole32, le32toh, htole64, le64toh */
 
 #include "protobuf-c.h"
 
@@ -312,10 +313,7 @@ int32_size(int32_t v)
 static inline uint32_t
 zigzag32(int32_t v)
 {
-	if (v < 0)
-		return (-(uint32_t)v) * 2 - 1;
-	else
-		return (uint32_t)(v) * 2;
+	return ((uint32_t)v << 1) ^ (v >> 31);
 }
 
 /**
@@ -377,10 +375,7 @@ uint64_size(uint64_t v)
 static inline uint64_t
 zigzag64(int64_t v)
 {
-	if (v < 0)
-		return (-(uint64_t)v) * 2 - 1;
-	else
-		return (uint64_t)(v) * 2;
+	return ((uint64_t)v << 1) ^ (v >> 63);
 }
 
 /**
@@ -915,26 +910,14 @@ sint64_pack(int64_t value, uint8_t *out)
 static inline size_t
 fixed32_pack(uint32_t value, void *out)
 {
-#if !defined(WORDS_BIGENDIAN)
+	value = htole32(value);
 	memcpy(out, &value, 4);
-#else
-	uint8_t *buf = out;
-
-	buf[0] = value;
-	buf[1] = value >> 8;
-	buf[2] = value >> 16;
-	buf[3] = value >> 24;
-#endif
 	return 4;
 }
 
 /**
  * Pack a 64-bit quantity in little-endian byte order. Used for protobuf wire
  * types fixed64, sfixed64, double. Similar to "htole64".
- *
- * \todo The big-endian impl is really only good for 32-bit machines, a 64-bit
- * version would be appreciated, plus a way to decide to use 64-bit math where
- * convenient.
  *
  * \param value
  *      Value to encode.
@@ -946,12 +929,8 @@ fixed32_pack(uint32_t value, void *out)
 static inline size_t
 fixed64_pack(uint64_t value, void *out)
 {
-#if !defined(WORDS_BIGENDIAN)
+	value = htole64(value);
 	memcpy(out, &value, 8);
-#else
-	fixed32_pack(value, out);
-	fixed32_pack(value >> 32, ((char *) out) + 4);
-#endif
 	return 8;
 }
 
@@ -2423,25 +2402,15 @@ parse_int32(unsigned len, const uint8_t *data)
 static inline int32_t
 unzigzag32(uint32_t v)
 {
-	if (v & 1)
-		return -(v >> 1) - 1;
-	else
-		return v >> 1;
+    return (v >> 1) ^ -(v & 1);
 }
 
 static inline uint32_t
 parse_fixed_uint32(const uint8_t *data)
 {
-#if !defined(WORDS_BIGENDIAN)
-	uint32_t t;
-	memcpy(&t, data, 4);
-	return t;
-#else
-	return data[0] |
-		((uint32_t) (data[1]) << 8) |
-		((uint32_t) (data[2]) << 16) |
-		((uint32_t) (data[3]) << 24);
-#endif
+    uint32_t t;
+    memcpy(&t, data, 4);
+    return le32toh(t);
 }
 
 static uint64_t
@@ -2467,23 +2436,15 @@ parse_uint64(unsigned len, const uint8_t *data)
 static inline int64_t
 unzigzag64(uint64_t v)
 {
-	if (v & 1)
-		return -(v >> 1) - 1;
-	else
-		return v >> 1;
+    return (v >> 1) ^ -(v & 1);
 }
 
 static inline uint64_t
 parse_fixed_uint64(const uint8_t *data)
 {
-#if !defined(WORDS_BIGENDIAN)
-	uint64_t t;
-	memcpy(&t, data, 8);
-	return t;
-#else
-	return (uint64_t) parse_fixed_uint32(data) |
-		(((uint64_t) parse_fixed_uint32(data + 4)) << 32);
-#endif
+    uint64_t t;
+    memcpy(&t, data, 8);
+    return le64toh(t);
 }
 
 static protobuf_c_boolean
