@@ -251,6 +251,7 @@ EXTRA_DIST += \
 	t/issue251/issue251.proto
 
 # Issue #330
+if BUILD_PROTO3
 check_PROGRAMS += \
 	t/issue330/issue330
 TESTS += \
@@ -264,6 +265,7 @@ t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h: $(top_builddir)/protoc-c/
 	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue330/issue330.proto
 BUILT_SOURCES += \
 	t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h
+endif # BUILD_PROTO3
 EXTRA_DIST += \
 	t/issue330/issue330.proto
 
