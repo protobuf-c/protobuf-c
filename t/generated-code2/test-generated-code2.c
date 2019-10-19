@@ -1683,7 +1683,7 @@ assert_required_default_values_are_default (Foo__DefaultRequiredValues *mess)
   assert (mess->v_float == 2.5);
   assert (mess->v_double == 4.5);
   assert (strcmp (mess->v_string, "hi mom\n") == 0);
-  assert (mess->v_bytes.len = /* a */ 1
+  assert (mess->v_bytes.len == /* a */ 1
                                + /* space */ 1
                                + /* NUL */ 1
                                + /* space */ 1
@@ -1722,7 +1722,7 @@ assert_optional_default_values_are_default (Foo__DefaultOptionalValues *mess)
   assert (mess->v_double == 4.5);
   assert (strcmp (mess->v_string, "hi mom\n") == 0);
   assert (!mess->has_v_bytes);
-  assert (mess->v_bytes.len = /* a */ 1
+  assert (mess->v_bytes.len == /* a */ 1
                                + /* space */ 1
                                + /* NUL */ 1
                                + /* space */ 1
