@@ -26,6 +26,7 @@ script:
     - ./autogen.sh
     - ./configure && make -j2 distcheck VERBOSE=1 && make clean
     - ./configure --enable-valgrind-tests CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined" && make -j2 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" VERBOSE=1 && make clean
+    - ./configure --enable-code-coverage && make -j2 && make check
 
 after_success:
     - cpp-coveralls --build-root . --exclude t/ --exclude /usr/include --exclude protobuf-$PROTOBUF_VERSION --exclude protoc-c
