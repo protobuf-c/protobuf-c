@@ -192,7 +192,7 @@ protobuf_c_buffer_simple_append(ProtobufCBuffer *buffer,
 
 	if (new_len > simp->alloced) {
 		ProtobufCAllocator *allocator = simp->allocator;
-		size_t new_alloced = simp->alloced * 2;
+		size_t new_alloced = (simp->alloced ? simp->alloced * 2 : new_len);
 		uint8_t *new_data;
 
 		if (allocator == NULL)
