@@ -266,7 +266,7 @@ GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage)
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message);\n"
 		);
-  if (!is_submessage) {
+  // if (!is_submessage) {
     printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$   *message);\n"
@@ -285,7 +285,7 @@ GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage)
 		 "                     ($classname$ *message,\n"
 		 "                      ProtobufCAllocator *allocator);\n"
 		);
-  }
+  // }
 }
 
 void MessageGenerator::
@@ -342,7 +342,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
 		 "}\n");
-  if (!is_submessage) {
+  // if (!is_submessage) {
     printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
@@ -384,7 +384,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
 		 "}\n"
 		);
-  }
+  // }
 }
 
 void MessageGenerator::
