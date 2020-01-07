@@ -22,7 +22,7 @@ If building from a git checkout, the `autotools` (`autoconf`, `automake`, `libto
 
 ## Test
 
-If you want to execute test cases individually, please run the following command after running `./configure` once.
+If you want to execute test cases individually, please run the following command after running `./configure` once:
 
      make check
 	 
