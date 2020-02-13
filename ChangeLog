@@ -1,4 +1,24 @@
+protobuf-c (1.3.3)
+
+  [ Robert Edmonds ]
+  * Release 1.3.3.
+
+  * Fix build failure on protobuf 2.x (#398).
+
+  [ msshapira ]
+  * CMake: Fix support for MSVC static build (#350).
+
+  [ Adam Cozzette ]
+  * Fix some test assertions in test-generated-code2.c (#392).
+
+  [ Ilya Lipnitskiy ]
+  * protobuf-c.c: Make zigzag encoding more compact (#400).
+
+  [ Markus Engel ]
+  * CMake: Fix endianness check.
+
 protobuf-c (1.3.2)
+
   [ Robert Edmonds ]
   * Release 1.3.2.
 
