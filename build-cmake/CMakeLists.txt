@@ -134,6 +134,15 @@ TARGET_LINK_LIBRARIES(test-generated-code3 protobuf-c)
 
 ENDIF()
 
+# https://github.com/protocolbuffers/protobuf/issues/5107
+IF(CMAKE_HOST_UNIX)
+	FIND_PACKAGE(Threads REQUIRED)
+	TARGET_LINK_LIBRARIES(protoc-gen-c ${CMAKE_THREAD_LIBS_INIT})
+	IF(CMAKE_BUILD_TYPE MATCHES Debug)
+		TARGET_LINK_LIBRARIES(cxx-generate-packed-data ${CMAKE_THREAD_LIBS_INIT})
+	ENDIF()
+ENDIF()
+
 INSTALL(TARGETS protoc-gen-c protobuf-c RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
