@@ -68,7 +68,6 @@ if ! git checkout "${DOC_BRANCH}"; then
 fi
 
 touch "$HTMLDIR/.nojekyll"
-echo lib.protobuf-c.io > "$HTMLDIR/CNAME"
 
 GIT_INDEX_FILE="$INDEX_FILE" GIT_WORK_TREE="$HTMLDIR" \
     git add --no-ignore-removal .
