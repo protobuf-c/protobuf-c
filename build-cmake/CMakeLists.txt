@@ -1,7 +1,8 @@
 SET(PACKAGE protobuf-c)
 SET(PACKAGE_NAME protobuf-c)
 SET(PACKAGE_VERSION 1.3.3)
-
+SET(PACKAGE_URL https://github.com/protobuf-c/protobuf-c)
+SET(PACKAGE_DESCRIPTION "Protocol Buffers implementation in C")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
 
@@ -140,6 +141,15 @@ INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
 IF(CMAKE_HOST_UNIX)
 INSTALL(CODE "EXECUTE_PROCESS (COMMAND ln -sf protoc-gen-c protoc-c WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)")
 ENDIF()
+
+INCLUDE(GNUInstallDirs)
+SET(prefix ${CMAKE_INSTALL_PREFIX})
+SET(exec_prefix \${prefix})
+SET(bindir \${exec_prefix}/${CMAKE_INSTALL_BINDIR})
+SET(libdir \${exec_prefix}/${CMAKE_INSTALL_LIBDIR})
+SET(includedir \${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
+CONFIGURE_FILE(${MAIN_DIR}/protobuf-c/libprotobuf-c.pc.in libprotobuf-c.pc @ONLY)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/libprotobuf-c.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 INCLUDE(Dart)
 
