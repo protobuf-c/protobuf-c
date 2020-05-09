@@ -1,4 +1,4 @@
-var annotated =
+var annotated_dup =
 [
     [ "ProtobufCAllocator", "structProtobufCAllocator.html", "structProtobufCAllocator" ],
     [ "ProtobufCBinaryData", "structProtobufCBinaryData.html", "structProtobufCBinaryData" ],

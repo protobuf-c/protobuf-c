@@ -1,4 +1,30 @@
+/*
+ @licstart  The following is the entire license notice for the JavaScript code in this file.
+
+ The MIT License (MIT)
+
+ Copyright (C) 1997-2020 by Dimitri van Heesch
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ and associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+ @licend  The above is the entire license notice for the JavaScript code in this file
+ */
 var navTreeSubIndices = new Array();
+var arrowDown = '&#9660;';
+var arrowRight = '&#9658;';
 
 function getData(varName)
 {
@@ -45,7 +71,6 @@ function localStorageSupported()
   }
 }
 
-
 function storeLink(link)
 {
   if (!$("#nav-sync").hasClass('sync') && localStorageSupported()) {
@@ -71,21 +96,13 @@ function cachedLink()
 
 function getScript(scriptName,func,show)
 {
-  var head = document.getElementsByTagName("head")[0]; 
+  var head = document.getElementsByTagName("head")[0];
   var script = document.createElement('script');
   script.id = scriptName;
   script.type = 'text/javascript';
-  script.onload = func; 
-  script.src = scriptName+'.js'; 
-  if ($.browser.msie && $.browser.version<=8) { 
-    // script.onload does not work with older versions of IE
-    script.onreadystatechange = function() {
-      if (script.readyState=='complete' || script.readyState=='loaded') { 
-        func(); if (show) showRoot(); 
-      }
-    }
-  }
-  head.appendChild(script); 
+  script.onload = func;
+  script.src = scriptName+'.js';
+  head.appendChild(script);
 }
 
 function createIndent(o,domNode,node,level)
@@ -94,18 +111,17 @@ function createIndent(o,domNode,node,level)
   var n = node;
   while (n.parentNode) { level++; n=n.parentNode; }
   if (node.childrenData) {
-    var imgNode = document.createElement("img");
+    var imgNode = document.createElement("span");
+    imgNode.className = 'arrow';
     imgNode.style.paddingLeft=(16*level).toString()+'px';
-    imgNode.width  = 16;
-    imgNode.height = 22;
-    imgNode.border = 0;
+    imgNode.innerHTML=arrowRight;
     node.plus_img = imgNode;
     node.expandToggle = document.createElement("a");
     node.expandToggle.href = "javascript:void(0)";
     node.expandToggle.onclick = function() {
       if (node.expanded) {
         $(node.getChildrenUL()).slideUp("fast");
-        node.plus_img.src = node.relpath+"arrowright.png";
+        node.plus_img.innerHTML=arrowRight;
         node.expanded = false;
       } else {
         expandNode(o, node, false, false);
@@ -113,15 +129,13 @@ function createIndent(o,domNode,node,level)
     }
     node.expandToggle.appendChild(imgNode);
     domNode.appendChild(node.expandToggle);
-    imgNode.src = node.relpath+"arrowright.png";
   } else {
     var span = document.createElement("span");
-    span.style.display = 'inline-block';
+    span.className = 'arrow';
     span.style.width   = 16*(level+1)+'px';
-    span.style.height  = '22px';
     span.innerHTML = '&#160;';
     domNode.appendChild(span);
-  } 
+  }
 }
 
 var animationInProgress = false;
@@ -131,6 +145,7 @@ function gotoAnchor(anchor,aname,updateLocation)
   var pos, docContent = $('#doc-content');
   var ancParent = $(anchor.parent());
   if (ancParent.hasClass('memItemLeft') ||
+      ancParent.hasClass('memtitle') ||
       ancParent.hasClass('fieldname') ||
       ancParent.hasClass('fieldtype') ||
       ancParent.is(':header'))
@@ -195,7 +210,7 @@ function newNode(o, po, text, link, childrenData, lastNode)
       var aname = '#'+link.split('#')[1];
       var srcPage = stripPath(pathName());
       var targetPage = stripPath(link.split('#')[0]);
-      a.href = srcPage!=targetPage ? url : "javascript:void(0)"; 
+      a.href = srcPage!=targetPage ? url : "javascript:void(0)";
       a.onclick = function(){
         storeLink(link);
         if (!$(a).parent().parent().hasClass('selected'))
@@ -213,7 +228,7 @@ function newNode(o, po, text, link, childrenData, lastNode)
       a.onclick = function() { storeLink(link); }
     }
   } else {
-    if (childrenData != null) 
+    if (childrenData != null)
     {
       a.className = "nolink";
       a.href = "javascript:void(0)";
@@ -243,7 +258,7 @@ function showRoot()
   (function (){ // retry until we can scroll to the selected item
     try {
       var navtree=$('#nav-tree');
-      navtree.scrollTo('#selected',0,{offset:-windowHeight/2});
+      navtree.scrollTo('#selected',100,{offset:-windowHeight/2});
     } catch (err) {
       setTimeout(arguments.callee, 0);
     }
@@ -262,17 +277,9 @@ function expandNode(o, node, imm, showRoot)
     } else {
       if (!node.childrenVisited) {
         getNode(o, node);
-      } if (imm || ($.browser.msie && $.browser.version>8)) { 
-        // somehow slideDown jumps to the start of tree for IE9 :-(
-        $(node.getChildrenUL()).show();
-      } else {
-        $(node.getChildrenUL()).slideDown("fast");
       }
-      if (node.isLast) {
-        node.plus_img.src = node.relpath+"arrowdown.png";
-      } else {
-        node.plus_img.src = node.relpath+"arrowdown.png";
-      }
+      $(node.getChildrenUL()).slideDown("fast");
+      node.plus_img.innerHTML = arrowDown;
       node.expanded = true;
     }
   }
@@ -301,7 +308,6 @@ function highlightAnchor()
   } else {
     glowEffect(anchor.next(),1000); // normal member
   }
-  gotoAnchor(anchor,aname,false);
 }
 
 function selectAndHighlight(hash,n)
@@ -341,7 +347,7 @@ function showNode(o, node, index, hash)
         getNode(o, node);
       }
       $(node.getChildrenUL()).css({'display':'block'});
-      node.plus_img.src = node.relpath+"arrowdown.png";
+      node.plus_img.innerHTML = arrowDown;
       node.expanded = true;
       var n = node.children[o.breadcrumbs[index]];
       if (index+1<o.breadcrumbs.length) {
@@ -463,6 +469,18 @@ function toggleSyncButton(relpath)
   }
 }
 
+var loadTriggered = false;
+var readyTriggered = false;
+var loadObject,loadToRoot,loadUrl,loadRelPath;
+
+$(window).on('load',function(){
+  if (readyTriggered) { // ready first
+    navTo(loadObject,loadToRoot,loadUrl,loadRelPath);
+    showRoot();
+  }
+  loadTriggered=true;
+});
+
 function initNavTree(toroot,relpath)
 {
   var o = new Object();
@@ -478,10 +496,9 @@ function initNavTree(toroot,relpath)
   o.node.relpath = relpath;
   o.node.expanded = false;
   o.node.isLast = true;
-  o.node.plus_img = document.createElement("img");
-  o.node.plus_img.src = relpath+"arrowright.png";
-  o.node.plus_img.width = 16;
-  o.node.plus_img.height = 22;
+  o.node.plus_img = document.createElement("span");
+  o.node.plus_img.className = 'arrow';
+  o.node.plus_img.innerHTML = arrowRight;
 
   if (localStorageSupported()) {
     var navSync = $('#nav-sync');
@@ -494,10 +511,16 @@ function initNavTree(toroot,relpath)
     navSync.click(function(){ toggleSyncButton(relpath); });
   }
 
-  $(window).load(function(){
+  if (loadTriggered) { // load before ready
     navTo(o,toroot,hashUrl(),relpath);
     showRoot();
-  });
+  } else { // ready before load
+    loadObject  = o;
+    loadToRoot  = toroot;
+    loadUrl     = hashUrl();
+    loadRelPath = relpath;
+    readyTriggered=true;
+  }
 
   $(window).bind('hashchange', function(){
      if (window.location.hash && window.location.hash.length>1){
@@ -520,4 +543,4 @@ function initNavTree(toroot,relpath)
      }
   })
 }
-
+/* @license-end */

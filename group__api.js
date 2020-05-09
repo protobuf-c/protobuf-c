@@ -127,7 +127,8 @@ var group__api =
     [ "ProtobufCLabel", "group__api.html#ga5ec2e3fd5bbe4c5f6a64b06b7425d0e5", [
       [ "PROTOBUF_C_LABEL_REQUIRED", "group__api.html#gga5ec2e3fd5bbe4c5f6a64b06b7425d0e5a407dd9d769a377e156a6c945647bccbb", null ],
       [ "PROTOBUF_C_LABEL_OPTIONAL", "group__api.html#gga5ec2e3fd5bbe4c5f6a64b06b7425d0e5abc861df7f96354b08c62397e5a1c1526", null ],
-      [ "PROTOBUF_C_LABEL_REPEATED", "group__api.html#gga5ec2e3fd5bbe4c5f6a64b06b7425d0e5a2603fa5b6f8effddfedf61cd0b423d86", null ]
+      [ "PROTOBUF_C_LABEL_REPEATED", "group__api.html#gga5ec2e3fd5bbe4c5f6a64b06b7425d0e5a2603fa5b6f8effddfedf61cd0b423d86", null ],
+      [ "PROTOBUF_C_LABEL_NONE", "group__api.html#gga5ec2e3fd5bbe4c5f6a64b06b7425d0e5a187e8a6468ac8deebfe39dc4cb996ff9", null ]
     ] ],
     [ "ProtobufCType", "group__api.html#ga784625188e935a74bc4577297b8c6802", [
       [ "PROTOBUF_C_TYPE_INT32", "group__api.html#gga784625188e935a74bc4577297b8c6802a54afdba64cff6fabf91b40fe31dec281", null ],
