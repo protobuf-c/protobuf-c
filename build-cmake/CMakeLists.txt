@@ -11,6 +11,7 @@ PROJECT(protobuf-c)
 #options
 option(MSVC_STATIC_BUILD "MSVC_STATIC_BUILD" OFF)
 option(BUILD_PROTO3 "BUILD_PROTO3" ON)
+option(BUILD_PROTOC "Build protoc-gen-c" ON)
 
 INCLUDE(TestBigEndian)
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
@@ -41,6 +42,8 @@ ADD_LIBRARY(protobuf-c ${PC_SOURCES})
 
 INCLUDE_DIRECTORIES(${MAIN_DIR})
 INCLUDE_DIRECTORIES(${MAIN_DIR}/protobuf-c)
+
+IF(BUILD_PROTOC)
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}) # for generated files
 
 FIND_PACKAGE(Protobuf REQUIRED)
@@ -49,6 +52,7 @@ INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 if (BUILD_PROTO3)
 	ADD_DEFINITIONS(-DHAVE_PROTO3)
 endif()
+ENDIF()
 
 if (MSVC AND MSVC_STATIC_BUILD)
 	# In case we are building static libraries, link also the runtime library statically
@@ -67,6 +71,7 @@ if (MSVC AND MSVC_STATIC_BUILD)
 	endforeach(flag_var)
 endif (MSVC AND MSVC_STATIC_BUILD)
 
+IF(BUILD_PROTOC)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
@@ -136,7 +141,7 @@ ADD_EXECUTABLE(test-generated-code3 ${TEST_DIR}/generated-code/test-generated-co
 TARGET_COMPILE_DEFINITIONS(test-generated-code3 PUBLIC -DPROTO3)
 TARGET_LINK_LIBRARIES(test-generated-code3 protobuf-c)
 
-ENDIF()
+ENDIF() # CMAKE_BUILD_TYPE
 
 # https://github.com/protocolbuffers/protobuf/issues/5107
 IF(CMAKE_HOST_UNIX)
@@ -147,7 +152,10 @@ IF(CMAKE_HOST_UNIX)
 	ENDIF()
 ENDIF()
 
-INSTALL(TARGETS protoc-gen-c protobuf-c RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+INSTALL(TARGETS protoc-gen-c RUNTIME DESTINATION bin)
+ENDIF() # BUILD_PROTOC
+
+INSTALL(TARGETS protobuf-c LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
 
