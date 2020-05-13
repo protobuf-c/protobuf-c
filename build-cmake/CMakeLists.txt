@@ -146,13 +146,13 @@ ADD_EXECUTABLE(test-generated-code3 ${TEST_DIR}/generated-code/test-generated-co
 TARGET_COMPILE_DEFINITIONS(test-generated-code3 PUBLIC -DPROTO3)
 TARGET_LINK_LIBRARIES(test-generated-code3 protobuf-c)
 
-ENDIF() # CMAKE_BUILD_TYPE
+ENDIF() # BUILD_TESTS
 
 # https://github.com/protocolbuffers/protobuf/issues/5107
 IF(CMAKE_HOST_UNIX)
 	FIND_PACKAGE(Threads REQUIRED)
 	TARGET_LINK_LIBRARIES(protoc-gen-c ${CMAKE_THREAD_LIBS_INIT})
-	IF(CMAKE_BUILD_TYPE MATCHES Debug)
+	IF(BUILD_TESTS)
 		TARGET_LINK_LIBRARIES(cxx-generate-packed-data ${CMAKE_THREAD_LIBS_INIT})
 	ENDIF()
 ENDIF()
@@ -177,6 +177,7 @@ SET(includedir \${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
 CONFIGURE_FILE(${MAIN_DIR}/protobuf-c/libprotobuf-c.pc.in libprotobuf-c.pc @ONLY)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/libprotobuf-c.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
+IF(BUILD_TESTS)
 INCLUDE(Dart)
 
 SET(DART_TESTING_TIMEOUT 5)
@@ -186,6 +187,7 @@ ADD_TEST(test-generated-code3 test-generated-code3)
 ADD_TEST(test-issue220 test-issue220)
 ADD_TEST(test-issue251 test-issue251)
 ADD_TEST(test-version test-version)
+ENDIF()
 
 
 INCLUDE(CPack)
