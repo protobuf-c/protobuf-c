@@ -2132,11 +2132,13 @@ scan_length_prefixed_data(size_t len, const uint8_t *data,
 		// Protobuf messages should always be less than 2 GiB in size.
 		// We also want to return early here so that hdr_len + val does
 		// not overflow on 32-bit systems.
-		PROTOBUF_C_UNPACK_ERROR("length prefix of %lu is too large", val);
+		PROTOBUF_C_UNPACK_ERROR("length prefix of %lu is too large",
+			(unsigned long int)val);
 		return 0;
 	}
 	if (hdr_len + val > len) {
-		PROTOBUF_C_UNPACK_ERROR("data too short after length-prefix of %lu", val);
+		PROTOBUF_C_UNPACK_ERROR("data too short after length-prefix of %lu",
+			(unsigned long int)val);
 		return 0;
 	}
 	return hdr_len + val;
