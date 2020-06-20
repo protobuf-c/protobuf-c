@@ -98,8 +98,8 @@ void ServiceGenerator::GenerateMainHFile(io::Printer* printer)
 void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
 {
   printer->Print(vars_,
-		 "typedef struct _$cname$_Service $cname$_Service;\n"
-		 "struct _$cname$_Service\n"
+		 "typedef struct $cname$_Service $cname$_Service;\n"
+		 "struct $cname$_Service\n"
 		 "{\n"
 		 "  ProtobufCService base;\n");
   for (int i = 0; i < descriptor_->method_count(); i++) {

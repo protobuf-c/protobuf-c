@@ -2095,9 +2095,9 @@ parse_tag_and_wiretype(size_t len,
 
 /* sizeof(ScannedMember) must be <= (1UL<<BOUND_SIZEOF_SCANNED_MEMBER_LOG2) */
 #define BOUND_SIZEOF_SCANNED_MEMBER_LOG2 5
-typedef struct _ScannedMember ScannedMember;
+typedef struct ScannedMember ScannedMember;
 /** Field as it's being read. */
-struct _ScannedMember {
+struct ScannedMember {
 	uint32_t tag;              /**< Field tag. */
 	uint8_t wire_type;         /**< Field type. */
 	uint8_t length_prefix_len; /**< Prefix length. */
