@@ -265,6 +265,15 @@ t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h: $(top_builddir)/protoc-c/
 	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue330/issue330.proto
 BUILT_SOURCES += \
 	t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h
+
+t_issue330_issue330_SOURCES += \
+	t/issue389/issue389.pb-c.c # Tack onto issue330 since there is no need for a separate binary here
+t/issue389/issue389.pb-c.c t/issue389/issue389.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue389/issue389.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue389/issue389.proto
+BUILT_SOURCES += \
+	t/issue389/issue389.pb-c.c t/issue389/issue389.pb-c.h
+EXTRA_DIST += \
+	t/issue389/issue389.proto
 endif # BUILD_PROTO3
 EXTRA_DIST += \
 	t/issue330/issue330.proto

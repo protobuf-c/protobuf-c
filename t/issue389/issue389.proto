@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message EnumIntTest {
+  enum Label {
+    LABEL_1 = 0;
+    LABEL_2 = 1;
+  }
+  oneof label {
+    Label label_label = 123;
+    uint64 label_uint64 = 124;
+  }
+}
