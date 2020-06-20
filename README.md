@@ -28,7 +28,7 @@ If you want to execute test cases individually, please run the following command
 	 
 ## Documentation
 
-See the [online Doxygen documentation here](http://lib.protobuf-c.io) or [the Wiki](https://github.com/protobuf-c/protobuf-c/wiki) for a detailed reference. The Doxygen documentation can be built from the source tree by running:
+See the [online Doxygen documentation here](https://protobuf-c.github.io/protobuf-c) or [the Wiki](https://github.com/protobuf-c/protobuf-c/wiki) for a detailed reference. The Doxygen documentation can be built from the source tree by running:
 
     make html
 

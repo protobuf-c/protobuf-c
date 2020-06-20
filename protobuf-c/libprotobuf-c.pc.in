@@ -4,9 +4,10 @@ libdir=@libdir@
 includedir=@includedir@
 bindir=@bindir@
 
-Name: libprotobuf-c
-Description: Protocol Buffers C library
-Version: @VERSION@
+Name: @PACKAGE_NAME@
+Description: @PACKAGE_DESCRIPTION@
+Version: @PACKAGE_VERSION@
+URL: @PACKAGE_URL@
 Libs: -L${libdir} -lprotobuf-c
 Libs.private:
 Cflags: -I${includedir}
