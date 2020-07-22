@@ -2,8 +2,7 @@ language:
     - c
     - cpp
 
-sudo: required
-dist: xenial
+dist: bionic
 
 addons:
   apt:
