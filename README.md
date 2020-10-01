@@ -65,3 +65,4 @@ Please send patches to the [protobuf-c mailing list](https://groups.google.com/f
 The most recently released `protobuf-c` version is kept on the `master` branch, while the `next` branch is used for commits targeted at the next release. Please base patches and pull requests against the `next` branch, not the `master` branch.
 
 Copyright to all contributions are retained by the original author, but must be licensed under the terms of the [BSD-2-Clause](http://opensource.org/licenses/BSD-2-Clause) license. Please add a `Signed-off-by` header to your commit message (`git commit -s`) to indicate that you are licensing your contribution under these terms.
+##Thanks for Visiting
