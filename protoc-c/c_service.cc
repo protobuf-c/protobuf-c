@@ -70,7 +70,7 @@ namespace compiler {
 namespace c {
 
 ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
-                                   const string& dllexport_decl)
+                                   const std::string& dllexport_decl)
   : descriptor_(descriptor) {
   vars_["name"] = descriptor_->name();
   vars_["fullname"] = descriptor_->full_name();
@@ -104,7 +104,7 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
 		 "  ProtobufCService base;\n");
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
-    string lcname = CamelToLower(method->name());
+    std::string lcname = CamelToLower(method->name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
     vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
@@ -131,7 +131,7 @@ void ServiceGenerator::GenerateInitMacros(io::Printer* printer)
 		 "    { $ucfullname$__BASE_INIT");
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
-    string lcname = CamelToLower(method->name());
+    std::string lcname = CamelToLower(method->name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
     printer->Print(vars_,
@@ -144,8 +144,8 @@ void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
 {
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
-    string lcname = CamelToLower(method->name());
-    string lcfullname = FullNameToLower(descriptor_->full_name());
+    std::string lcname = CamelToLower(method->name());
+    std::string lcfullname = FullNameToLower(descriptor_->full_name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
     vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
@@ -266,8 +266,8 @@ void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
 {
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
-    string lcname = CamelToLower(method->name());
-    string lcfullname = FullNameToLower(descriptor_->full_name());
+    std::string lcname = CamelToLower(method->name());
+    std::string lcfullname = FullNameToLower(descriptor_->full_name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
     vars_["input_typename"] = FullNameToC(method->input_type()->full_name());

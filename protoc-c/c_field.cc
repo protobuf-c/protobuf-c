@@ -103,10 +103,10 @@ static bool is_packable_type(FieldDescriptor::Type type)
 
 void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 							  bool optional_uses_has,
-							  const string &type_macro,
-							  const string &descriptor_addr) const
+							  const std::string &type_macro,
+							  const std::string &descriptor_addr) const
 {
-  std::map<string, string> variables;
+  std::map<std::string, std::string> variables;
   variables["TYPE"] = type_macro;
   variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
   variables["name"] = FieldName(descriptor_);
@@ -126,7 +126,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   }
 
   if (descriptor_->has_default_value()) {
-    variables["default_value"] = string("&")
+    variables["default_value"] = std::string("&")
                                + FullNameToLower(descriptor_->full_name())
 			       + "__default_value";
   } else if (FieldSyntax(descriptor_) == 3 &&

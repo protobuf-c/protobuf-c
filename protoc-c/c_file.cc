@@ -80,7 +80,7 @@ namespace c {
 // ===================================================================
 
 FileGenerator::FileGenerator(const FileDescriptor* file,
-                             const string& dllexport_decl)
+                             const std::string& dllexport_decl)
   : file_(file),
     message_generators_(
       new std::unique_ptr<MessageGenerator>[file->message_type_count()]),
@@ -117,7 +117,7 @@ FileGenerator::FileGenerator(const FileDescriptor* file,
 FileGenerator::~FileGenerator() {}
 
 void FileGenerator::GenerateHeader(io::Printer* printer) {
-  string filename_identifier = FilenameIdentifier(file_->name());
+  std::string filename_identifier = FilenameIdentifier(file_->name());
 
   int min_header_version = 1000000;
 #if defined(HAVE_PROTO3)

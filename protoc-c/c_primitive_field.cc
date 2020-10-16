@@ -79,8 +79,8 @@ PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {}
 
 void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
-  string c_type;
-  std::map<string, string> vars;
+  std::string c_type;
+  std::map<std::string, std::string> vars;
   switch (descriptor_->type()) {
     case FieldDescriptor::TYPE_SINT32  : 
     case FieldDescriptor::TYPE_SFIXED32: 
@@ -123,7 +123,7 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
-string PrimitiveFieldGenerator::GetDefaultValue() const
+std::string PrimitiveFieldGenerator::GetDefaultValue() const
 {
   /* XXX: SimpleItoa seems woefully inadequate for anything but int32,
    * but that's what protobuf uses. */
@@ -149,7 +149,7 @@ string PrimitiveFieldGenerator::GetDefaultValue() const
 }
 void PrimitiveFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
-  std::map<string, string> vars;
+  std::map<std::string, std::string> vars;
   if (descriptor_->has_default_value()) {
     vars["default_value"] = GetDefaultValue();
   } else {
@@ -172,7 +172,7 @@ void PrimitiveFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 
 void PrimitiveFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {
-  string c_type_macro;
+  std::string c_type_macro;
   switch (descriptor_->type()) {
   #define WRITE_CASE(shortname) case FieldDescriptor::TYPE_##shortname: c_type_macro = #shortname; break;
     WRITE_CASE(INT32)

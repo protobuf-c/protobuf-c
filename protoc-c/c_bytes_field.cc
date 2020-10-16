@@ -74,7 +74,7 @@ namespace c {
 using internal::WireFormat;
 
 void SetBytesVariables(const FieldDescriptor* descriptor,
-                        std::map<string, string>* variables) {
+                        std::map<std::string, std::string>* variables) {
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["default"] =
     "\"" + CEscape(descriptor->default_value_string()) + "\"";
@@ -89,7 +89,7 @@ BytesFieldGenerator(const FieldDescriptor* descriptor)
   SetBytesVariables(descriptor, &variables_);
   variables_["default_value"] = descriptor->has_default_value()
                               ? GetDefaultValue() 
-			      : string("{0,NULL}");
+			      : std::string("{0,NULL}");
 }
 
 BytesFieldGenerator::~BytesFieldGenerator() {}
@@ -113,7 +113,7 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 }
 void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer) const
 {
-  std::map<string, string> vars;
+  std::map<std::string, std::string> vars;
   vars["default_value_data"] = FullNameToLower(descriptor_->full_name())
 	                     + "__default_value_data";
   printer->Print(vars, "extern uint8_t $default_value_data$[];\n");
@@ -121,13 +121,13 @@ void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer)
 
 void BytesFieldGenerator::GenerateDefaultValueImplementations(io::Printer* printer) const
 {
-  std::map<string, string> vars;
+  std::map<std::string, std::string> vars;
   vars["default_value_data"] = FullNameToLower(descriptor_->full_name())
 	                     + "__default_value_data";
   vars["escaped"] = CEscape(descriptor_->default_value_string());
   printer->Print(vars, "uint8_t $default_value_data$[] = \"$escaped$\";\n");
 }
-string BytesFieldGenerator::GetDefaultValue(void) const
+std::string BytesFieldGenerator::GetDefaultValue(void) const
 {
   return "{ "
 	+ SimpleItoa(descriptor_->default_value_string().size())

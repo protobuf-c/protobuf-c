@@ -91,7 +91,7 @@ class FieldGenerator {
 
   virtual void GenerateDefaultValueDeclarations(io::Printer* printer) const { }
   virtual void GenerateDefaultValueImplementations(io::Printer* printer) const { }
-  virtual string GetDefaultValue() const = 0;
+  virtual std::string GetDefaultValue() const = 0;
 
   // Generate members to initialize this field from a static initializer
   virtual void GenerateStaticInit(io::Printer* printer) const = 0;
@@ -100,8 +100,8 @@ class FieldGenerator {
  protected:
   void GenerateDescriptorInitializerGeneric(io::Printer* printer,
                                             bool optional_uses_has,
-                                            const string &type_macro,
-                                            const string &descriptor_addr) const;
+                                            const std::string &type_macro,
+                                            const std::string &descriptor_addr) const;
   const FieldDescriptor *descriptor_;
 
  private:
