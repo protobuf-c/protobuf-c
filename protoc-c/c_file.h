@@ -90,7 +90,8 @@ class FileGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
   explicit FileGenerator(const FileDescriptor* file,
-                         const std::string& dllexport_decl);
+                         const std::string& dllexport_decl,
+                         bool generate_helpers = true);
   ~FileGenerator();
 
   void GenerateHeader(io::Printer* printer);

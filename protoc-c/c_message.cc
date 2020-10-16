@@ -80,9 +80,11 @@ namespace c {
 // ===================================================================
 
 MessageGenerator::MessageGenerator(const Descriptor* descriptor,
-                                   const std::string& dllexport_decl)
+                                   const std::string& dllexport_decl,
+                                   bool generate_helpers)
   : descriptor_(descriptor),
     dllexport_decl_(dllexport_decl),
+    generate_helpers_(generate_helpers),
     field_generators_(descriptor),
     nested_generators_(new std::unique_ptr<MessageGenerator>[
       descriptor->nested_type_count()]),
@@ -266,7 +268,7 @@ GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage)
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message);\n"
 		);
-  if (!is_submessage) {
+  if (!is_submessage && generate_helpers_) {
     printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$   *message);\n"
@@ -342,7 +344,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
 		 "}\n");
-  if (!is_submessage) {
+  if (!is_submessage && generate_helpers_) {
     printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"

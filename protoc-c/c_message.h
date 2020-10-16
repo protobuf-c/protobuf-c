@@ -86,7 +86,8 @@ class MessageGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
   explicit MessageGenerator(const Descriptor* descriptor,
-                            const std::string& dllexport_decl);
+                            const std::string& dllexport_decl,
+                            bool generate_helpers = true);
   ~MessageGenerator();
 
   // Header stuff.
@@ -126,6 +127,7 @@ class MessageGenerator {
 
   const Descriptor* descriptor_;
   std::string dllexport_decl_;
+  bool generate_helpers_;
   FieldGeneratorMap field_generators_;
   std::unique_ptr<std::unique_ptr<MessageGenerator>[]> nested_generators_;
   std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;

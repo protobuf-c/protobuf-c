@@ -80,7 +80,8 @@ namespace c {
 // ===================================================================
 
 FileGenerator::FileGenerator(const FileDescriptor* file,
-                             const std::string& dllexport_decl)
+                             const std::string& dllexport_decl,
+                             bool generate_helpers)
   : file_(file),
     message_generators_(
       new std::unique_ptr<MessageGenerator>[file->message_type_count()]),
@@ -93,7 +94,7 @@ FileGenerator::FileGenerator(const FileDescriptor* file,
 
   for (int i = 0; i < file->message_type_count(); i++) {
     message_generators_[i].reset(
-      new MessageGenerator(file->message_type(i), dllexport_decl));
+      new MessageGenerator(file->message_type(i), dllexport_decl, generate_helpers));
   }
 
   for (int i = 0; i < file->enum_type_count(); i++) {

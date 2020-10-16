@@ -131,9 +131,18 @@ bool CGenerator::Generate(const FileDescriptor* file,
   // __declspec(dllimport) depending on what is being compiled.
   std::string dllexport_decl;
 
+  // By default, message pack/unpack helpers are generated for every message. These
+  // wrap protobuf-c functions with an additional type check. If these are not required,
+  // the library size can be significantly reduced by passing the option
+  // disable_message_helpers. e.g.
+  //  protoc --c_out=disable_message_helpers:outdir foo.proto
+  bool generate_helpers = true;
+
   for (unsigned i = 0; i < options.size(); i++) {
     if (options[i].first == "dllexport_decl") {
       dllexport_decl = options[i].second;
+    } else if (options[i].first == "disable_message_helpers") {
+      generate_helpers = false;
     } else {
       *error = "Unknown generator option: " + options[i].first;
       return false;
@@ -146,7 +155,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
   std::string basename = StripProto(file->name());
   basename.append(".pb-c");
 
-  FileGenerator file_generator(file, dllexport_decl);
+  FileGenerator file_generator(file, dllexport_decl, generate_helpers);
 
   // Generate header.
   {
