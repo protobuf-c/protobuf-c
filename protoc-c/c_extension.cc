@@ -70,7 +70,7 @@ namespace compiler {
 namespace c {
 
 ExtensionGenerator::ExtensionGenerator(const FieldDescriptor* descriptor,
-                                       const string& dllexport_decl)
+                                       const std::string& dllexport_decl)
   : descriptor_(descriptor),
     dllexport_decl_(dllexport_decl) {
 }

@@ -75,7 +75,7 @@ using internal::WireFormat;
 // TODO(kenton):  Factor out a "SetCommonFieldVariables()" to get rid of
 //   repeat code between this and the other field types.
 void SetEnumVariables(const FieldDescriptor* descriptor,
-                      std::map<string, string>* variables) {
+                      std::map<std::string, std::string>* variables) {
 
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name());
@@ -114,7 +114,7 @@ void EnumFieldGenerator::GenerateStructMembers(io::Printer* printer) const
   }
 }
 
-string EnumFieldGenerator::GetDefaultValue(void) const
+std::string EnumFieldGenerator::GetDefaultValue(void) const
 {
   return variables_.find("default")->second;
 }
@@ -138,7 +138,7 @@ void EnumFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 
 void EnumFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
 {
-  string addr = "&" + FullNameToLower(descriptor_->enum_type()->full_name()) + "__descriptor";
+  std::string addr = "&" + FullNameToLower(descriptor_->enum_type()->full_name()) + "__descriptor";
   GenerateDescriptorInitializerGeneric(printer, true, "ENUM", addr);
 }
 
