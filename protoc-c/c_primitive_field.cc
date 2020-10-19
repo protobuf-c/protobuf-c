@@ -60,6 +60,7 @@
 
 // Modified to implement C code by Dave Benson.
 
+#include <cmath>
 #include <protoc-c/c_primitive_field.h>
 #include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
@@ -137,8 +138,14 @@ string PrimitiveFieldGenerator::GetDefaultValue() const
     case FieldDescriptor::CPPTYPE_UINT64:
       return SimpleItoa(descriptor_->default_value_uint64()) + "ull";
     case FieldDescriptor::CPPTYPE_FLOAT:
+      if (std::isnan(descriptor_->default_value_float())) {
+        return "NAN";
+      }
       return SimpleFtoa(descriptor_->default_value_float());
     case FieldDescriptor::CPPTYPE_DOUBLE:
+      if (std::isnan(descriptor_->default_value_double())) {
+        return "NAN";
+      }
       return SimpleDtoa(descriptor_->default_value_double());
     case FieldDescriptor::CPPTYPE_BOOL:
       return descriptor_->default_value_bool() ? "1" : "0";
