@@ -245,7 +245,12 @@ GenerateStructDefinition(io::Printer* printer) {
     // Initialize the case enum
     printer->Print(vars, ", $foneofname$__NOT_SET");
     // Initialize the union
-    printer->Print(", {0}");
+    const FieldDescriptor *first_field = oneof->field(0);
+    if( first_field && first_field->cpp_type() == FieldDescriptor::CPPTYPE_STRING) {
+      printer->Print(", {{0}}");
+    } else {
+      printer->Print(", {0}");
+    }
   }
   printer->Print(" }\n\n\n");
 
