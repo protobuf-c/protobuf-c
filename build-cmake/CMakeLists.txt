@@ -44,6 +44,7 @@ SET (PC_SOURCES
         ${MAIN_DIR}/protobuf-c/protobuf-c.h)
 
 ADD_LIBRARY(protobuf-c ${PC_SOURCES})
+set_target_properties(protobuf-c PROPERTIES COMPILE_PDB_NAME protobuf-c)
 
 INCLUDE_DIRECTORIES(${MAIN_DIR})
 INCLUDE_DIRECTORIES(${MAIN_DIR}/protobuf-c)
@@ -163,6 +164,7 @@ ENDIF() # BUILD_PROTOC
 INSTALL(TARGETS protobuf-c LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/protobuf-c.pdb DESTINATION lib OPTIONAL)
 
 IF(CMAKE_HOST_UNIX)
 INSTALL(CODE "EXECUTE_PROCESS (COMMAND ln -sf protoc-gen-c protoc-c WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)")
