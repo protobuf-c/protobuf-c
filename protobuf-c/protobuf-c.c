@@ -2578,7 +2578,7 @@ parse_required_member(ScannedMember *scanned_member,
 		{
 			do_free(allocator, bd->data);
 		}
-		if (len - pref_len > 0) {
+		if (len > pref_len) {
 			bd->data = do_alloc(allocator, len - pref_len);
 			if (bd->data == NULL)
 				return FALSE;
