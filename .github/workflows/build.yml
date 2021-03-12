@@ -1,0 +1,114 @@
+name: Test Build
+on:
+  push:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at 00:00
+jobs:
+  distcheck:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
+      - name: Install Mac dependencies
+        if: startsWith(matrix.os, 'macos')
+        run: brew install protobuf automake
+      - name: Run distcheck
+        run: |
+          ./autogen.sh
+          ./configure
+          make -j${nproc} distcheck VERBOSE=1
+
+  valgrind:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev valgrind
+      - name: Run distcheck with valgrind
+        run: |
+          ./autogen.sh
+          ./configure --enable-valgrind-tests CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined"
+          make -j${nproc} distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" VERBOSE=1
+
+  coverage:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev lcov
+      - name: Run coverage build
+        run: |
+          ./autogen.sh
+          ./configure --enable-code-coverage
+          make -j${nproc}
+          mkdir coverage
+          lcov --no-external --capture --initial --directory . --output-file ./coverage/lcov.info --include '*protobuf-c.c'
+          make check
+          lcov --no-external --capture --directory . --output-file ./coverage/lcov.info --include '*protobuf-c.c'
+      - uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  cmake:
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        os: [macos-latest, ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
+      - name: Install Mac dependencies
+        if: startsWith(matrix.os, 'macos')
+        run: brew install protobuf
+      - name: Run cmake tests
+        run: |
+          mkdir build-cmake/bin
+          cd build-cmake/bin
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=protobuf-c-bin ../
+          make -j3
+          make test
+          make install
+
+  cmake-msvc:
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+        shared-lib: [ON, OFF]
+    name: "MSVC CMake (${{ matrix.build-type }}, DLL: ${{ matrix.shared-lib }})"
+    runs-on: windows-latest
+    env:
+      PROTOBUF_VERSION: 3.15.6
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/protobuf-bin
+          key: ${{ env.PROTOBUF_VERSION }}-${{ matrix.shared-lib }}-${{ matrix.build-type}}
+      - name: Build and install protobuf
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd ~
+          C:\msys64\usr\bin\wget.exe https://github.com/protocolbuffers/protobuf/releases/download/v${{ env.PROTOBUF_VERSION }}/protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
+          C:\msys64\usr\bin\unzip protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
+          cd ~/protobuf-${{ env.PROTOBUF_VERSION }}/cmake && mkdir build && cd build
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
+          nmake
+          nmake install
+      - name: Run cmake tests
+        run: |
+          mkdir build-cmake/bin
+          cd build-cmake/bin
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DBUILD_TESTS=ON -DCMAKE_PREFIX_PATH=~/protobuf-bin -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
+          nmake
+          nmake test
+          nmake install
