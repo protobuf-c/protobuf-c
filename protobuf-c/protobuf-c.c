@@ -2062,7 +2062,7 @@ static size_t
 parse_tag_and_wiretype(size_t len,
 		       const uint8_t *data,
 		       uint32_t *tag_out,
-		       ProtobufCWireType *wiretype_out)
+		       uint8_t *wiretype_out)
 {
 	unsigned max_rv = len > 5 ? 5 : len;
 	uint32_t tag = (data[0] & 0x7f) >> 3;
@@ -2499,7 +2499,7 @@ parse_required_member(ScannedMember *scanned_member,
 {
 	unsigned len = scanned_member->len;
 	const uint8_t *data = scanned_member->data;
-	ProtobufCWireType wire_type = scanned_member->wire_type;
+	uint8_t wire_type = scanned_member->wire_type;
 
 	switch (scanned_member->field->type) {
 	case PROTOBUF_C_TYPE_ENUM:
@@ -3081,7 +3081,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 
 	while (rem > 0) {
 		uint32_t tag;
-		ProtobufCWireType wire_type;
+		uint8_t wire_type;
 		size_t used = parse_tag_and_wiretype(rem, at, &tag, &wire_type);
 		const ProtobufCFieldDescriptor *field;
 		ScannedMember tmp;
