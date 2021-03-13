@@ -238,7 +238,7 @@ PROTOBUF_C__BEGIN_DECLS
 #define PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC       0x114315af
 
 /* Empty string used for initializers */
-PROTOBUF_C__API extern const char protobuf_c_empty_string[];
+extern const char protobuf_c_empty_string[];
 
 /**
  * \defgroup api Public API
