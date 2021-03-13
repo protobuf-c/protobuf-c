@@ -84,7 +84,9 @@
 # define PROTOBUF_C_UNPACK_ERROR(...)
 #endif
 
+#if !defined(_WIN32) || !defined(PROTOBUF_C_USE_SHARED_LIB)
 const char protobuf_c_empty_string[] = "";
+#endif
 
 /**
  * Internal `ProtobufCMessage` manipulation macro.

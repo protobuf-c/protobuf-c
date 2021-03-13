@@ -238,7 +238,11 @@ PROTOBUF_C__BEGIN_DECLS
 #define PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC       0x114315af
 
 /* Empty string used for initializers */
+#if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
+static const char protobuf_c_empty_string[] = "";
+#else
 extern const char protobuf_c_empty_string[];
+#endif
 
 /**
  * \defgroup api Public API
