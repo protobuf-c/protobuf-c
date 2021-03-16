@@ -7,7 +7,7 @@ jobs:
   distcheck:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-20.04]
+        os: [macos-latest, ubuntu-20.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -17,8 +17,14 @@ jobs:
       - name: Install Mac dependencies
         if: startsWith(matrix.os, 'macos')
         run: brew install protobuf automake
+      - name: Install Windows dependencies
+        if: startsWith(matrix.os, 'windows')
+        run: C:\msys64\usr\bin\pacman --noconfirm -S protobuf
       - name: Run distcheck
+        shell: bash
         run: |
+          [[ ${{ matrix.os }} = windows* ]] && export PATH="/c/msys64/usr/bin"
+          echo $PATH
           ./autogen.sh
           ./configure
           make -j${nproc} distcheck VERBOSE=1
