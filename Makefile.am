@@ -42,7 +42,8 @@ lib_LTLIBRARIES += \
 	protobuf-c/libprotobuf-c.la
 
 nobase_include_HEADERS += \
-	protobuf-c/protobuf-c.h
+	protobuf-c/protobuf-c.h \
+	protobuf-c/protobuf-c.proto
 
 protobuf_c_libprotobuf_c_la_SOURCES = \
 	protobuf-c/protobuf-c.c \
@@ -99,6 +100,8 @@ protoc_c_protoc_gen_c_SOURCES = \
 	protoc-c/c_service.h \
 	protoc-c/c_string_field.cc \
 	protoc-c/c_string_field.h \
+	protobuf-c/protobuf-c.pb.cc \
+	protobuf-c/protobuf-c.pb.h \
 	protoc-c/main.cc
 protoc_c_protoc_gen_c_CXXFLAGS = \
 	$(AM_CXXFLAGS) \
@@ -107,6 +110,12 @@ protoc_c_protoc_gen_c_LDADD = \
 	$(protobuf_LIBS) \
 	-lprotoc
 
+protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h: @PROTOC@ $(top_srcdir)/protobuf-c/protobuf-c.proto
+	$(AM_V_GEN)@PROTOC@ -I$(top_srcdir) --cpp_out=$(top_builddir) $(top_srcdir)/protobuf-c/protobuf-c.proto
+
+BUILT_SOURCES += \
+		 protobuf-c/protobuf-c.pb.cc \
+		 protobuf-c/protobuf-c.pb.h
 #
 # protoc-c compat link
 #

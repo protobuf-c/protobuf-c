@@ -67,7 +67,7 @@
 #include <vector>
 #include <sstream>
 #include <google/protobuf/descriptor.h>
-#include <google/protobuf/descriptor.pb.h>
+#include <protobuf-c/protobuf-c.pb.h>
 #include <google/protobuf/io/printer.h>
 
 namespace google {

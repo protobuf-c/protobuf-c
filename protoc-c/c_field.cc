@@ -67,7 +67,7 @@
 #include <protoc-c/c_enum_field.h>
 #include <protoc-c/c_message_field.h>
 #include <protoc-c/c_helpers.h>
-#include <google/protobuf/descriptor.pb.h>
+#include <protobuf-c/protobuf-c.pb.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/io/printer.h>
 

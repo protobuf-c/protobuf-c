@@ -68,7 +68,7 @@
 #include <protoc-c/c_helpers.h>
 #include <protoc-c/c_message.h>
 #include <google/protobuf/io/printer.h>
-#include <google/protobuf/descriptor.pb.h>
+#include <protobuf-c/protobuf-c.pb.h>
 
 #include "protobuf-c.h"
 
