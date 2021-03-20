@@ -164,7 +164,8 @@ noinst_PROGRAMS += \
 
 t_generated_code2_cxx_generate_packed_data_SOURCES = \
 	t/generated-code2/cxx-generate-packed-data.cc \
-	t/test-full.pb.cc
+	t/test-full.pb.cc \
+	protobuf-c/protobuf-c.pb.cc
 $(t_generated_code2_cxx_generate_packed_data_OBJECTS): t/test-full.pb.h
 t_generated_code2_cxx_generate_packed_data_CXXFLAGS = \
 	$(AM_CXXFLAGS) \

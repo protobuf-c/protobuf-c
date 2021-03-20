@@ -30,7 +30,13 @@
 syntax = "proto2";
 import "google/protobuf/descriptor.proto";
 
+// We never need to generate protobuf-c.pb-c.{c,h}, the options are used
+// only by protoc-gen-c, never by the protobuf-c runtime itself
+option (pb_c_file).no_generate = true;
+
 message ProtobufCFileOptions {
+    // Suppresses pb-c.{c,h} file output completely.
+    optional bool no_generate = 1 [default = false];
 }
 
 extend google.protobuf.FileOptions {

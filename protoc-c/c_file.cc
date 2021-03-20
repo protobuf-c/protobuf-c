@@ -157,9 +157,13 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
     "protoc_version", SimpleItoa(PROTOBUF_C_VERSION_NUMBER));
 
   for (int i = 0; i < file_->dependency_count(); i++) {
-    printer->Print(
-      "#include \"$dependency$.pb-c.h\"\n",
-      "dependency", StripProto(file_->dependency(i)->name()));
+    const ProtobufCFileOptions opt =
+	    file_->dependency(i)->options().GetExtension(pb_c_file);
+    if (!opt.no_generate()) {
+      printer->Print(
+        "#include \"$dependency$.pb-c.h\"\n",
+	"dependency", StripProto(file_->dependency(i)->name()));
+    }
   }
 
   printer->Print("\n");

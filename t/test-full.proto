@@ -1,5 +1,7 @@
 package foo;
 
+import "protobuf-c/protobuf-c.proto";
+
 message SubMess {
   required int32 test = 4;
 

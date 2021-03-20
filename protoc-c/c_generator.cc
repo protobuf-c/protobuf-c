@@ -106,6 +106,9 @@ bool CGenerator::Generate(const FileDescriptor* file,
                             const std::string& parameter,
                             OutputDirectory* output_directory,
                             std::string* error) const {
+  if (file->options().GetExtension(pb_c_file).no_generate())
+    return true;
+
   std::vector<std::pair<std::string, std::string> > options;
   ParseOptions(parameter, &options);
 
