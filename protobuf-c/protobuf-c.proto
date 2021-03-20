@@ -37,6 +37,14 @@ option (pb_c_file).no_generate = true;
 message ProtobufCFileOptions {
     // Suppresses pb-c.{c,h} file output completely.
     optional bool no_generate = 1 [default = false];
+
+    // Generate helper pack/unpack functions?
+    // For backwards compatibility, if this field is not explicitly set,
+    // only top-level message pack/unpack functions will be generated
+    optional bool gen_pack_helpers = 2 [default = true];
+
+    // Generate helper init message functions?
+    optional bool gen_init_helpers = 3 [default = true];
 }
 
 extend google.protobuf.FileOptions {
@@ -44,6 +52,11 @@ extend google.protobuf.FileOptions {
 }
 
 message ProtobufCMessageOptions {
+    // Overrides the parent setting only if present
+    optional bool gen_pack_helpers = 1 [default = false];
+
+    // Overrides the parent setting only if present
+    optional bool gen_init_helpers = 2 [default = true];
 }
 
 extend google.protobuf.MessageOptions {

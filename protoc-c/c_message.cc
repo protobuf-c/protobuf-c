@@ -252,21 +252,38 @@ GenerateStructDefinition(io::Printer* printer) {
 }
 
 void MessageGenerator::
-GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage)
+GenerateHelperFunctionDeclarations(io::Printer* printer,
+				   bool is_pack_deep,
+				   bool gen_pack,
+				   bool gen_init)
 {
+  const ProtobufCMessageOptions opt =
+	  descriptor_->options().GetExtension(pb_c_msg);
+
+  // Override parent settings, if needed
+  if (opt.has_gen_pack_helpers())
+    gen_pack = opt.gen_pack_helpers();
+  if (opt.has_gen_init_helpers())
+    gen_init = opt.gen_init_helpers();
+
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-    nested_generators_[i]->GenerateHelperFunctionDeclarations(printer, true);
+    bool nested_pack = !is_pack_deep ? opt.gen_pack_helpers() : gen_pack;
+    nested_generators_[i]->GenerateHelperFunctionDeclarations(printer, true,
+							      nested_pack,
+							      gen_init);
   }
 
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
-  printer->Print(vars,
+  if (gen_init) {
+    printer->Print(vars,
 		 "/* $classname$ methods */\n"
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message);\n"
 		);
-  if (!is_submessage) {
+  }
+  if (gen_pack) {
     printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$   *message);\n"
@@ -325,24 +342,41 @@ compare_pfields_by_number (const void *a, const void *b)
 }
 
 void MessageGenerator::
-GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
+GenerateHelperFunctionDefinitions(io::Printer* printer,
+				  bool is_pack_deep,
+				  bool gen_pack,
+				  bool gen_init)
 {
+  const ProtobufCMessageOptions opt =
+	  descriptor_->options().GetExtension(pb_c_msg);
+
+  // Override parent settings, if needed
+  if (opt.has_gen_pack_helpers())
+    gen_pack = opt.gen_pack_helpers();
+  if (opt.has_gen_init_helpers())
+    gen_init = opt.gen_init_helpers();
+
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-    nested_generators_[i]->GenerateHelperFunctionDefinitions(printer, true);
+    bool nested_pack = !is_pack_deep ? opt.gen_pack_helpers() : gen_pack;
+    nested_generators_[i]->GenerateHelperFunctionDefinitions(printer, true,
+							     nested_pack,
+							     gen_init);
   }
 
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
-  printer->Print(vars,
+  if (gen_init) {
+    printer->Print(vars,
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message)\n"
 		 "{\n"
 		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
 		 "  *message = init_value;\n"
 		 "}\n");
-  if (!is_submessage) {
+  }
+  if (gen_pack) {
     printer->Print(vars,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
@@ -388,7 +422,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage)
 }
 
 void MessageGenerator::
-GenerateMessageDescriptor(io::Printer* printer) {
+GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
     std::map<std::string, std::string> vars;
     vars["fullname"] = descriptor_->full_name();
     vars["classname"] = FullNameToC(descriptor_->full_name());
@@ -401,8 +435,14 @@ GenerateMessageDescriptor(io::Printer* printer) {
         descriptor_->file()->options().optimize_for() ==
         FileOptions_OptimizeMode_CODE_SIZE;
 
+    const ProtobufCMessageOptions opt =
+	    descriptor_->options().GetExtension(pb_c_msg);
+    // Override parent settings, if needed
+    if (opt.has_gen_init_helpers())
+      gen_init = opt.gen_init_helpers();
+
     for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-      nested_generators_[i]->GenerateMessageDescriptor(printer);
+      nested_generators_[i]->GenerateMessageDescriptor(printer, gen_init);
     }
 
     for (int i = 0; i < descriptor_->enum_type_count(); i++) {
@@ -568,8 +608,15 @@ GenerateMessageDescriptor(io::Printer* printer) {
   }
   printer->Print(vars,
       "  $n_ranges$,"
-      "  $lcclassname$__number_ranges,\n"
-      "  (ProtobufCMessageInit) $lcclassname$__init,\n"
+      "  $lcclassname$__number_ranges,\n");
+  if (gen_init) {
+    printer->Print(vars,
+      "  (ProtobufCMessageInit) $lcclassname$__init,\n");
+  } else {
+    printer->Print(vars,
+      "  NULL, /* gen_init_helpers = false */\n");
+  }
+  printer->Print(vars,
       "  NULL,NULL,NULL    /* reserved[123] */\n"
       "};\n");
 }

@@ -191,7 +191,13 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   }
 
   for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateHelperFunctionDeclarations(printer, false);
+    const ProtobufCFileOptions opt = file_->options().GetExtension(pb_c_file);
+
+    message_generators_[i]->GenerateHelperFunctionDeclarations(
+						printer,
+						opt.has_gen_pack_helpers(),
+						opt.gen_pack_helpers(),
+						opt.gen_init_helpers());
   }
 
   printer->Print("/* --- per-message closures --- */\n\n");
@@ -265,11 +271,18 @@ void FileGenerator::GenerateSource(io::Printer* printer) {
   }
 #endif
 
+  const ProtobufCFileOptions opt = file_->options().GetExtension(pb_c_file);
+
   for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateHelperFunctionDefinitions(printer, false);
+    message_generators_[i]->GenerateHelperFunctionDefinitions(
+						printer,
+						opt.has_gen_pack_helpers(),
+						opt.gen_pack_helpers(),
+						opt.gen_init_helpers());
   }
   for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateMessageDescriptor(printer);
+    message_generators_[i]->GenerateMessageDescriptor(printer,
+						      opt.gen_init_helpers());
   }
   for (int i = 0; i < file_->enum_type_count(); i++) {
     enum_generators_[i]->GenerateEnumDescriptor(printer);

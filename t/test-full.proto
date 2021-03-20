@@ -117,6 +117,8 @@ message TestMessPacked {
 }
 
 message TestMessOptional {
+  option (pb_c_msg).gen_pack_helpers = false;
+  option (pb_c_msg).gen_init_helpers = false;
   optional int32 test_int32 = 1;
   optional sint32 test_sint32 = 2;
   optional sfixed32 test_sfixed32 = 3;

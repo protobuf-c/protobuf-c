@@ -432,6 +432,39 @@ static void test_required_SubMess (void)
 #undef DO_TEST
 }
 
+static size_t foo__test_mess_optional__get_packed_size
+                     (const Foo__TestMessOptional *message)
+{
+  assert(message->base.descriptor == &foo__test_mess_optional__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+static size_t foo__test_mess_optional__pack
+                     (const Foo__TestMessOptional *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &foo__test_mess_optional__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+static Foo__TestMessOptional *
+       foo__test_mess_optional__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Foo__TestMessOptional *)
+     protobuf_c_message_unpack (&foo__test_mess_optional__descriptor,
+                                allocator, len, data);
+}
+static void   foo__test_mess_optional__free_unpacked
+                     (Foo__TestMessOptional *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &foo__test_mess_optional__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+
 /* === Optional type fields === */
 static void test_empty_optional (void)
 {
