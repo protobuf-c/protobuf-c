@@ -1274,7 +1274,7 @@ static void test_repeated_string (void)
 {
 
 #define DO_TEST(static_array, example_packed_data) \
-  DO_TEST_REPEATED(test_string, (char **), \
+  DO_TEST_REPEATED(test_string, (const char **), \
                    static_array, example_packed_data, \
                    STRING_EQUALS)
 
@@ -2109,8 +2109,8 @@ test_message_check(void)
   Foo__TestMessageCheck__SubMessage sm = FOO__TEST_MESSAGE_CHECK__SUB_MESSAGE__INIT;
   Foo__TestMessageCheck__SubMessage sm2 = FOO__TEST_MESSAGE_CHECK__SUB_MESSAGE__INIT;
   Foo__TestMessageCheck m = FOO__TEST_MESSAGE_CHECK__INIT;
-  char *null = NULL;
-  char *str = "";
+  const char *null = NULL;
+  const char *str = "";
   Foo__TestMessageCheck__SubMessage *sm_p;
   ProtobufCBinaryData bd;
 

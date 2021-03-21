@@ -93,13 +93,19 @@ StringFieldGenerator::~StringFieldGenerator() {}
 
 void StringFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 {
+  const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
+
   switch (descriptor_->label()) {
     case FieldDescriptor::LABEL_REQUIRED:
     case FieldDescriptor::LABEL_OPTIONAL:
+      if (opt.const_strings())
+        printer->Print(variables_, "const ");
       printer->Print(variables_, "char *$name$$deprecated$;\n");
       break;
     case FieldDescriptor::LABEL_REPEATED:
       printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
+      if (opt.const_strings())
+        printer->Print(variables_, "const ");
       printer->Print(variables_, "char **$name$$deprecated$;\n");
       break;
   }
@@ -123,10 +129,13 @@ std::string StringFieldGenerator::GetDefaultValue(void) const
 void StringFieldGenerator::GenerateStaticInit(io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
+  const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
   if (descriptor_->has_default_value()) {
     vars["default"] = GetDefaultValue();
   } else if (FieldSyntax(descriptor_) == 2) {
     vars["default"] = "NULL";
+  } else if (opt.const_strings()) {
+    vars["default"] = "(const char *)protobuf_c_empty_string";
   } else {
     vars["default"] = "(char *)protobuf_c_empty_string";
   }

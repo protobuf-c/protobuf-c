@@ -45,6 +45,9 @@ message ProtobufCFileOptions {
 
     // Generate helper init message functions?
     optional bool gen_init_helpers = 3 [default = true];
+
+    // Use const char * instead of char * for string fields
+    optional bool const_strings = 4 [default = false];
 }
 
 extend google.protobuf.FileOptions {

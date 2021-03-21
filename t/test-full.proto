@@ -2,6 +2,8 @@ package foo;
 
 import "protobuf-c/protobuf-c.proto";
 
+option (pb_c_file).const_strings = true;
+
 message SubMess {
   required int32 test = 4;
 
