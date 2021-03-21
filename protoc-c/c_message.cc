@@ -178,10 +178,14 @@ GenerateStructDefinition(io::Printer* printer) {
   descriptor_->GetSourceLocation(&msgSourceLoc);
   PrintComment (printer, msgSourceLoc.leading_comments);
 
+  const ProtobufCMessageOptions opt =
+	  descriptor_->options().GetExtension(pb_c_msg);
+  vars["base"] = opt.base_field_name();
+
   printer->Print(vars,
     "struct $dllexport$ $classname$\n"
     "{\n"
-    "  ProtobufCMessage base;\n");
+    "  ProtobufCMessage $base$;\n");
 
   // Generate fields.
   printer->Indent();
@@ -367,6 +371,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
   vars["classname"] = FullNameToC(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
+  vars["base"] = opt.base_field_name();
   if (gen_init) {
     printer->Print(vars,
 		 "void   $lcclassname$__init\n"
@@ -381,21 +386,21 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
 		 "size_t $lcclassname$__get_packed_size\n"
 		 "                     (const $classname$ *message)\n"
 		 "{\n"
-		 "  assert(message->base.descriptor == &$lcclassname$__descriptor);\n"
+		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
 		 "  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));\n"
 		 "}\n"
 		 "size_t $lcclassname$__pack\n"
 		 "                     (const $classname$ *message,\n"
 		 "                      uint8_t       *out)\n"
 		 "{\n"
-		 "  assert(message->base.descriptor == &$lcclassname$__descriptor);\n"
+		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
 		 "  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);\n"
 		 "}\n"
 		 "size_t $lcclassname$__pack_to_buffer\n"
 		 "                     (const $classname$ *message,\n"
 		 "                      ProtobufCBuffer *buffer)\n"
 		 "{\n"
-		 "  assert(message->base.descriptor == &$lcclassname$__descriptor);\n"
+		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
 		 "  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);\n"
 		 "}\n"
 		 "$classname$ *\n"
@@ -414,7 +419,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
 		 "{\n"
 		 "  if(!message)\n"
 		 "    return;\n"
-		 "  assert(message->base.descriptor == &$lcclassname$__descriptor);\n"
+		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
 		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
 		 "}\n"
 		);

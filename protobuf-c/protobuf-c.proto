@@ -57,6 +57,9 @@ message ProtobufCMessageOptions {
 
     // Overrides the parent setting only if present
     optional bool gen_init_helpers = 2 [default = true];
+
+    // Reserved base message field name
+    optional string base_field_name = 3 [default = "base"];
 }
 
 extend google.protobuf.MessageOptions {
