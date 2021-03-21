@@ -2748,7 +2748,9 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 	const uint8_t *at = scanned_member->data + scanned_member->length_prefix_len;
 	size_t rem = scanned_member->len - scanned_member->length_prefix_len;
 	size_t count = 0;
+#if defined(WORDS_BIGENDIAN)
 	unsigned i;
+#endif
 
 	switch (field->type) {
 	case PROTOBUF_C_TYPE_SFIXED32:
@@ -2841,13 +2843,15 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 		}
 		break;
 	case PROTOBUF_C_TYPE_BOOL:
-		count = rem;
-		for (i = 0; i < count; i++) {
-			if (at[i] > 1) {
+		while (rem > 0) {
+			unsigned s = scan_varint(rem, at);
+			if (s == 0) {
 				PROTOBUF_C_UNPACK_ERROR("bad packed-repeated boolean value");
 				return FALSE;
 			}
-			((protobuf_c_boolean *) array)[i] = at[i];
+			((protobuf_c_boolean *) array)[count++] = parse_boolean(s, at);
+			at += s;
+			rem -= s;
 		}
 		break;
 	default:
