@@ -463,6 +463,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
       const FieldDescriptor *fd = descriptor_->field(i);
+      const ProtobufCFieldOptions opt = fd->options().GetExtension(pb_c_field);
       if (fd->has_default_value()) {
 
 	bool already_defined = false;
@@ -501,7 +502,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 	  GOOGLE_LOG(DFATAL) << "Messages can't have default values!";
 	  break;
 	case FieldDescriptor::CPPTYPE_STRING:
-	  if (fd->type() == FieldDescriptor::TYPE_BYTES)
+	  if (fd->type() == FieldDescriptor::TYPE_BYTES || opt.string_as_bytes())
 	  {
 	    vars["field_dv_ctype"] = "ProtobufCBinaryData";
 	  }

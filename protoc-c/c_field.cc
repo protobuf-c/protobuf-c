@@ -203,11 +203,15 @@ FieldGeneratorMap::FieldGeneratorMap(const Descriptor* descriptor)
 }
 
 FieldGenerator* FieldGeneratorMap::MakeGenerator(const FieldDescriptor* field) {
+  const ProtobufCFieldOptions opt = field->options().GetExtension(pb_c_field);
   switch (field->type()) {
     case FieldDescriptor::TYPE_MESSAGE:
       return new MessageFieldGenerator(field);
     case FieldDescriptor::TYPE_STRING:
-      return new StringFieldGenerator(field);
+      if (opt.string_as_bytes())
+        return new BytesFieldGenerator(field);
+      else
+        return new StringFieldGenerator(field);
     case FieldDescriptor::TYPE_BYTES:
       return new BytesFieldGenerator(field);
     case FieldDescriptor::TYPE_ENUM:

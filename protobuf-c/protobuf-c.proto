@@ -67,6 +67,8 @@ extend google.protobuf.MessageOptions {
 }
 
 message ProtobufCFieldOptions {
+    // Treat string as bytes in generated code
+    optional bool string_as_bytes = 1 [default = false];
 }
 
 extend google.protobuf.FieldOptions {
