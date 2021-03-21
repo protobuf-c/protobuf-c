@@ -1,0 +1,15 @@
+import "protobuf-c/protobuf-c.proto";
+
+option (pb_c_file).use_oneof_field_name = true;
+
+message two_oneofs {
+    oneof first_oneof {
+        bool a = 10;
+        bool b = 11;
+    }
+
+    oneof second_oneof {
+        bool c = 20;
+        bool d = 21;
+    }
+}

@@ -226,6 +226,23 @@ t_version_version_SOURCES = \
 t_version_version_LDADD = \
 	protobuf-c/libprotobuf-c.la
 
+# Issue #204
+check_PROGRAMS += \
+	t/issue204/issue204
+TESTS += \
+	t/issue204/issue204
+t_issue204_issue204_SOURCES = \
+	t/issue204/issue204.c \
+	t/issue204/issue204.pb-c.c
+t_issue204_issue204_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/issue204/issue204.pb-c.c t/issue204/issue204.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue204/issue204.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue204/issue204.proto
+BUILT_SOURCES += \
+	t/issue204/issue204.pb-c.c t/issue204/issue204.pb-c.h
+EXTRA_DIST += \
+	t/issue204/issue204.proto
+
 # Issue #220
 check_PROGRAMS += \
 	t/issue220/issue220

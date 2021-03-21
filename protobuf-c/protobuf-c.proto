@@ -48,6 +48,10 @@ message ProtobufCFileOptions {
 
     // Use const char * instead of char * for string fields
     optional bool const_strings = 4 [default = false];
+
+    // For oneof fields, set ProtobufCFieldDescriptor name field to the
+    // name of the containing oneof, instead of the field name
+    optional bool use_oneof_field_name = 5 [default = false];
 }
 
 extend google.protobuf.FileOptions {
