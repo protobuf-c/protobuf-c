@@ -153,7 +153,7 @@ GenerateStructDefinition(io::Printer* printer) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
     vars["opt_comma"] = ",";
 
-    vars["oneofname"] = FullNameToUpper(oneof->name());
+    vars["oneofname"] = CamelToUpper(oneof->name());
     vars["foneofname"] = FullNameToC(oneof->full_name());
 
     printer->Print("typedef enum {\n");
@@ -161,7 +161,7 @@ GenerateStructDefinition(io::Printer* printer) {
     printer->Print(vars, "$ucclassname$__$oneofname$__NOT_SET = 0,\n");
     for (int j = 0; j < oneof->field_count(); j++) {
       const FieldDescriptor *field = oneof->field(j);
-      vars["fieldname"] = FullNameToUpper(field->name());
+      vars["fieldname"] = CamelToUpper(field->name());
       vars["fieldnum"] = SimpleItoa(field->number());
       bool isLast = j == oneof->field_count() - 1;
       if (isLast) {
@@ -204,7 +204,7 @@ GenerateStructDefinition(io::Printer* printer) {
   // Generate unions from oneofs.
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
-    vars["oneofname"] = FullNameToLower(oneof->name());
+    vars["oneofname"] = CamelToLower(oneof->name());
     vars["foneofname"] = FullNameToC(oneof->full_name());
 
     printer->Print(vars, "$foneofname$Case $oneofname$_case;\n");

@@ -119,7 +119,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   variables["descriptor_addr"] = descriptor_addr;
   variables["value"] = SimpleItoa(descriptor_->number());
   if (oneof != NULL)
-    variables["oneofname"] = FullNameToLower(oneof->name());
+    variables["oneofname"] = CamelToLower(oneof->name());
 
   if (FieldSyntax(descriptor_) == 3 &&
     descriptor_->label() == FieldDescriptor::LABEL_OPTIONAL) {
