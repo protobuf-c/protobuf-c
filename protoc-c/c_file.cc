@@ -110,8 +110,6 @@ FileGenerator::FileGenerator(const FileDescriptor* file,
     extension_generators_[i].reset(
       new ExtensionGenerator(file->extension(i), dllexport_decl));
   }
-
-  SplitStringUsing(file_->package(), ".", &package_parts_);
 }
 
 FileGenerator::~FileGenerator() {}
@@ -247,29 +245,6 @@ void FileGenerator::GenerateSource(io::Printer* printer) {
     "#include \"$basename$.pb-c.h\"\n",
     "filename", file_->name(),
     "basename", StripProto(file_->name()));
-
-#if 0
-  // For each dependency, write a prototype for that dependency's
-  // BuildDescriptors() function.  We don't expose these in the header because
-  // they are internal implementation details, and since this is generated code
-  // we don't have the usual risks involved with declaring external functions
-  // within a .cc file.
-  for (int i = 0; i < file_->dependency_count(); i++) {
-    const FileDescriptor* dependency = file_->dependency(i);
-    // Open the dependency's namespace.
-    vector<string> dependency_package_parts;
-    SplitStringUsing(dependency->package(), ".", &dependency_package_parts);
-    // Declare its BuildDescriptors() function.
-    printer->Print(
-      "void $function$();",
-      "function", GlobalBuildDescriptorsName(dependency->name()));
-    // Close the namespace.
-    for (int i = 0; i < dependency_package_parts.size(); i++) {
-      printer->Print(" }");
-    }
-    printer->Print("\n");
-  }
-#endif
 
   const ProtobufCFileOptions opt = file_->options().GetExtension(pb_c_file);
 

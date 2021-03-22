@@ -278,37 +278,6 @@ std::set<std::string> MakeKeywordsMap() {
 
 std::set<std::string> kKeywords = MakeKeywordsMap();
 
-std::string ClassName(const Descriptor* descriptor, bool qualified) {
-  // Find "outer", the descriptor of the top-level message in which
-  // "descriptor" is embedded.
-  const Descriptor* outer = descriptor;
-  while (outer->containing_type() != NULL) outer = outer->containing_type();
-
-  const std::string& outer_name = outer->full_name();
-  std::string inner_name = descriptor->full_name().substr(outer_name.size());
-
-  if (qualified) {
-    return "::" + DotsToColons(outer_name) + DotsToUnderscores(inner_name);
-  } else {
-    return outer->name() + DotsToUnderscores(inner_name);
-  }
-}
-
-std::string ClassName(const EnumDescriptor* enum_descriptor, bool qualified) {
-  if (enum_descriptor->containing_type() == NULL) {
-    if (qualified) {
-      return DotsToColons(enum_descriptor->full_name());
-    } else {
-      return enum_descriptor->name();
-    }
-  } else {
-    std::string result = ClassName(enum_descriptor->containing_type(), qualified);
-    result += '_';
-    result += enum_descriptor->name();
-    return result;
-  }
-}
-
 std::string FieldName(const FieldDescriptor* field) {
   std::string result = ToLower(field->name());
   if (kKeywords.count(result) > 0) {

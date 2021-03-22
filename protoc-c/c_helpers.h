@@ -75,17 +75,6 @@ namespace protobuf {
 namespace compiler {
 namespace c {
 
-// Returns the non-nested type name for the given type.  If "qualified" is
-// true, prefix the type with the full namespace.  For example, if you had:
-//   package foo.bar;
-//   message Baz { message Qux {} }
-// Then the qualified ClassName for Qux would be:
-//   Foo__Bar__Baz_Qux
-// While the non-qualified version would be:
-//   Baz_Qux
-std::string ClassName(const Descriptor* descriptor, bool qualified);
-std::string ClassName(const EnumDescriptor* enum_descriptor, bool qualified);
-
 // --- Borrowed from stubs. ---
 template <typename T> std::string SimpleItoa(T n) {
   std::stringstream stream;
