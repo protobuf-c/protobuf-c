@@ -1,5 +1,9 @@
 package foo;
 
+import "protobuf-c/protobuf-c.proto";
+
+option (pb_c_file).c_package = "foo";
+
 message Person {
   required string name = 1;
   required int32 id = 2;

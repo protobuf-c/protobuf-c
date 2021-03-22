@@ -114,7 +114,7 @@ void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
 void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
-  vars["default_value_data"] = FullNameToLower(descriptor_->full_name())
+  vars["default_value_data"] = FullNameToLower(descriptor_->full_name(), descriptor_->file())
 	                     + "__default_value_data";
   printer->Print(vars, "extern uint8_t $default_value_data$[];\n");
 }
@@ -122,7 +122,7 @@ void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer)
 void BytesFieldGenerator::GenerateDefaultValueImplementations(io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
-  vars["default_value_data"] = FullNameToLower(descriptor_->full_name())
+  vars["default_value_data"] = FullNameToLower(descriptor_->full_name(), descriptor_->file())
 	                     + "__default_value_data";
   vars["escaped"] = CEscape(descriptor_->default_value_string());
   printer->Print(vars, "uint8_t $default_value_data$[] = \"$escaped$\";\n");
@@ -132,7 +132,7 @@ std::string BytesFieldGenerator::GetDefaultValue(void) const
   return "{ "
 	+ SimpleItoa(descriptor_->default_value_string().size())
 	+ ", "
-	+ FullNameToLower(descriptor_->full_name())
+	+ FullNameToLower(descriptor_->full_name(), descriptor_->file())
 	+ "__default_value_data }";
 }
 void BytesFieldGenerator::GenerateStaticInit(io::Printer* printer) const

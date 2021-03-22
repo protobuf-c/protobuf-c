@@ -112,7 +112,7 @@ MessageGenerator::~MessageGenerator() {}
 void MessageGenerator::
 GenerateStructTypedef(io::Printer* printer) {
   printer->Print("typedef struct $classname$ $classname$;\n",
-                 "classname", FullNameToC(descriptor_->full_name()));
+                 "classname", FullNameToC(descriptor_->full_name(), descriptor_->file()));
 
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
     nested_generators_[i]->GenerateStructTypedef(printer);
@@ -138,9 +138,9 @@ GenerateStructDefinition(io::Printer* printer) {
   }
 
   std::map<std::string, std::string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
-  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
-  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
+  vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars["field_count"] = SimpleItoa(descriptor_->field_count());
   if (dllexport_decl_.empty()) {
     vars["dllexport"] = "";
@@ -154,7 +154,7 @@ GenerateStructDefinition(io::Printer* printer) {
     vars["opt_comma"] = ",";
 
     vars["oneofname"] = CamelToUpper(oneof->name());
-    vars["foneofname"] = FullNameToC(oneof->full_name());
+    vars["foneofname"] = FullNameToC(oneof->full_name(), oneof->file());
 
     printer->Print("typedef enum {\n");
     printer->Indent();
@@ -205,7 +205,7 @@ GenerateStructDefinition(io::Printer* printer) {
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
     vars["oneofname"] = CamelToLower(oneof->name());
-    vars["foneofname"] = FullNameToC(oneof->full_name());
+    vars["foneofname"] = FullNameToC(oneof->full_name(), oneof->file());
 
     printer->Print(vars, "$foneofname$Case $oneofname$_case;\n");
 
@@ -245,7 +245,7 @@ GenerateStructDefinition(io::Printer* printer) {
   }
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
-    vars["foneofname"] = FullNameToUpper(oneof->full_name());
+    vars["foneofname"] = FullNameToUpper(oneof->full_name(), oneof->file());
     // Initialize the case enum
     printer->Print(vars, ", $foneofname$__NOT_SET");
     // Initialize the union
@@ -278,8 +278,8 @@ GenerateHelperFunctionDeclarations(io::Printer* printer,
   }
 
   std::map<std::string, std::string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
-  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
+  vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   if (gen_init) {
     printer->Print(vars,
 		 "/* $classname$ methods */\n"
@@ -312,7 +312,7 @@ GenerateHelperFunctionDeclarations(io::Printer* printer,
 void MessageGenerator::
 GenerateDescriptorDeclarations(io::Printer* printer) {
   printer->Print("extern const ProtobufCMessageDescriptor $name$__descriptor;\n",
-                 "name", FullNameToLower(descriptor_->full_name()));
+                 "name", FullNameToLower(descriptor_->full_name(), descriptor_->file()));
 
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
     nested_generators_[i]->GenerateDescriptorDeclarations(printer);
@@ -328,7 +328,7 @@ void MessageGenerator::GenerateClosureTypedef(io::Printer* printer)
     nested_generators_[i]->GenerateClosureTypedef(printer);
   }
   std::map<std::string, std::string> vars;
-  vars["name"] = FullNameToC(descriptor_->full_name());
+  vars["name"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   printer->Print(vars,
                  "typedef void (*$name$_Closure)\n"
 		 "                 (const $name$ *message,\n"
@@ -368,9 +368,9 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
   }
 
   std::map<std::string, std::string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
-  vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
-  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
+  vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars["base"] = opt.base_field_name();
   if (gen_init) {
     printer->Print(vars,
@@ -430,8 +430,8 @@ void MessageGenerator::
 GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
     std::map<std::string, std::string> vars;
     vars["fullname"] = descriptor_->full_name();
-    vars["classname"] = FullNameToC(descriptor_->full_name());
-    vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
+    vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+    vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
     vars["shortname"] = ToCamel(descriptor_->name());
     vars["n_fields"] = SimpleItoa(descriptor_->field_count());
     vars["packagename"] = descriptor_->file()->package();
@@ -517,7 +517,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 	case FieldDescriptor::CPPTYPE_ENUM:
 	  {
 	    const EnumValueDescriptor *vd = fd->default_value_enum();
-	    vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name());
+	    vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name(), vd->type()->file());
 	    break;
 	  }
 	default:

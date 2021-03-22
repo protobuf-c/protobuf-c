@@ -110,7 +110,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   const OneofDescriptor *oneof = descriptor_->containing_oneof();
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
   variables["TYPE"] = type_macro;
-  variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name());
+  variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name(), FieldScope(descriptor_)->file());
   variables["name"] = FieldName(descriptor_);
   if (opt.use_oneof_field_name())
     variables["proto_name"] = oneof->name();
@@ -131,7 +131,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 
   if (descriptor_->has_default_value()) {
     variables["default_value"] = std::string("&")
-                               + FullNameToLower(descriptor_->full_name())
+                               + FullNameToLower(descriptor_->full_name(), descriptor_->file())
 			       + "__default_value";
   } else if (FieldSyntax(descriptor_) == 3 &&
     descriptor_->type() == FieldDescriptor::TYPE_STRING) {

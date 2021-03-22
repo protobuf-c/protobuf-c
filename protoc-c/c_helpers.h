@@ -121,11 +121,11 @@ std::string ToLower(const std::string &class_name);
 std::string ToUpper(const std::string &class_name);
 
 // full_name() to lowercase with underscores
-std::string FullNameToLower(const std::string &full_name);
-std::string FullNameToUpper(const std::string &full_name);
+std::string FullNameToLower(const std::string &full_name, const FileDescriptor *file);
+std::string FullNameToUpper(const std::string &full_name, const FileDescriptor *file);
 
 // full_name() to c-typename (with underscores for packages, otherwise camel case)
-std::string FullNameToC(const std::string &class_name);
+std::string FullNameToC(const std::string &class_name, const FileDescriptor *file);
 
 // Splits, indents, formats, and prints comment lines
 void PrintComment (io::Printer* printer, std::string comment);

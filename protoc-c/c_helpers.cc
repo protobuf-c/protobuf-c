@@ -177,9 +177,23 @@ std::string ToCamel(const std::string &name) {
   return rv;
 }
 
-std::string FullNameToLower(const std::string &full_name) {
+std::string OverrideFullName(const std::string &full_name,
+			    const FileDescriptor *file) {
+  const ProtobufCFileOptions opt = file->options().GetExtension(pb_c_file);
+  if (!opt.has_c_package())
+    return full_name;
+
+  std::string new_name = opt.c_package();
+  if (file->package().empty())
+    new_name += ".";
+
+  return new_name + full_name.substr(file->package().length());
+}
+
+std::string FullNameToLower(const std::string &full_name,
+			    const FileDescriptor *file) {
   std::vector<std::string> pieces;
-  SplitStringUsing(full_name, ".", &pieces);
+  SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
   for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
@@ -188,9 +202,10 @@ std::string FullNameToLower(const std::string &full_name) {
   }
   return rv;
 }
-std::string FullNameToUpper(const std::string &full_name) {
+std::string FullNameToUpper(const std::string &full_name,
+			    const FileDescriptor *file) {
   std::vector<std::string> pieces;
-  SplitStringUsing(full_name, ".", &pieces);
+  SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
   for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
@@ -199,9 +214,10 @@ std::string FullNameToUpper(const std::string &full_name) {
   }
   return rv;
 }
-std::string FullNameToC(const std::string &full_name) {
+std::string FullNameToC(const std::string &full_name,
+			const FileDescriptor *file) {
   std::vector<std::string> pieces;
-  SplitStringUsing(full_name, ".", &pieces);
+  SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
   for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;

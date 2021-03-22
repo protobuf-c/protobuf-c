@@ -52,6 +52,9 @@ message ProtobufCFileOptions {
     // For oneof fields, set ProtobufCFieldDescriptor name field to the
     // name of the containing oneof, instead of the field name
     optional bool use_oneof_field_name = 5 [default = false];
+
+    // Overrides the package name, if present
+    optional string c_package = 6;
 }
 
 extend google.protobuf.FileOptions {

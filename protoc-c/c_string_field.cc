@@ -76,7 +76,7 @@ using internal::WireFormat;
 void SetStringVariables(const FieldDescriptor* descriptor,
                         std::map<std::string, std::string>* variables) {
   (*variables)["name"] = FieldName(descriptor);
-  (*variables)["default"] = FullNameToLower(descriptor->full_name())
+  (*variables)["default"] = FullNameToLower(descriptor->full_name(), descriptor->file())
 	+ "__default_value";
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
 }
