@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/protobuf-c/protobuf-c.png?branch=master)](https://travis-ci.org/protobuf-c/protobuf-c) [![Coverage Status](https://coveralls.io/repos/protobuf-c/protobuf-c/badge.png)](https://coveralls.io/r/protobuf-c/protobuf-c)
+[![Build Status](https://github.com/protobuf-c/protobuf-c/actions/workflows/build.yml/badge.svg)](https://github.com/protobuf-c/protobuf-c/actions) [![Coverage Status](https://coveralls.io/repos/protobuf-c/protobuf-c/badge.png)](https://coveralls.io/r/protobuf-c/protobuf-c)
 
 ## Overview
 
