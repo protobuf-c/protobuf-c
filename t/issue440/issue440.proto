@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message Int {
+	repeated int32 int = 1;
+}
+
+message Boolean {
+	repeated bool boolean = 1;
+}

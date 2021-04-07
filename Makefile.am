@@ -301,6 +301,22 @@ BUILT_SOURCES += \
 	t/issue389/issue389.pb-c.c t/issue389/issue389.pb-c.h
 EXTRA_DIST += \
 	t/issue389/issue389.proto
+
+check_PROGRAMS += \
+	t/issue440/issue440
+TESTS += \
+	t/issue440/issue440
+t_issue440_issue440_SOURCES = \
+	t/issue440/issue440.c \
+	t/issue440/issue440.pb-c.c
+t_issue440_issue440_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/issue440/issue440.pb-c.c t/issue440/issue440.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue440/issue440.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue440/issue440.proto
+BUILT_SOURCES += \
+	t/issue440/issue440.pb-c.c t/issue440/issue440.pb-c.h
+EXTRA_DIST += \
+	t/issue440/issue440.proto
 endif # BUILD_PROTO3
 EXTRA_DIST += \
 	t/issue330/issue330.proto
