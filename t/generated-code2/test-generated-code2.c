@@ -432,6 +432,39 @@ static void test_required_SubMess (void)
 #undef DO_TEST
 }
 
+static size_t foo__test_mess_optional__get_packed_size
+                     (const Foo__TestMessOptional *message)
+{
+  assert(message->base.descriptor == &foo__test_mess_optional__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+static size_t foo__test_mess_optional__pack
+                     (const Foo__TestMessOptional *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &foo__test_mess_optional__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+static Foo__TestMessOptional *
+       foo__test_mess_optional__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Foo__TestMessOptional *)
+     protobuf_c_message_unpack (&foo__test_mess_optional__descriptor,
+                                allocator, len, data);
+}
+static void   foo__test_mess_optional__free_unpacked
+                     (Foo__TestMessOptional *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &foo__test_mess_optional__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+
 /* === Optional type fields === */
 static void test_empty_optional (void)
 {
@@ -1241,7 +1274,7 @@ static void test_repeated_string (void)
 {
 
 #define DO_TEST(static_array, example_packed_data) \
-  DO_TEST_REPEATED(test_string, (char **), \
+  DO_TEST_REPEATED(test_string, (const char **), \
                    static_array, example_packed_data, \
                    STRING_EQUALS)
 
@@ -2076,8 +2109,8 @@ test_message_check(void)
   Foo__TestMessageCheck__SubMessage sm = FOO__TEST_MESSAGE_CHECK__SUB_MESSAGE__INIT;
   Foo__TestMessageCheck__SubMessage sm2 = FOO__TEST_MESSAGE_CHECK__SUB_MESSAGE__INIT;
   Foo__TestMessageCheck m = FOO__TEST_MESSAGE_CHECK__INIT;
-  char *null = NULL;
-  char *str = "";
+  const char *null = NULL;
+  const char *str = "";
   Foo__TestMessageCheck__SubMessage *sm_p;
   ProtobufCBinaryData bd;
 

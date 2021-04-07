@@ -74,9 +74,9 @@ ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
   : descriptor_(descriptor) {
   vars_["name"] = descriptor_->name();
   vars_["fullname"] = descriptor_->full_name();
-  vars_["cname"] = FullNameToC(descriptor_->full_name());
-  vars_["lcfullname"] = FullNameToLower(descriptor_->full_name());
-  vars_["ucfullname"] = FullNameToUpper(descriptor_->full_name());
+  vars_["cname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars_["lcfullname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+  vars_["ucfullname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars_["lcfullpadd"] = ConvertToSpaces(vars_["lcfullname"]);
   vars_["package"] = descriptor_->file()->package();
   if (dllexport_decl.empty()) {
@@ -107,8 +107,8 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
     std::string lcname = CamelToLower(method->name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
-    vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
-    vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    vars_["input_typename"] = FullNameToC(method->input_type()->full_name(), method->input_type()->file());
+    vars_["output_typename"] = FullNameToC(method->output_type()->full_name(), method->output_type()->file());
     printer->Print(vars_,
                    "  void (*$method$)($cname$_Service *service,\n"
                    "         $metpad$  const $input_typename$ *input,\n"
@@ -145,11 +145,11 @@ void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
     std::string lcname = CamelToLower(method->name());
-    std::string lcfullname = FullNameToLower(descriptor_->full_name());
+    std::string lcfullname = FullNameToLower(descriptor_->full_name(), descriptor_->file());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
-    vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
-    vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    vars_["input_typename"] = FullNameToC(method->input_type()->full_name(), method->input_type()->file());
+    vars_["output_typename"] = FullNameToC(method->output_type()->full_name(), method->output_type()->file());
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     printer->Print(vars_,
                    "void $lcfullname$__$method$(ProtobufCService *service,\n"
@@ -208,8 +208,8 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
   for (int i = 0; i < n_methods; i++) {
     const MethodDescriptor *method = descriptor_->method(i);
     vars_["method"] = method->name();
-    vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name()) + "__descriptor";
-    vars_["output_descriptor"] = "&" + FullNameToLower(method->output_type()->full_name()) + "__descriptor";
+    vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name(), method->input_type()->file()) + "__descriptor";
+    vars_["output_descriptor"] = "&" + FullNameToLower(method->output_type()->full_name(), method->output_type()->file()) + "__descriptor";
     if (optimize_code_size) {
       printer->Print(vars_,
           "  { NULL, $input_descriptor$, $output_descriptor$ }, /* CODE_SIZE */\n");
@@ -267,11 +267,11 @@ void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor *method = descriptor_->method(i);
     std::string lcname = CamelToLower(method->name());
-    std::string lcfullname = FullNameToLower(descriptor_->full_name());
+    std::string lcfullname = FullNameToLower(descriptor_->full_name(), descriptor_->file());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
-    vars_["input_typename"] = FullNameToC(method->input_type()->full_name());
-    vars_["output_typename"] = FullNameToC(method->output_type()->full_name());
+    vars_["input_typename"] = FullNameToC(method->input_type()->full_name(), method->input_type()->file());
+    vars_["output_typename"] = FullNameToC(method->output_type()->full_name(), method->output_type()->file());
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     vars_["index"] = SimpleItoa(i);
 

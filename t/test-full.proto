@@ -1,5 +1,9 @@
 package foo;
 
+import "protobuf-c/protobuf-c.proto";
+
+option (pb_c_file).const_strings = true;
+
 message SubMess {
   required int32 test = 4;
 
@@ -11,6 +15,8 @@ message SubMess {
     repeated int32 rep = 4;
     optional bytes bytes1 = 2 [default = "a \0 char"];
     optional string str1 = 3 [default = "hello world\n"];
+    optional string str2 = 5 [default = "hello\0world\n",
+			      (pb_c_field).string_as_bytes = true];
   }
   optional SubSubMess sub1 = 9;
   optional SubSubMess sub2 = 10;
@@ -115,6 +121,8 @@ message TestMessPacked {
 }
 
 message TestMessOptional {
+  option (pb_c_msg).gen_pack_helpers = false;
+  option (pb_c_msg).gen_init_helpers = false;
   optional int32 test_int32 = 1;
   optional sint32 test_sint32 = 2;
   optional sfixed32 test_sfixed32 = 3;

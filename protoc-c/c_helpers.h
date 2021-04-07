@@ -67,24 +67,13 @@
 #include <vector>
 #include <sstream>
 #include <google/protobuf/descriptor.h>
-#include <google/protobuf/descriptor.pb.h>
+#include <protobuf-c/protobuf-c.pb.h>
 #include <google/protobuf/io/printer.h>
 
 namespace google {
 namespace protobuf {
 namespace compiler {
 namespace c {
-
-// Returns the non-nested type name for the given type.  If "qualified" is
-// true, prefix the type with the full namespace.  For example, if you had:
-//   package foo.bar;
-//   message Baz { message Qux {} }
-// Then the qualified ClassName for Qux would be:
-//   Foo__Bar__Baz_Qux
-// While the non-qualified version would be:
-//   Baz_Qux
-std::string ClassName(const Descriptor* descriptor, bool qualified);
-std::string ClassName(const EnumDescriptor* enum_descriptor, bool qualified);
 
 // --- Borrowed from stubs. ---
 template <typename T> std::string SimpleItoa(T n) {
@@ -132,11 +121,11 @@ std::string ToLower(const std::string &class_name);
 std::string ToUpper(const std::string &class_name);
 
 // full_name() to lowercase with underscores
-std::string FullNameToLower(const std::string &full_name);
-std::string FullNameToUpper(const std::string &full_name);
+std::string FullNameToLower(const std::string &full_name, const FileDescriptor *file);
+std::string FullNameToUpper(const std::string &full_name, const FileDescriptor *file);
 
 // full_name() to c-typename (with underscores for packages, otherwise camel case)
-std::string FullNameToC(const std::string &class_name);
+std::string FullNameToC(const std::string &class_name, const FileDescriptor *file);
 
 // Splits, indents, formats, and prints comment lines
 void PrintComment (io::Printer* printer, std::string comment);

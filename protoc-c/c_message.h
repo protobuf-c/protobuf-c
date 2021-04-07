@@ -111,14 +111,20 @@ class MessageGenerator {
   void GenerateStructStaticInitMacro(io::Printer* printer);
 
   // Generate standard helper functions declarations for this message.
-  void GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage);
+  void GenerateHelperFunctionDeclarations(io::Printer* printer,
+					  bool is_pack_deep,
+					  bool gen_pack,
+					  bool gen_init);
 
   // Source file stuff.
 
   // Generate code that initializes the global variable storing the message's
   // descriptor.
-  void GenerateMessageDescriptor(io::Printer* printer);
-  void GenerateHelperFunctionDefinitions(io::Printer* printer, bool is_submessage);
+  void GenerateMessageDescriptor(io::Printer* printer, bool gen_init);
+  void GenerateHelperFunctionDefinitions(io::Printer* printer,
+					 bool is_pack_deep,
+					 bool gen_pack,
+					 bool gen_init);
 
  private:
 

@@ -70,7 +70,7 @@
 #include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
-#include <google/protobuf/descriptor.pb.h>
+#include <protobuf-c/protobuf-c.pb.h>
 
 namespace google {
 namespace protobuf {
@@ -106,6 +106,9 @@ bool CGenerator::Generate(const FileDescriptor* file,
                             const std::string& parameter,
                             OutputDirectory* output_directory,
                             std::string* error) const {
+  if (file->options().GetExtension(pb_c_file).no_generate())
+    return true;
+
   std::vector<std::pair<std::string, std::string> > options;
   ParseOptions(parameter, &options);
 

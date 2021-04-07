@@ -104,9 +104,6 @@ class FileGenerator {
   std::unique_ptr<std::unique_ptr<ServiceGenerator>[]> service_generators_;
   std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
 
-  // E.g. if the package is foo.bar, package_parts_ is {"foo", "bar"}.
-  std::vector<std::string> package_parts_;
-
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FileGenerator);
 };
 

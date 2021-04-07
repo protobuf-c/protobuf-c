@@ -177,9 +177,23 @@ std::string ToCamel(const std::string &name) {
   return rv;
 }
 
-std::string FullNameToLower(const std::string &full_name) {
+std::string OverrideFullName(const std::string &full_name,
+			    const FileDescriptor *file) {
+  const ProtobufCFileOptions opt = file->options().GetExtension(pb_c_file);
+  if (!opt.has_c_package())
+    return full_name;
+
+  std::string new_name = opt.c_package();
+  if (file->package().empty())
+    new_name += ".";
+
+  return new_name + full_name.substr(file->package().length());
+}
+
+std::string FullNameToLower(const std::string &full_name,
+			    const FileDescriptor *file) {
   std::vector<std::string> pieces;
-  SplitStringUsing(full_name, ".", &pieces);
+  SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
   for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
@@ -188,9 +202,10 @@ std::string FullNameToLower(const std::string &full_name) {
   }
   return rv;
 }
-std::string FullNameToUpper(const std::string &full_name) {
+std::string FullNameToUpper(const std::string &full_name,
+			    const FileDescriptor *file) {
   std::vector<std::string> pieces;
-  SplitStringUsing(full_name, ".", &pieces);
+  SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
   for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
@@ -199,9 +214,10 @@ std::string FullNameToUpper(const std::string &full_name) {
   }
   return rv;
 }
-std::string FullNameToC(const std::string &full_name) {
+std::string FullNameToC(const std::string &full_name,
+			const FileDescriptor *file) {
   std::vector<std::string> pieces;
-  SplitStringUsing(full_name, ".", &pieces);
+  SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
   for (unsigned i = 0; i < pieces.size(); i++) {
     if (pieces[i] == "") continue;
@@ -277,37 +293,6 @@ std::set<std::string> MakeKeywordsMap() {
 }
 
 std::set<std::string> kKeywords = MakeKeywordsMap();
-
-std::string ClassName(const Descriptor* descriptor, bool qualified) {
-  // Find "outer", the descriptor of the top-level message in which
-  // "descriptor" is embedded.
-  const Descriptor* outer = descriptor;
-  while (outer->containing_type() != NULL) outer = outer->containing_type();
-
-  const std::string& outer_name = outer->full_name();
-  std::string inner_name = descriptor->full_name().substr(outer_name.size());
-
-  if (qualified) {
-    return "::" + DotsToColons(outer_name) + DotsToUnderscores(inner_name);
-  } else {
-    return outer->name() + DotsToUnderscores(inner_name);
-  }
-}
-
-std::string ClassName(const EnumDescriptor* enum_descriptor, bool qualified) {
-  if (enum_descriptor->containing_type() == NULL) {
-    if (qualified) {
-      return DotsToColons(enum_descriptor->full_name());
-    } else {
-      return enum_descriptor->name();
-    }
-  } else {
-    std::string result = ClassName(enum_descriptor->containing_type(), qualified);
-    result += '_';
-    result += enum_descriptor->name();
-    return result;
-  }
-}
 
 std::string FieldName(const FieldDescriptor* field) {
   std::string result = ToLower(field->name());

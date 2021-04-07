@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2021, the protobuf-c authors.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+syntax = "proto2";
+import "google/protobuf/descriptor.proto";
+
+// We never need to generate protobuf-c.pb-c.{c,h}, the options are used
+// only by protoc-gen-c, never by the protobuf-c runtime itself
+option (pb_c_file).no_generate = true;
+
+message ProtobufCFileOptions {
+    // Suppresses pb-c.{c,h} file output completely.
+    optional bool no_generate = 1 [default = false];
+
+    // Generate helper pack/unpack functions?
+    // For backwards compatibility, if this field is not explicitly set,
+    // only top-level message pack/unpack functions will be generated
+    optional bool gen_pack_helpers = 2 [default = true];
+
+    // Generate helper init message functions?
+    optional bool gen_init_helpers = 3 [default = true];
+
+    // Use const char * instead of char * for string fields
+    optional bool const_strings = 4 [default = false];
+
+    // For oneof fields, set ProtobufCFieldDescriptor name field to the
+    // name of the containing oneof, instead of the field name
+    optional bool use_oneof_field_name = 5 [default = false];
+
+    // Overrides the package name, if present
+    optional string c_package = 6;
+}
+
+extend google.protobuf.FileOptions {
+    optional ProtobufCFileOptions pb_c_file = 1019;
+}
+
+message ProtobufCMessageOptions {
+    // Overrides the parent setting only if present
+    optional bool gen_pack_helpers = 1 [default = false];
+
+    // Overrides the parent setting only if present
+    optional bool gen_init_helpers = 2 [default = true];
+
+    // Reserved base message field name
+    optional string base_field_name = 3 [default = "base"];
+}
+
+extend google.protobuf.MessageOptions {
+    optional ProtobufCMessageOptions pb_c_msg = 1019;
+}
+
+message ProtobufCFieldOptions {
+    // Treat string as bytes in generated code
+    optional bool string_as_bytes = 1 [default = false];
+}
+
+extend google.protobuf.FieldOptions {
+    optional ProtobufCFieldOptions pb_c_field = 1019;
+}
