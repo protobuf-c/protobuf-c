@@ -11,10 +11,11 @@ PROJECT(protobuf-c)
 #options
 option(BUILD_PROTO3 "BUILD_PROTO3" ON)
 option(BUILD_PROTOC "Build protoc-gen-c" ON)
+
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-option(BUILD_TESTS "Build tests" ON)
+option(BUILD_TESTING "Build tests" ON)
 else()
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_TESTING "Build tests" OFF)
 endif()
 
 INCLUDE(TestBigEndian)
@@ -120,7 +121,7 @@ FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
 ENDFUNCTION()
 
 
-IF(BUILD_TESTS)
+IF(BUILD_TESTING)
 ENABLE_TESTING()
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/test.proto t/test.pb-c.c t/test.pb-c.h)
@@ -170,13 +171,13 @@ ADD_EXECUTABLE(test-generated-code3 ${TEST_DIR}/generated-code/test-generated-co
 TARGET_COMPILE_DEFINITIONS(test-generated-code3 PUBLIC -DPROTO3)
 TARGET_LINK_LIBRARIES(test-generated-code3 protobuf-c)
 
-ENDIF() # BUILD_TESTS
+ENDIF() # BUILD_TESTING
 
 # https://github.com/protocolbuffers/protobuf/issues/5107
 IF(CMAKE_HOST_UNIX)
 	FIND_PACKAGE(Threads REQUIRED)
 	TARGET_LINK_LIBRARIES(protoc-gen-c ${CMAKE_THREAD_LIBS_INIT})
-	IF(BUILD_TESTS)
+	IF(BUILD_TESTING)
 		TARGET_LINK_LIBRARIES(cxx-generate-packed-data ${CMAKE_THREAD_LIBS_INIT})
 	ENDIF()
 ENDIF()
@@ -202,7 +203,7 @@ SET(includedir \${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
 CONFIGURE_FILE(${MAIN_DIR}/protobuf-c/libprotobuf-c.pc.in libprotobuf-c.pc @ONLY)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/libprotobuf-c.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
-IF(BUILD_TESTS)
+IF(BUILD_TESTING)
 INCLUDE(Dart)
 
 SET(DART_TESTING_TIMEOUT 5)
