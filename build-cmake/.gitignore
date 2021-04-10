@@ -1,3 +1,4 @@
 *
 !.gitignore
 !CMakeLists.txt
+!Config.cmake.in
