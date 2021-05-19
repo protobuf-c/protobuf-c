@@ -1,3 +1,41 @@
+protobuf-c (1.4.0)
+
+  [ Robert Edmonds ]
+  * Release 1.4.0.
+
+  [ Ilya Lipnitsky ]
+  * c_message.cc: Resolve name conflict between certain enums and oneofs
+    (#427).
+  * protobuf-c.h: Fix Windows DLL export issue with the
+    protobuf_c_empty_string symbol (#428).
+  * Standardize pkg-config for use by autotools and cmake, fix cmake tests
+    (#425).
+  * protobuf-c.c: Cast %lu args to unsigned long int (#429).
+  * protoc-c: Remove leading underscores from structs (#430).
+  * protoc-c: Fix shared lib build on windows, migrate from Travis CI to
+    GitHub Actions (#459).
+  * protobuf-c: Don't use ProtobufCWireType internally (#463).
+  * protoc-c: Add custom options support (#466).
+  * protobuf-c.c: Fix packed repeated bool parsing (#467).
+
+  [ Markus Engel ]
+  * Pack nested messages inline (#431).
+
+  [ Daniel Axtens ]
+  * Travis CI: Test on other platforms (#438).
+
+  [ Adam Cozzette ]
+  * Update the generator to fully qualify std::string (#443).
+
+  [ Piotr Pietraszkiewicz ]
+  * Install MSVC debug symbols alongside the protobuf-c.lib file (#456).
+
+  [ ihsinme ]
+  * Fix invalid unsigned arithmetic (#455).
+
+  [ Wolfram Rösler ]
+  * Avoid "unused function parameter" compiler warning (#453).
+
 protobuf-c (1.3.3)
 
   [ Robert Edmonds ]
