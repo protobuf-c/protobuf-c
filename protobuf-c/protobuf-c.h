@@ -315,7 +315,7 @@ typedef enum {
 	PROTOBUF_C_TYPE_UINT64,     /**< unsigned int64 */
 	PROTOBUF_C_TYPE_FIXED64,    /**< unsigned int64 (8 bytes) */
 	PROTOBUF_C_TYPE_FLOAT,      /**< float */
-	PROTOBUF_C_TYPE_DOUBLE,     /**< double */
+	PROTOBUF_C_TYPE_DOUBLE,     /**< protobuf_c_double */
 	PROTOBUF_C_TYPE_BOOL,       /**< boolean */
 	PROTOBUF_C_TYPE_ENUM,       /**< enumerated type */
 	PROTOBUF_C_TYPE_STRING,     /**< UTF-8 or ASCII string */
@@ -373,6 +373,26 @@ typedef struct ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
 
 /** Boolean type. */
 typedef int protobuf_c_boolean;
+
+/** Double type.
+ *
+ * Some embedded compilers can be configured for 32-bit doubles, but a native
+ * 64-bit type is needed to support the 64-bit protobuf double type.  If the
+ * preprocessor is activating this block, the target environment falls into
+ * this category: the target environment's native double type is not 64-bit.
+ * But if __LDBL_MANT_DIG__ == 53, the target's long double type is 64-bit.
+ * Therefore, use long double to represent 64-bit protobuf doubles, and notify
+ * the user in case this will break on their platform.
+ */
+
+#if (__DBL_MANT_DIG__ != 53 && __LDBL_MANT_DIG__ == 53)
+typedef long double protobuf_c_double;
+#elif (__DBL_MANT_DIG__ != 53)
+#error unable find a native 64-bit type for the protobuf double!
+#else
+typedef double protobuf_c_double;
+#endif
+
 
 typedef void (*ProtobufCClosure)(const ProtobufCMessage *, void *closure_data);
 typedef void (*ProtobufCMessageInit)(ProtobufCMessage *);
