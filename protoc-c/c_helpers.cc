@@ -295,7 +295,11 @@ std::set<std::string> MakeKeywordsMap() {
 std::set<std::string> kKeywords = MakeKeywordsMap();
 
 std::string FieldName(const FieldDescriptor* field) {
+#ifdef PROTOC_C__USE_CAMELCASE_NAME
+  std::string result = field->name();
+#else
   std::string result = ToLower(field->name());
+#endif
   if (kKeywords.count(result) > 0) {
     result.append("_");
   }

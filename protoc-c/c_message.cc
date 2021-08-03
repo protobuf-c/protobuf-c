@@ -280,6 +280,35 @@ GenerateHelperFunctionDeclarations(io::Printer* printer,
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+#ifdef PROTOC_C__USE_CAMELCASE_NAME
+  if (gen_init) {
+      printer->Print(vars,
+          "/* $classname$ methods */\n"
+          "void   $classname$_Init\n"
+          "                     ($classname$         *message);\n"
+      );
+  }
+  if (gen_pack) {
+      printer->Print(vars,
+          "size_t $classname$_GetPackedSize\n"
+          "                     (const $classname$   *message);\n"
+          "size_t $classname$_Pack\n"
+          "                     (const $classname$   *message,\n"
+          "                      uint8_t             *out);\n"
+          "size_t $classname$_PackToBuffer\n"
+          "                     (const $classname$   *message,\n"
+          "                      ProtobufCBuffer     *buffer);\n"
+          "$classname$ *\n"
+          "       $classname$_Unpack\n"
+          "                     (ProtobufCAllocator  *allocator,\n"
+          "                      size_t               len,\n"
+          "                      const uint8_t       *data);\n"
+          "void   $classname$_FreeUnpacked\n"
+          "                     ($classname$ *message,\n"
+          "                      ProtobufCAllocator *allocator);\n"
+      );
+  }
+#else
   if (gen_init) {
     printer->Print(vars,
 		 "/* $classname$ methods */\n"
@@ -307,6 +336,7 @@ GenerateHelperFunctionDeclarations(io::Printer* printer,
 		 "                      ProtobufCAllocator *allocator);\n"
 		);
   }
+#endif
 }
 
 void MessageGenerator::
@@ -372,6 +402,60 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars["base"] = opt.base_field_name();
+#ifdef PROTOC_C__USE_CAMELCASE_NAME
+  if (gen_init) {
+      printer->Print(vars,
+          "void   $classname$_Init\n"
+          "                     ($classname$         *message)\n"
+          "{\n"
+          "  static const $classname$ init_value = $ucclassname$__INIT;\n"
+          "  *message = init_value;\n"
+          "}\n");
+  }
+  if (gen_pack) {
+      printer->Print(vars,
+          "size_t $classname$_GetPackedSize\n"
+          "                     (const $classname$ *message)\n"
+          "{\n"
+          "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+          "  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));\n"
+          "}\n"
+          "size_t $classname$_Pack\n"
+          "                     (const $classname$ *message,\n"
+          "                      uint8_t       *out)\n"
+          "{\n"
+          "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+          "  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);\n"
+          "}\n"
+          "size_t $classname$_PackToBuffer\n"
+          "                     (const $classname$ *message,\n"
+          "                      ProtobufCBuffer *buffer)\n"
+          "{\n"
+          "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+          "  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);\n"
+          "}\n"
+          "$classname$ *\n"
+          "       $classname$_Unpack\n"
+          "                     (ProtobufCAllocator  *allocator,\n"
+          "                      size_t               len,\n"
+          "                      const uint8_t       *data)\n"
+          "{\n"
+          "  return ($classname$ *)\n"
+          "     protobuf_c_message_unpack (&$lcclassname$__descriptor,\n"
+          "                                allocator, len, data);\n"
+          "}\n"
+          "void   $classname$_FreeUnpacked\n"
+          "                     ($classname$ *message,\n"
+          "                      ProtobufCAllocator *allocator)\n"
+          "{\n"
+          "  if(!message)\n"
+          "    return;\n"
+          "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+          "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
+          "}\n"
+      );
+  }
+#else
   if (gen_init) {
     printer->Print(vars,
 		 "void   $lcclassname$__init\n"
@@ -424,6 +508,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
 		 "}\n"
 		);
   }
+#endif
 }
 
 void MessageGenerator::
@@ -617,7 +702,11 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
       "  $lcclassname$__number_ranges,\n");
   if (gen_init) {
     printer->Print(vars,
+#ifdef PROTOC_C__USE_CAMELCASE_NAME
+      "  (ProtobufCMessageInit) $classname$_Init,\n");
+#else
       "  (ProtobufCMessageInit) $lcclassname$__init,\n");
+#endif
   } else {
     printer->Print(vars,
       "  NULL, /* gen_init_helpers = false */\n");
