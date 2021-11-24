@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
 
   if (invocation_basename == legacy_name) {
     google::protobuf::compiler::CommandLineInterface cli;
-    cli.RegisterGenerator("--c_out", &c_generator, "Generate C/H files.");
+    cli.RegisterGenerator("--c_out", "--c_opt", &c_generator, "Generate C/H files.");
     cli.SetVersionInfo(PACKAGE_STRING);
     return cli.Run(argc, argv);
   }

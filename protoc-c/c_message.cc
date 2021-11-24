@@ -79,10 +79,8 @@ namespace c {
 
 // ===================================================================
 
-MessageGenerator::MessageGenerator(const Descriptor* descriptor,
-                                   const std::string& dllexport_decl)
+MessageGenerator::MessageGenerator(const Descriptor* descriptor)
   : descriptor_(descriptor),
-    dllexport_decl_(dllexport_decl),
     field_generators_(descriptor),
     nested_generators_(new std::unique_ptr<MessageGenerator>[
       descriptor->nested_type_count()]),
@@ -93,17 +91,17 @@ MessageGenerator::MessageGenerator(const Descriptor* descriptor,
 
   for (int i = 0; i < descriptor->nested_type_count(); i++) {
     nested_generators_[i].reset(
-      new MessageGenerator(descriptor->nested_type(i), dllexport_decl));
+      new MessageGenerator(descriptor->nested_type(i)));
   }
 
   for (int i = 0; i < descriptor->enum_type_count(); i++) {
     enum_generators_[i].reset(
-      new EnumGenerator(descriptor->enum_type(i), dllexport_decl));
+      new EnumGenerator(descriptor->enum_type(i)));
   }
 
   for (int i = 0; i < descriptor->extension_count(); i++) {
     extension_generators_[i].reset(
-      new ExtensionGenerator(descriptor->extension(i), dllexport_decl));
+      new ExtensionGenerator(descriptor->extension(i)));
   }
 }
 
@@ -142,10 +140,11 @@ GenerateStructDefinition(io::Printer* printer) {
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars["field_count"] = SimpleItoa(descriptor_->field_count());
-  if (dllexport_decl_.empty()) {
+  auto it = g_generator_options.find("dllexport_decl");
+  if (it == g_generator_options.end()) {
     vars["dllexport"] = "";
   } else {
-    vars["dllexport"] = dllexport_decl_ + " ";
+    vars["dllexport"] = it->second + " ";
   }
 
   // Generate the case enums for unions
@@ -280,32 +279,62 @@ GenerateHelperFunctionDeclarations(io::Printer* printer,
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
-  if (gen_init) {
-    printer->Print(vars,
-		 "/* $classname$ methods */\n"
-		 "void   $lcclassname$__init\n"
-		 "                     ($classname$         *message);\n"
-		);
-  }
-  if (gen_pack) {
-    printer->Print(vars,
-		 "size_t $lcclassname$__get_packed_size\n"
-		 "                     (const $classname$   *message);\n"
-		 "size_t $lcclassname$__pack\n"
-		 "                     (const $classname$   *message,\n"
-		 "                      uint8_t             *out);\n"
-		 "size_t $lcclassname$__pack_to_buffer\n"
-		 "                     (const $classname$   *message,\n"
-		 "                      ProtobufCBuffer     *buffer);\n"
-		 "$classname$ *\n"
-		 "       $lcclassname$__unpack\n"
-		 "                     (ProtobufCAllocator  *allocator,\n"
-                 "                      size_t               len,\n"
-                 "                      const uint8_t       *data);\n"
-		 "void   $lcclassname$__free_unpacked\n"
-		 "                     ($classname$ *message,\n"
-		 "                      ProtobufCAllocator *allocator);\n"
-		);
+  if (g_generator_options.find("disable_lowercase_name") == g_generator_options.end()) {
+    if (gen_init) {
+      printer->Print(vars,
+                     "/* $classname$ methods */\n"
+                     "void   $lcclassname$__init\n"
+                     "                     ($classname$         *message);\n"
+      );
+    }
+    if (gen_pack) {
+      printer->Print(vars,
+                     "size_t $lcclassname$__get_packed_size\n"
+                     "                     (const $classname$   *message);\n"
+                     "size_t $lcclassname$__pack\n"
+                     "                     (const $classname$   *message,\n"
+                     "                      uint8_t             *out);\n"
+                     "size_t $lcclassname$__pack_to_buffer\n"
+                     "                     (const $classname$   *message,\n"
+                     "                      ProtobufCBuffer     *buffer);\n"
+                     "$classname$ *\n"
+                     "       $lcclassname$__unpack\n"
+                     "                     (ProtobufCAllocator  *allocator,\n"
+                     "                      size_t               len,\n"
+                     "                      const uint8_t       *data);\n"
+                     "void   $lcclassname$__free_unpacked\n"
+                     "                     ($classname$ *message,\n"
+                     "                      ProtobufCAllocator *allocator);\n"
+      );
+    }
+  } else {
+    if (gen_init) {
+      printer->Print(vars,
+                     "/* $classname$ methods */\n"
+                     "void   $classname$_Init\n"
+                     "                     ($classname$         *message);\n"
+      );
+    }
+    if (gen_pack) {
+      printer->Print(vars,
+                     "size_t $classname$_GetPackedSize\n"
+                     "                     (const $classname$   *message);\n"
+                     "size_t $classname$_Pack\n"
+                     "                     (const $classname$   *message,\n"
+                     "                      uint8_t             *out);\n"
+                     "size_t $classname$_PackToBuffer\n"
+                     "                     (const $classname$   *message,\n"
+                     "                      ProtobufCBuffer     *buffer);\n"
+                     "$classname$ *\n"
+                     "       $classname$_Unpack\n"
+                     "                     (ProtobufCAllocator  *allocator,\n"
+                     "                      size_t               len,\n"
+                     "                      const uint8_t       *data);\n"
+                     "void   $classname$_FreeUnpacked\n"
+                     "                     ($classname$ *message,\n"
+                     "                      ProtobufCAllocator *allocator);\n"
+      );
+    }
   }
 }
 
@@ -372,57 +401,112 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars["base"] = opt.base_field_name();
-  if (gen_init) {
-    printer->Print(vars,
-		 "void   $lcclassname$__init\n"
-		 "                     ($classname$         *message)\n"
-		 "{\n"
-		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
-		 "  *message = init_value;\n"
-		 "}\n");
-  }
-  if (gen_pack) {
-    printer->Print(vars,
-		 "size_t $lcclassname$__get_packed_size\n"
-		 "                     (const $classname$ *message)\n"
-		 "{\n"
-		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
-		 "  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));\n"
-		 "}\n"
-		 "size_t $lcclassname$__pack\n"
-		 "                     (const $classname$ *message,\n"
-		 "                      uint8_t       *out)\n"
-		 "{\n"
-		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
-		 "  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);\n"
-		 "}\n"
-		 "size_t $lcclassname$__pack_to_buffer\n"
-		 "                     (const $classname$ *message,\n"
-		 "                      ProtobufCBuffer *buffer)\n"
-		 "{\n"
-		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
-		 "  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);\n"
-		 "}\n"
-		 "$classname$ *\n"
-		 "       $lcclassname$__unpack\n"
-		 "                     (ProtobufCAllocator  *allocator,\n"
-		 "                      size_t               len,\n"
-                 "                      const uint8_t       *data)\n"
-		 "{\n"
-		 "  return ($classname$ *)\n"
-		 "     protobuf_c_message_unpack (&$lcclassname$__descriptor,\n"
-		 "                                allocator, len, data);\n"
-		 "}\n"
-		 "void   $lcclassname$__free_unpacked\n"
-		 "                     ($classname$ *message,\n"
-		 "                      ProtobufCAllocator *allocator)\n"
-		 "{\n"
-		 "  if(!message)\n"
-		 "    return;\n"
-		 "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
-		 "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
-		 "}\n"
-		);
+  if (g_generator_options.find("disable_lowercase_name") == g_generator_options.end()) {
+    if (gen_init) {
+      printer->Print(vars,
+                     "void   $lcclassname$__init\n"
+                     "                     ($classname$         *message)\n"
+                     "{\n"
+                     "  static const $classname$ init_value = $ucclassname$__INIT;\n"
+                     "  *message = init_value;\n"
+                     "}\n");
+    }
+    if (gen_pack) {
+      printer->Print(vars,
+                     "size_t $lcclassname$__get_packed_size\n"
+                     "                     (const $classname$ *message)\n"
+                     "{\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));\n"
+                     "}\n"
+                     "size_t $lcclassname$__pack\n"
+                     "                     (const $classname$ *message,\n"
+                     "                      uint8_t       *out)\n"
+                     "{\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);\n"
+                     "}\n"
+                     "size_t $lcclassname$__pack_to_buffer\n"
+                     "                     (const $classname$ *message,\n"
+                     "                      ProtobufCBuffer *buffer)\n"
+                     "{\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);\n"
+                     "}\n"
+                     "$classname$ *\n"
+                     "       $lcclassname$__unpack\n"
+                     "                     (ProtobufCAllocator  *allocator,\n"
+                     "                      size_t               len,\n"
+                     "                      const uint8_t       *data)\n"
+                     "{\n"
+                     "  return ($classname$ *)\n"
+                     "     protobuf_c_message_unpack (&$lcclassname$__descriptor,\n"
+                     "                                allocator, len, data);\n"
+                     "}\n"
+                     "void   $lcclassname$__free_unpacked\n"
+                     "                     ($classname$ *message,\n"
+                     "                      ProtobufCAllocator *allocator)\n"
+                     "{\n"
+                     "  if(!message)\n"
+                     "    return;\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
+                     "}\n"
+      );
+    }
+  } else {
+    if (gen_init) {
+      printer->Print(vars,
+                     "void   $classname$_Init\n"
+                     "                     ($classname$         *message)\n"
+                     "{\n"
+                     "  static const $classname$ init_value = $ucclassname$__INIT;\n"
+                     "  *message = init_value;\n"
+                     "}\n");
+    }
+    if (gen_pack) {
+      printer->Print(vars,
+                     "size_t $classname$_GetPackedSize\n"
+                     "                     (const $classname$ *message)\n"
+                     "{\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));\n"
+                     "}\n"
+                     "size_t $classname$_Pack\n"
+                     "                     (const $classname$ *message,\n"
+                     "                      uint8_t       *out)\n"
+                     "{\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);\n"
+                     "}\n"
+                     "size_t $classname$_PackToBuffer\n"
+                     "                     (const $classname$ *message,\n"
+                     "                      ProtobufCBuffer *buffer)\n"
+                     "{\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);\n"
+                     "}\n"
+                     "$classname$ *\n"
+                     "       $classname$_Unpack\n"
+                     "                     (ProtobufCAllocator  *allocator,\n"
+                     "                      size_t               len,\n"
+                     "                      const uint8_t       *data)\n"
+                     "{\n"
+                     "  return ($classname$ *)\n"
+                     "     protobuf_c_message_unpack (&$lcclassname$__descriptor,\n"
+                     "                                allocator, len, data);\n"
+                     "}\n"
+                     "void   $classname$_FreeUnpacked\n"
+                     "                     ($classname$ *message,\n"
+                     "                      ProtobufCAllocator *allocator)\n"
+                     "{\n"
+                     "  if(!message)\n"
+                     "    return;\n"
+                     "  assert(message->$base$.descriptor == &$lcclassname$__descriptor);\n"
+                     "  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);\n"
+                     "}\n"
+      );
+    }
   }
 }
 
@@ -616,8 +700,11 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
       "  $n_ranges$,"
       "  $lcclassname$__number_ranges,\n");
   if (gen_init) {
-    printer->Print(vars,
-      "  (ProtobufCMessageInit) $lcclassname$__init,\n");
+    if (g_generator_options.find("disable_lowercase_name") == g_generator_options.end()) {
+      printer->Print(vars, "  (ProtobufCMessageInit) $lcclassname$__init,\n");
+    } else {
+      printer->Print(vars, "  (ProtobufCMessageInit) $classname$_Init,\n");
+    }
   } else {
     printer->Print(vars,
       "  NULL, /* gen_init_helpers = false */\n");

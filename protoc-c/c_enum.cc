@@ -72,10 +72,8 @@ namespace protobuf {
 namespace compiler {
 namespace c {
 
-EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor,
-                             const std::string& dllexport_decl)
-  : descriptor_(descriptor),
-    dllexport_decl_(dllexport_decl) {
+EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor)
+  : descriptor_(descriptor) {
 }
 
 EnumGenerator::~EnumGenerator() {}
@@ -127,10 +125,11 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
 
 void EnumGenerator::GenerateDescriptorDeclarations(io::Printer* printer) {
   std::map<std::string, std::string> vars;
-  if (dllexport_decl_.empty()) {
+  auto it = g_generator_options.find("dllexport_decl");
+  if (it == g_generator_options.end()) {
     vars["dllexport"] = "";
   } else {
-    vars["dllexport"] = dllexport_decl_ + " ";
+    vars["dllexport"] = it->second + " ";
   }
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
