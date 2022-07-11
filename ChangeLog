@@ -1,3 +1,17 @@
+protobuf-c (1.4.1)
+
+  [ Robert Edmonds ]
+  * Release 1.4.1
+
+  [ Todd C. Miller ]
+  * Only shift unsigned values to avoid implementation-specific behavior
+    (#506, #508).
+  * Fix regression with zero-length messages introduced in protobuf-c PR 500.
+  * Fix a clang analyzer 14 warning about a possible NULL deref (#512, #514).
+
+  [ steed717 ]
+  * Fix unsigned integer overflow (#499, #513).
+
 protobuf-c (1.4.0)
 
   [ Robert Edmonds ]
