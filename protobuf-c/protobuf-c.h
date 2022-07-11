@@ -794,13 +794,13 @@ protobuf_c_version_number(void);
  * The version of the protobuf-c headers, represented as a string using the same
  * format as protobuf_c_version().
  */
-#define PROTOBUF_C_VERSION		"1.4.0"
+#define PROTOBUF_C_VERSION		"1.4.1"
 
 /**
  * The version of the protobuf-c headers, represented as an integer using the
  * same format as protobuf_c_version_number().
  */
-#define PROTOBUF_C_VERSION_NUMBER	1004000
+#define PROTOBUF_C_VERSION_NUMBER	1004001
 
 /**
  * The minimum protoc-c version which works with the current version of the
