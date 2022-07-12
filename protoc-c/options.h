@@ -60,58 +60,23 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
+#ifndef GOOGLE_PROTOBUF_COMPILER_C_OPTIONS_H__
+#define GOOGLE_PROTOBUF_COMPILER_C_OPTIONS_H__
 
-#include <string>
-#include <google/protobuf/descriptor.h>
-#include <protoc-c/options.h>
+#include <map>
 
 namespace google {
-namespace protobuf {
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
-
 namespace protobuf {
 namespace compiler {
 namespace c {
 
-class EnumGenerator {
- public:
-  explicit EnumGenerator(const EnumDescriptor* descriptor);
+typedef std::map<std::string, std::string> GeneratorOptions;
 
-  ~EnumGenerator();
-
-  // Header stuff.
-
-  // Generate header code defining the enum.  This code should be placed
-  // within the enum's package namespace, but NOT within any class, even for
-  // nested enums.
-  void GenerateDefinition(io::Printer* printer);
-
-  void GenerateDescriptorDeclarations(io::Printer* printer);
-
-
-  // Source file stuff.
-
-  // Generate the ProtobufCEnumDescriptor for this enum
-  void GenerateEnumDescriptor(io::Printer* printer);
-
-  // Generate static initializer for a ProtobufCEnumValue
-  // given the index of the value in the enum.
-  void GenerateValueInitializer(io::Printer *printer, int index);
-
- private:
-  const EnumDescriptor* descriptor_;
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(EnumGenerator);
-};
+extern GeneratorOptions g_generator_options;
 
 }  // namespace c
 }  // namespace compiler
 }  // namespace protobuf
-
 }  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
+
+#endif  // GOOGLE_PROTOBUF_COMPILER_C_OPTIONS_H__

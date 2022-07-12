@@ -69,6 +69,7 @@
 #include <google/protobuf/descriptor.h>
 #include <protobuf-c/protobuf-c.pb.h>
 #include <google/protobuf/io/printer.h>
+#include <protoc-c/options.h>
 
 namespace google {
 namespace protobuf {

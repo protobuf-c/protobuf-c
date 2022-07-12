@@ -69,8 +69,7 @@ namespace protobuf {
 namespace compiler {
 namespace c {
 
-ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
-                                   const std::string& dllexport_decl)
+ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor)
   : descriptor_(descriptor) {
   vars_["name"] = descriptor_->name();
   vars_["fullname"] = descriptor_->full_name();
@@ -79,10 +78,11 @@ ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
   vars_["ucfullname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
   vars_["lcfullpadd"] = ConvertToSpaces(vars_["lcfullname"]);
   vars_["package"] = descriptor_->file()->package();
-  if (dllexport_decl.empty()) {
+  auto it = g_generator_options.find("dllexport_decl");
+  if (it == g_generator_options.end()) {
     vars_["dllexport"] = "";
   } else {
-    vars_["dllexport"] = dllexport_decl + " ";
+    vars_["dllexport"] = it->second + " ";
   }
 }
 

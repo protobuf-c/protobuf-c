@@ -61,6 +61,7 @@
 // Modified to implement C code by Dave Benson.
 
 #include <protoc-c/c_generator.h>
+#include <protoc-c/options.h>
 
 #include <memory>
 #include <vector>
@@ -71,31 +72,30 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <protobuf-c/protobuf-c.pb.h>
+#include <protoc-c/options.h>
 
 namespace google {
 namespace protobuf {
 namespace compiler {
 namespace c {
 
+GeneratorOptions g_generator_options;
+
 // Parses a set of comma-delimited name/value pairs, e.g.:
 //   "foo=bar,baz,qux=corge"
 // parses to the pairs:
 //   ("foo", "bar"), ("baz", ""), ("qux", "corge")
-void ParseOptions(const std::string& text, std::vector<std::pair<std::string, std::string> >* output) {
+void ParseOptions(const std::string& text, GeneratorOptions& output) {
   std::vector<std::string> parts;
   SplitStringUsing(text, ",", &parts);
 
   for (unsigned i = 0; i < parts.size(); i++) {
     std::string::size_type equals_pos = parts[i].find_first_of('=');
-    std::pair<std::string, std::string> value;
     if (equals_pos == std::string::npos) {
-      value.first = parts[i];
-      value.second = "";
+      output[parts[i]] = "";
     } else {
-      value.first = parts[i].substr(0, equals_pos);
-      value.second = parts[i].substr(equals_pos + 1);
+      output[parts[i].substr(0, equals_pos)] = parts[i].substr(equals_pos + 1);
     }
-    output->push_back(value);
   }
 }
 
@@ -109,47 +109,37 @@ bool CGenerator::Generate(const FileDescriptor* file,
   if (file->options().GetExtension(pb_c_file).no_generate())
     return true;
 
-  std::vector<std::pair<std::string, std::string> > options;
-  ParseOptions(parameter, &options);
-
-  // -----------------------------------------------------------------
   // parse generator options
+  ParseOptions(parameter, g_generator_options);
 
-  // TODO(kenton):  If we ever have more options, we may want to create a
-  //   class that encapsulates them which we can pass down to all the
-  //   generator classes.  Currently we pass dllexport_decl down to all of
-  //   them via the constructors, but we don't want to have to add another
-  //   constructor parameter for every option.
-
+  // For option --c_opt=dllexport_decl=FOO_EXPORT:
   // If the dllexport_decl option is passed to the compiler, we need to write
   // it in front of every symbol that should be exported if this .proto is
   // compiled into a Windows DLL.  E.g., if the user invokes the protocol
   // compiler as:
-  //   protoc --cpp_out=dllexport_decl=FOO_EXPORT:outdir foo.proto
+  //   protoc-c --c_opt=outdir --c_opt=dllexport_decl=FOO_EXPORT foo.proto
   // then we'll define classes like this:
-  //   class FOO_EXPORT Foo {
+  //   struct FOO_EXPORT Foo {
   //     ...
   //   }
   // FOO_EXPORT is a macro which should expand to __declspec(dllexport) or
   // __declspec(dllimport) depending on what is being compiled.
-  std::string dllexport_decl;
+  //
+  // for option --c_opt=disable_lowercase_name:
+  // Identifier case will remain the same.
 
-  for (unsigned i = 0; i < options.size(); i++) {
-    if (options[i].first == "dllexport_decl") {
-      dllexport_decl = options[i].second;
-    } else {
-      *error = "Unknown generator option: " + options[i].first;
+  for (auto &it : g_generator_options) {
+    if (it.first != "dllexport_decl" &&
+        it.first != "disable_lowercase_name") {
+      *error = "Unknown generator option: " + it.first;
       return false;
     }
   }
 
-  // -----------------------------------------------------------------
-
-
   std::string basename = StripProto(file->name());
   basename.append(".pb-c");
 
-  FileGenerator file_generator(file, dllexport_decl);
+  FileGenerator file_generator(file);
 
   // Generate header.
   {

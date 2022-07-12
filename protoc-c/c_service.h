@@ -66,6 +66,7 @@
 #include <map>
 #include <string>
 #include <google/protobuf/descriptor.h>
+#include <protoc-c/options.h>
 
 namespace google {
 namespace protobuf {
@@ -80,9 +81,8 @@ namespace c {
 
 class ServiceGenerator {
  public:
-  // See generator.cc for the meaning of dllexport_decl.
-  explicit ServiceGenerator(const ServiceDescriptor* descriptor,
-                            const std::string& dllexport_decl);
+  explicit ServiceGenerator(const ServiceDescriptor* descriptor);
+
   ~ServiceGenerator();
 
   // Header stuff.

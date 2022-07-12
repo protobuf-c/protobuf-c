@@ -62,6 +62,7 @@
 
 #include <protoc-c/c_extension.h>
 #include <protoc-c/c_helpers.h>
+#include <protoc-c/options.h>
 #include <google/protobuf/io/printer.h>
 
 namespace google {
@@ -69,10 +70,8 @@ namespace protobuf {
 namespace compiler {
 namespace c {
 
-ExtensionGenerator::ExtensionGenerator(const FieldDescriptor* descriptor,
-                                       const std::string& dllexport_decl)
-  : descriptor_(descriptor),
-    dllexport_decl_(dllexport_decl) {
+ExtensionGenerator::ExtensionGenerator(const FieldDescriptor* descriptor)
+  : descriptor_(descriptor) {
 }
 
 ExtensionGenerator::~ExtensionGenerator() {}

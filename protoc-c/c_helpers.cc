@@ -295,7 +295,12 @@ std::set<std::string> MakeKeywordsMap() {
 std::set<std::string> kKeywords = MakeKeywordsMap();
 
 std::string FieldName(const FieldDescriptor* field) {
-  std::string result = ToLower(field->name());
+  std::string result;
+  if (g_generator_options.find("disable_lowercase_name") == g_generator_options.end()) {
+    result = ToLower(field->name());
+  } else {
+    result = field->name();
+  }
   if (kKeywords.count(result) > 0) {
     result.append("_");
   }
