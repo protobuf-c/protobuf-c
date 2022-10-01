@@ -131,7 +131,7 @@ jobs:
         run: |
           cd ~
           C:\msys64\usr\bin\wget.exe https://github.com/protocolbuffers/protobuf/releases/download/v${{ env.PROTOBUF_VERSION }}/protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
-          C:\msys64\usr\bin\unzip protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
+          7z x protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
           cd ~/protobuf-${{ env.PROTOBUF_VERSION }}/cmake && mkdir build && cd build
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
           nmake
