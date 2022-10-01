@@ -19,11 +19,11 @@ jobs:
           ls -la protobuf-c
           ls -la protoc-c
 
-     - name: Archive results
-        uses: actions/upload-artifact@v3
-        with:
-          path: |
-            ./protoc-c/protoc-gen-c
+      - name: Archive results
+         uses: actions/upload-artifact@v3
+         with:
+           path: |
+             ./protoc-c/protoc-gen-c
 
   build-linux:
     runs-on: ubuntu-20.04
@@ -42,12 +42,12 @@ jobs:
           ls -la protobuf-c
           ls -la protoc-c
      
-     - name: Archive results
-        uses: actions/upload-artifact@v3
-        with:
-          name: Archive ${{ matrix.os }}
-          path: |
-            ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c
+      - name: Archive results
+         uses: actions/upload-artifact@v3
+         with:
+           name: Archive ${{ matrix.os }}
+           path: |
+             ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c
 
   build-windows:
     strategy:
