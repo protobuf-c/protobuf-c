@@ -47,7 +47,7 @@ jobs:
         with:
           name: Archive ${{ matrix.os }}
           path: |
-            ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c
+            ./protoc-c/protoc-gen-c
 
   build-windows:
     strategy:
@@ -84,4 +84,4 @@ jobs:
         with:
           name: Archive Windows
           path: |
-            ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c
+            ./protoc-c/protoc-gen-c
