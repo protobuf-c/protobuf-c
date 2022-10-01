@@ -1,0 +1,87 @@
+name: Build artifacts
+on: push
+
+jobs:
+  build_macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install dependencies
+        run: brew install protobuf
+
+      - name: Build
+        run: |
+          ./autogen.sh
+          ./configure
+          make
+          ls -la .
+          ls -la protobuf-c
+          ls -la protoc-c
+
+     - name: Archive results
+        uses: actions/upload-artifact@v3
+        with:
+          path: |
+            ./protoc-c/protoc-gen-c
+
+  build_linux:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install dependencies
+        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
+      
+      - name: Build
+        run: |
+          ./autogen.sh
+          ./configure
+          make
+          ls -la .
+          ls -la protobuf-c
+          ls -la protoc-c
+     
+     - name: Archive results
+        uses: actions/upload-artifact@v3
+        with:
+          name: Archive ${{ matrix.os }}
+          path: |
+            ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c
+
+  build_windows:
+    strategy:
+      matrix:
+        shared-lib: [ON, OFF]
+    runs-on: windows-latest
+    env:
+      PROTOBUF_VERSION: 3.15.6
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ilammy/msvc-dev-cmd@v1
+     
+      - name: Build and install protobuf
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd ~
+          C:\msys64\usr\bin\wget.exe https://github.com/protocolbuffers/protobuf/releases/download/v${{ env.PROTOBUF_VERSION }}/protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
+          7z x protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
+          cd ~/protobuf-${{ env.PROTOBUF_VERSION }}/cmake && mkdir build && cd build
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
+          nmake
+          nmake install
+    
+      - name: Run cmake
+        run: |
+          mkdir build-cmake/bin
+          cd build-cmake/bin
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DCMAKE_PREFIX_PATH=~/protobuf-bin -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
+          nmake
+          nmake install
+   
+      - name: Archive results
+        uses: actions/upload-artifact@v3
+        with:
+          name: Archive Windows
+          path: |
+            ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c
