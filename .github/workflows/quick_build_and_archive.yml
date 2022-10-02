@@ -19,7 +19,7 @@ jobs:
           ls -la protobuf-c
           ls -la protoc-c
 
-      - name: Archive results
+      - name: Archive macOS
         uses: actions/upload-artifact@v3
         with:
           path: |
@@ -42,17 +42,14 @@ jobs:
           ls -la protobuf-c
           ls -la protoc-c
      
-      - name: Archive results
+      - name: Archive Linux
         uses: actions/upload-artifact@v3
         with:
-          name: Archive ${{ matrix.os }}
+          name: Linux
           path: |
             ./protoc-c/protoc-gen-c
 
   build-windows:
-    strategy:
-      matrix:
-        shared-lib: [ON, OFF]
     runs-on: windows-latest
     env:
       PROTOBUF_VERSION: 3.15.6
@@ -67,7 +64,7 @@ jobs:
           C:\msys64\usr\bin\wget.exe https://github.com/protocolbuffers/protobuf/releases/download/v${{ env.PROTOBUF_VERSION }}/protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
           7z x protobuf-cpp-${{ env.PROTOBUF_VERSION }}.zip
           cd ~/protobuf-${{ env.PROTOBUF_VERSION }}/cmake && mkdir build && cd build
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=OFF ..
           nmake
           nmake install
     
@@ -75,7 +72,7 @@ jobs:
         run: |
           mkdir build-cmake/bin
           cd build-cmake/bin
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DCMAKE_PREFIX_PATH=~/protobuf-bin -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} ..
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DCMAKE_PREFIX_PATH=~/protobuf-bin -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -DBUILD_SHARED_LIBS=OFF ..
           nmake
           nmake install
    
@@ -84,4 +81,4 @@ jobs:
         with:
           name: Archive Windows
           path: |
-            ./protoc-c/protoc-gen-c
+            ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c.exe
