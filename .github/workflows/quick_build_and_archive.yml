@@ -73,7 +73,7 @@ jobs:
         run: |
           mkdir build-cmake/bin
           cd build-cmake/bin
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DCMAKE_PREFIX_PATH=~/protobuf-bin -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -DBUILD_SHARED_LIBS=OFF ..
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DCMAKE_PREFIX_PATH=~/protobuf-bin -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -DBUILD_SHARED_LIBS=OFF ..
           nmake
           nmake install
    
