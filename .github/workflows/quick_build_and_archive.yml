@@ -22,6 +22,7 @@ jobs:
       - name: Archive macOS
         uses: actions/upload-artifact@v3
         with:
+          name: macOS
           path: |
             ./protoc-c/protoc-gen-c
 
@@ -79,6 +80,6 @@ jobs:
       - name: Archive results
         uses: actions/upload-artifact@v3
         with:
-          name: Archive Windows
+          name: Windows
           path: |
             ./build-cmake/bin/protobuf-c-bin/bin/protoc-gen-c.exe
