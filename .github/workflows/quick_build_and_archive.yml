@@ -27,6 +27,7 @@ jobs:
           name: macOS
           path: |
             ./protoc-c/protoc-gen-c
+            ./protobuf-c/.libs/libprotobuf-c.dylib
 
   build-linux:
     runs-on: ubuntu-20.04
@@ -41,7 +42,7 @@ jobs:
           ./autogen.sh
           ./configure
           make
-     
+
       - name: Archive Linux
         uses: actions/upload-artifact@v3
         with:
