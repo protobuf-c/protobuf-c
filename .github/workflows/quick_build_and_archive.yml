@@ -27,7 +27,8 @@ jobs:
           name: macOS
           path: |
             ./protoc-c/protoc-gen-c
-            ./protobuf-c/.libs/libprotobuf-c.dylib
+            /usr/local/opt/protobuf/lib/libprotobuf.32.dylib
+            /usr/local/opt/protobuf/lib/libprotoc.32.dylib
 
   build-linux:
     runs-on: ubuntu-20.04
