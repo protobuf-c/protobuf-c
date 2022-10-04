@@ -42,6 +42,8 @@ jobs:
           ls -la .
           ls -la protobuf-c
           ls -la protoc-c
+          brew install tree
+          tree -a
      
       - name: Archive Linux
         uses: actions/upload-artifact@v3
