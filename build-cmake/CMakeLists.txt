@@ -56,7 +56,7 @@ INCLUDE_DIRECTORIES(${MAIN_DIR})
 INCLUDE_DIRECTORIES(${MAIN_DIR}/protobuf-c)
 
 IF(BUILD_PROTOC)
-INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}) # for generated files
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}) # for generated files
 
 if (MSVC AND NOT BUILD_SHARED_LIBS)
 	SET(Protobuf_USE_STATIC_LIBS ON)
@@ -91,11 +91,11 @@ IF(BUILD_PROTOC)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
-ADD_CUSTOM_COMMAND(OUTPUT protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
+ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.h
                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_BINARY_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
+                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
 FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
-ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC} protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
+ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.h)
 
 TARGET_LINK_LIBRARIES(protoc-gen-c ${PROTOBUF_PROTOC_LIBRARY} ${PROTOBUF_LIBRARY})
 
@@ -103,7 +103,7 @@ IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
 	GET_FILENAME_COMPONENT(PROTOBUF_DLL_DIR ${PROTOBUF_PROTOC_EXECUTABLE} DIRECTORY)
 	FILE(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
-	FILE(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_BINARY_DIR})
+	FILE(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
 IF(CMAKE_HOST_UNIX)
@@ -115,7 +115,7 @@ ENDIF()
 FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
 	ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_BINARY_DIR}
+                   ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
                    DEPENDS protoc-gen-c)
 ENDFUNCTION()
 
@@ -131,7 +131,7 @@ TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
+                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full.pb-c.h)
 
@@ -141,9 +141,9 @@ IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(cxx-generate-packed-data PRIVATE -DPROTOBUF_USE_DLLS)
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
-FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/t/generated-code2)
+FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/t/generated-code2)
 ADD_CUSTOM_COMMAND(OUTPUT t/generated-code2/test-full-cxx-output.inc
-                   COMMAND ${CMAKE_BINARY_DIR}/cxx-generate-packed-data ">t/generated-code2/test-full-cxx-output.inc"
+                   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cxx-generate-packed-data ">t/generated-code2/test-full-cxx-output.inc"
                    DEPENDS cxx-generate-packed-data
                    )
 
@@ -187,7 +187,7 @@ ENDIF() # BUILD_PROTOC
 INSTALL(TARGETS protobuf-c LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h ${MAIN_DIR}/protobuf-c/protobuf-c.proto DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/protobuf-c.pdb DESTINATION lib OPTIONAL)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c.pdb DESTINATION lib OPTIONAL)
 
 IF(CMAKE_HOST_UNIX)
 INSTALL(CODE "EXECUTE_PROCESS (COMMAND ln -sf protoc-gen-c protoc-c WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)")
@@ -200,7 +200,7 @@ SET(bindir \${exec_prefix}/${CMAKE_INSTALL_BINDIR})
 SET(libdir \${exec_prefix}/${CMAKE_INSTALL_LIBDIR})
 SET(includedir \${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
 CONFIGURE_FILE(${MAIN_DIR}/protobuf-c/libprotobuf-c.pc.in libprotobuf-c.pc @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/libprotobuf-c.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/libprotobuf-c.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 IF(BUILD_TESTS)
 INCLUDE(Dart)
