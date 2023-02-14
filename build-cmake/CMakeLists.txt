@@ -63,7 +63,17 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 endif (MSVC AND NOT BUILD_SHARED_LIBS)
 
 FIND_PACKAGE(Protobuf REQUIRED)
-INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(protobuf::libprotobuf)
+
+if(NOT EXISTS ${PROTOBUF_INCLUDE_DIR}/google/protobuf/descriptor.proto)
+	get_target_property(Protobuf_INCLUDE_DIRS protobuf::libprotobuf INCLUDE_DIRECTORIES)
+	list(REMOVE_DUPLICATES Protobuf_INCLUDE_DIRS)
+	foreach(proto_dir ${Protobuf_INCLUDE_DIRS})
+		if(EXISTS ${proto_dir}/google/protobuf/descriptor.proto)
+			set(PROTOBUF_INCLUDE_DIR "${proto_dir}")
+		endif()
+	endforeach()
+endif()
 
 if (BUILD_PROTO3)
 	ADD_DEFINITIONS(-DHAVE_PROTO3)
@@ -92,12 +102,12 @@ SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.h
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
+                   COMMAND protobuf::protoc
+                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${PROTOBUF_INCLUDE_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
 FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
 ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.h)
 
-TARGET_LINK_LIBRARIES(protoc-gen-c ${PROTOBUF_PROTOC_LIBRARY} ${PROTOBUF_LIBRARY})
+TARGET_LINK_LIBRARIES(protoc-gen-c protobuf::libprotoc  ${PROTOBUF_LIBRARY})
 
 IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
@@ -114,8 +124,8 @@ ENDIF()
 
 FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
 	ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
+                   COMMAND protobuf::protoc
+                   ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${PROTOBUF_INCLUDE_DIR} -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
                    DEPENDS protoc-gen-c)
 ENDFUNCTION()
 
@@ -130,8 +140,8 @@ TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
 
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
+                   COMMAND protobuf::protoc
+                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${PROTOBUF_INCLUDE_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full.pb-c.h)
 
