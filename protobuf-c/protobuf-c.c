@@ -1923,6 +1923,7 @@ repeated_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		buffer->append(buffer, rv, scratch);
 		tmp = pack_buffer_packed_payload(field, count, array, buffer);
 		assert(tmp == payload_len);
+		(void)tmp;
 		return rv + payload_len;
 	} else {
 		size_t siz;
