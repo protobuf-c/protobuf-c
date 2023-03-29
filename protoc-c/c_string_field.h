@@ -88,7 +88,6 @@ class StringFieldGenerator : public FieldGenerator {
  private:
   std::map<std::string, std::string> variables_;
 
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StringFieldGenerator);
 };
 
 

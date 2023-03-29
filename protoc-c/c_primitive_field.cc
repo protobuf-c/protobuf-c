@@ -99,7 +99,7 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
     case FieldDescriptor::TYPE_STRING  :
     case FieldDescriptor::TYPE_BYTES   :
     case FieldDescriptor::TYPE_GROUP   :
-    case FieldDescriptor::TYPE_MESSAGE : GOOGLE_LOG(FATAL) << "not a primitive type"; break;
+    case FieldDescriptor::TYPE_MESSAGE : ABSL_LOG(FATAL) << "not a primitive type"; break;
 
     // No default because we want the compiler to complain if any new
     // types are added.
@@ -143,7 +143,7 @@ std::string PrimitiveFieldGenerator::GetDefaultValue() const
     case FieldDescriptor::CPPTYPE_BOOL:
       return descriptor_->default_value_bool() ? "1" : "0";
     default:
-      GOOGLE_LOG(DFATAL) << "unexpected CPPTYPE in c_primitive_field";
+      ABSL_LOG(FATAL) << "unexpected CPPTYPE in c_primitive_field";
       return "UNEXPECTED_CPPTYPE";
   }
 }
@@ -197,7 +197,7 @@ void PrimitiveFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer
     case FieldDescriptor::TYPE_STRING  :
     case FieldDescriptor::TYPE_BYTES   :
     case FieldDescriptor::TYPE_GROUP   :
-    case FieldDescriptor::TYPE_MESSAGE : GOOGLE_LOG(FATAL) << "not a primitive type"; break;
+    case FieldDescriptor::TYPE_MESSAGE : ABSL_LOG(FATAL) << "not a primitive type"; break;
 
     // No default because we want the compiler to complain if any new
     // types are added.

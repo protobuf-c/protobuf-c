@@ -107,7 +107,6 @@ class EnumGenerator {
   const EnumDescriptor* descriptor_;
   std::string dllexport_decl_;
 
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(EnumGenerator);
 };
 
 }  // namespace c

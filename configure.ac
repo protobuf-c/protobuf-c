@@ -78,6 +78,14 @@ if test "x$enable_protoc" != "xno"; then
 
   AX_CXX_COMPILE_STDCXX(11, noext, mandatory)
 
+# now checking 4.22.x protobuf, if so, set cxx as 14
+  AS_IF([pkg-config --atleast-version 4.22.0 protobuf],[AX_CXX_COMPILE_STDCXX(14, noext, mandatory)])
+
+  AS_IF([pkg-config --atleast-version 4.22.0 protobuf],
+    [PKG_CHECK_MODULES([ABSL_LOG_INTERNAL_CHECK_OP], [absl_log_internal_check_op],
+       [PKG_CHECK_MODULES([ABSL_LOG_RAW_HASH_SET], [absl_raw_hash_set], [], [AC_MSG_ERROR([Missing absl_raw_hash_set library.])])],
+       [AC_MSG_ERROR([Missing absl_log_internal_check_op library.])])])
+
   PKG_CHECK_MODULES([protobuf], [protobuf >= 3.0.0],
     [proto3_supported=yes],
     [PKG_CHECK_MODULES([protobuf], [protobuf >= 2.6.0])]

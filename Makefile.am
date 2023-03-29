@@ -20,7 +20,7 @@ AM_CPPFLAGS = \
 	-I${top_builddir} \
 	-I${top_srcdir}
 AM_CFLAGS = ${my_CFLAGS}
-AM_LDFLAGS =
+AM_LDFLAGS = ${ABSL_LOG_INTERNAL_CHECK_OP_LIBS} ${ABSL_LOG_RAW_HASH_SET_LIBS}
 
 # code coverage
 

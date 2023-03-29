@@ -104,8 +104,6 @@ class FieldGenerator {
                                             const std::string &descriptor_addr) const;
   const FieldDescriptor *descriptor_;
 
- private:
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGenerator);
 };
 
 // Convenience class which constructs FieldGenerators for a Descriptor.
@@ -122,7 +120,6 @@ class FieldGeneratorMap {
 
   static FieldGenerator* MakeGenerator(const FieldDescriptor* field);
 
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGeneratorMap);
 };
 
 }  // namespace c

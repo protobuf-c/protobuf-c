@@ -286,7 +286,7 @@ const char* const kKeywordList[] = {
 
 std::set<std::string> MakeKeywordsMap() {
   std::set<std::string> result;
-  for (int i = 0; i < GOOGLE_ARRAYSIZE(kKeywordList); i++) {
+  for (int i = 0; i < ABSL_ARRAYSIZE(kKeywordList); i++) {
     result.insert(kKeywordList[i]);
   }
   return result;
@@ -548,7 +548,7 @@ std::string CEscape(const std::string& src) {
   std::unique_ptr<char[]> dest(new char[dest_length]);
   const int len = CEscapeInternal(src.data(), src.size(),
                                   dest.get(), dest_length, false);
-  GOOGLE_DCHECK_GE(len, 0);
+  ABSL_DCHECK_GE(len, 0);
   return std::string(dest.get(), len);
 }
 
