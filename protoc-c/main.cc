@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
   google::protobuf::compiler::c::CGenerator c_generator;
 
   std::string invocation_name = argv[0];
-  std::string invocation_basename = invocation_name.substr(invocation_name.find_last_of("/") + 1);
+  std::string invocation_basename = invocation_name.substr(invocation_name.find_last_of('/') + 1);
   const std::string legacy_name = "protoc-c";
 
   if (invocation_basename == legacy_name) {
