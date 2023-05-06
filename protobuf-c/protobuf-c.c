@@ -814,7 +814,7 @@ uint32_pack(uint32_t value, uint8_t *out)
 static inline size_t
 int32_pack(uint32_t value, uint8_t *out)
 {
-	if ((int32_t)value < 0) {
+	if (value > INT_MAX) {
 		out[0] = value | 0x80;
 		out[1] = (value >> 7) | 0x80;
 		out[2] = (value >> 14) | 0x80;
