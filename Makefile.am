@@ -66,6 +66,9 @@ pkgconfig_DATA += protobuf-c/libprotobuf-c.pc
 CLEANFILES += protobuf-c/libprotobuf-c.pc
 EXTRA_DIST += protobuf-c/libprotobuf-c.pc.in
 
+cmakedir = $(prefix)/lib/cmake/@PACKAGE@/
+cmake_DATA = protobuf-c/protobuf-c.cmake
+
 #
 # protoc-gen-c
 #

@@ -195,6 +195,7 @@ install(TARGETS ${PROTOBUF_C_TARGETS}
 
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h ${MAIN_DIR}/protobuf-c/protobuf-c.proto DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
+INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.cmake DESTINATION lib/cmake/protobuf-c)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c.pdb DESTINATION lib OPTIONAL)
 
 SET(prefix ${CMAKE_INSTALL_PREFIX})
