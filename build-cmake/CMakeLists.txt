@@ -70,7 +70,6 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 endif (MSVC AND NOT BUILD_SHARED_LIBS)
 
 FIND_PACKAGE(Protobuf REQUIRED)
-INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 
 ENDIF()
 
@@ -83,7 +82,7 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 	foreach(flag_var
 		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
 		CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-		CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE 
+		CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
 		CMAKE_C_FLAGS_MINSIZEREL CMAKE_FLAGS_RELWITHDEBINFO)
 	  if(${flag_var} MATCHES "/MD")
 		string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
@@ -96,8 +95,8 @@ SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 ADD_CUSTOM_COMMAND(OUTPUT protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${PROTOBUF_INCLUDE_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
+                   COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${Protobuf_INCLUDE_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
 FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
 ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC} protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
 target_include_directories(protoc-gen-c
@@ -109,14 +108,14 @@ target_link_libraries(protoc-gen-c protobuf::libprotoc protobuf::libprotobuf)
 
 IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
-	GET_FILENAME_COMPONENT(PROTOBUF_DLL_DIR ${PROTOBUF_PROTOC_EXECUTABLE} DIRECTORY)
+	GET_FILENAME_COMPONENT(PROTOBUF_DLL_DIR ${Protobuf_PROTOC_EXECUTABLE} DIRECTORY)
 	FILE(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
 	FILE(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
 FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
 	ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                   COMMAND ${Protobuf_PROTOC_EXECUTABLE}
                    ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
                    DEPENDS protoc-gen-c)
 ENDFUNCTION()
@@ -132,13 +131,13 @@ TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
 
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                   COMMAND ${Protobuf_PROTOC_EXECUTABLE}
                    ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full.pb-c.h)
 
 ADD_EXECUTABLE(cxx-generate-packed-data ${TEST_DIR}/generated-code2/cxx-generate-packed-data.cc t/test-full.pb.h t/test-full.pb.cc protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
-TARGET_LINK_LIBRARIES(cxx-generate-packed-data ${PROTOBUF_LIBRARY})
+TARGET_LINK_LIBRARIES(cxx-generate-packed-data protobuf::libprotobuf)
 IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(cxx-generate-packed-data PRIVATE -DPROTOBUF_USE_DLLS)
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
