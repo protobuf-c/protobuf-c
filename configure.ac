@@ -78,8 +78,8 @@ if test "x$enable_protoc" != "xno"; then
 
   AX_CXX_COMPILE_STDCXX(11, noext, mandatory)
 
-# now checking 4.22.x protobuf, if so, set cxx as 14
-  AS_IF([pkg-config --atleast-version 4.22.0 protobuf],[AX_CXX_COMPILE_STDCXX(14, noext, mandatory)])
+# now checking 4.22.x protobuf, if so, set cxx as 17
+  AS_IF([pkg-config --atleast-version 4.22.0 protobuf],[AX_CXX_COMPILE_STDCXX(17, noext, mandatory)])
 
   AS_IF([pkg-config --atleast-version 4.22.0 protobuf],
     [PKG_CHECK_MODULES([ABSL_LOG_INTERNAL_CHECK_OP], [absl_log_internal_check_op],
