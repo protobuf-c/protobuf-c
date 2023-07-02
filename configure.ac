@@ -1,4 +1,4 @@
-AC_PREREQ(2.63)
+AC_PREREQ([2.63])
 
 AC_INIT([protobuf-c],
         [1.4.1],
@@ -11,7 +11,7 @@ AC_SUBST(PACKAGE_DESCRIPTION)
 AC_CONFIG_SRCDIR([protobuf-c/protobuf-c.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules subdir-objects])
-AC_PROG_CC_STDC
+AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LN_S
 AC_PROG_MKDIR_P
