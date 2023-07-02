@@ -100,8 +100,6 @@ class ServiceGenerator {
 
   const ServiceDescriptor* descriptor_;
   std::map<std::string, std::string> vars_;
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ServiceGenerator);
 };
 
 }  // namespace c

@@ -103,8 +103,6 @@ class FileGenerator {
   std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
   std::unique_ptr<std::unique_ptr<ServiceGenerator>[]> service_generators_;
   std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FileGenerator);
 };
 
 }  // namespace c

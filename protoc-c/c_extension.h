@@ -98,8 +98,6 @@ class ExtensionGenerator {
   const FieldDescriptor* descriptor_;
   std::string type_traits_;
   std::string dllexport_decl_;
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ExtensionGenerator);
 };
 
 }  // namespace c
