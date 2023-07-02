@@ -178,6 +178,16 @@ inline int FieldSyntax(const FieldDescriptor* field) {
 #endif
 }
 
+// Work around changes in protobuf >= 22.x without breaking compilation against
+// older protobuf versions.
+#if GOOGLE_PROTOBUF_VERSION >= 4022000
+# define GOOGLE_ARRAYSIZE	ABSL_ARRAYSIZE
+# define GOOGLE_CHECK_EQ	ABSL_CHECK_EQ
+# define GOOGLE_CHECK_EQ	ABSL_CHECK_EQ
+# define GOOGLE_DCHECK_GE	ABSL_DCHECK_GE
+# define GOOGLE_LOG		ABSL_LOG
+#endif
+
 }  // namespace c
 }  // namespace compiler
 }  // namespace protobuf
