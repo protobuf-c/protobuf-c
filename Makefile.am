@@ -107,8 +107,8 @@ protoc_c_protoc_gen_c_CXXFLAGS = \
 	$(AM_CXXFLAGS) \
 	$(protobuf_CFLAGS)
 protoc_c_protoc_gen_c_LDADD = \
-	$(protobuf_LIBS) \
-	-lprotoc
+	-lprotoc \
+	$(protobuf_LIBS)
 
 protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h: @PROTOC@ $(top_srcdir)/protobuf-c/protobuf-c.proto
 	$(AM_V_GEN)@PROTOC@ -I$(top_srcdir) --cpp_out=$(top_builddir) $(top_srcdir)/protobuf-c/protobuf-c.proto
