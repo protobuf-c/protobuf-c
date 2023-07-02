@@ -20,6 +20,9 @@ endif()
 INCLUDE(TestBigEndian)
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
+include(GNUInstallDirs)
+
+set(PROTOBUF_C_TARGETS "protobuf-c")
 SET(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 ADD_DEFINITIONS(-DPACKAGE_VERSION="${PACKAGE_VERSION}")
 ADD_DEFINITIONS(-DPACKAGE_STRING="${PACKAGE_STRING}")
@@ -48,6 +51,11 @@ SET (PC_SOURCES
 
 ADD_LIBRARY(protobuf-c ${PC_SOURCES})
 set_target_properties(protobuf-c PROPERTIES COMPILE_PDB_NAME protobuf-c)
+target_include_directories(protobuf-c
+  PUBLIC
+    $<BUILD_INTERFACE:${MAIN_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(protobuf-c PRIVATE -DPROTOBUF_C_EXPORT)
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
@@ -96,8 +104,12 @@ ADD_CUSTOM_COMMAND(OUTPUT protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
                    ARGS --cpp_out ${CMAKE_BINARY_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
 FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
 ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC} protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
-
-TARGET_LINK_LIBRARIES(protoc-gen-c ${PROTOBUF_PROTOC_LIBRARY} ${PROTOBUF_LIBRARY})
+target_include_directories(protoc-gen-c
+  PUBLIC
+    $<BUILD_INTERFACE:${MAIN_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+target_link_libraries(protoc-gen-c protobuf::libprotoc protobuf::libprotobuf)
 
 IF (MSVC AND BUILD_SHARED_LIBS)
 	TARGET_COMPILE_DEFINITIONS(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
@@ -181,10 +193,16 @@ IF(CMAKE_HOST_UNIX)
 	ENDIF()
 ENDIF()
 
-INSTALL(TARGETS protoc-gen-c RUNTIME DESTINATION bin)
+list(APPEND PROTOBUF_C_TARGETS "protoc-gen-c")
 ENDIF() # BUILD_PROTOC
 
-INSTALL(TARGETS protobuf-c LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+install(TARGETS ${PROTOBUF_C_TARGETS}
+  EXPORT protobuf-c-targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h ${MAIN_DIR}/protobuf-c/protobuf-c.proto DESTINATION include/protobuf-c)
 INSTALL(FILES ${MAIN_DIR}/protobuf-c/protobuf-c.h DESTINATION include)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/protobuf-c.pdb DESTINATION lib OPTIONAL)
@@ -193,7 +211,6 @@ IF(CMAKE_HOST_UNIX)
 INSTALL(CODE "EXECUTE_PROCESS (COMMAND ln -sf protoc-gen-c protoc-c WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)")
 ENDIF()
 
-INCLUDE(GNUInstallDirs)
 SET(prefix ${CMAKE_INSTALL_PREFIX})
 SET(exec_prefix \${prefix})
 SET(bindir \${exec_prefix}/${CMAKE_INSTALL_BINDIR})
@@ -201,6 +218,30 @@ SET(libdir \${exec_prefix}/${CMAKE_INSTALL_LIBDIR})
 SET(includedir \${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
 CONFIGURE_FILE(${MAIN_DIR}/protobuf-c/libprotobuf-c.pc.in libprotobuf-c.pc @ONLY)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/libprotobuf-c.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+install(EXPORT protobuf-c-targets
+  NAMESPACE protobuf-c::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/protobuf-c
+)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/protobuf-c-config.cmake"
+  INSTALL_DESTINATION "lib/cmake/protobuf-c"
+)
+
+write_basic_package_version_file(protobuf-c-config-version.cmake
+  VERSION ${PACKAGE_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c-config.cmake ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c-config-version.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/protobuf-c
+)
+
+export(EXPORT protobuf-c-targets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/protobuf-c-targets.cmake"
+)
 
 IF(BUILD_TESTS)
 INCLUDE(Dart)
