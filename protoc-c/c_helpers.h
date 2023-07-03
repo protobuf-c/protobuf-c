@@ -70,6 +70,10 @@
 #include <protobuf-c/protobuf-c.pb.h>
 #include <google/protobuf/io/printer.h>
 
+#if GOOGLE_PROTOBUF_VERSION >= 4023000
+# include <google/protobuf/descriptor_legacy.h>
+#endif
+
 namespace google {
 namespace protobuf {
 namespace compiler {
@@ -172,7 +176,11 @@ int compare_name_indices_by_name(const void*, const void*);
 // This wrapper is needed to be able to compile against protobuf2.
 inline int FieldSyntax(const FieldDescriptor* field) {
 #ifdef HAVE_PROTO3
+# if GOOGLE_PROTOBUF_VERSION >= 4023000
+  return FileDescriptorLegacy(field->file()).syntax() == FileDescriptorLegacy::SYNTAX_PROTO3 ? 3 : 2;
+# else
   return field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 ? 3 : 2;
+# endif
 #else
   return 2;
 #endif
