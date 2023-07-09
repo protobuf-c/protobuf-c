@@ -82,10 +82,6 @@ class PrimitiveFieldGenerator : public FieldGenerator {
   void GenerateDescriptorInitializer(io::Printer* printer) const;
   std::string GetDefaultValue(void) const;
   void GenerateStaticInit(io::Printer* printer) const;
-
- private:
-
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(PrimitiveFieldGenerator);
 };
 
 }  // namespace c

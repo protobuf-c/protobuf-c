@@ -143,7 +143,7 @@ std::string PrimitiveFieldGenerator::GetDefaultValue() const
     case FieldDescriptor::CPPTYPE_BOOL:
       return descriptor_->default_value_bool() ? "1" : "0";
     default:
-      GOOGLE_LOG(DFATAL) << "unexpected CPPTYPE in c_primitive_field";
+      GOOGLE_LOG(FATAL) << "unexpected CPPTYPE in c_primitive_field";
       return "UNEXPECTED_CPPTYPE";
   }
 }

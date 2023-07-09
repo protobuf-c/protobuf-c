@@ -499,7 +499,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 	  // NOTE: not supported by protobuf
 	  vars["maybe_static"] = "";
 	  vars["field_dv_ctype"] = "{ ... }";
-	  GOOGLE_LOG(DFATAL) << "Messages can't have default values!";
+	  GOOGLE_LOG(FATAL) << "Messages can't have default values!";
 	  break;
 	case FieldDescriptor::CPPTYPE_STRING:
 	  if (fd->type() == FieldDescriptor::TYPE_BYTES || opt.string_as_bytes())
@@ -521,7 +521,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 	    break;
 	  }
 	default:
-	  GOOGLE_LOG(DFATAL) << "Unknown CPPTYPE";
+	  GOOGLE_LOG(FATAL) << "Unknown CPPTYPE";
 	  break;
 	}
 	if (!already_defined)

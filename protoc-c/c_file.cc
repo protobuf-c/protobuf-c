@@ -119,7 +119,11 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
 
   int min_header_version = 1000000;
 #if defined(HAVE_PROTO3)
+# if GOOGLE_PROTOBUF_VERSION >= 4023000
+  if (FileDescriptorLegacy(file_).syntax() == FileDescriptorLegacy::SYNTAX_PROTO3) {
+# else
   if (file_->syntax() == FileDescriptor::SYNTAX_PROTO3) {
+#endif
     min_header_version = 1003000;
   }
 #endif
