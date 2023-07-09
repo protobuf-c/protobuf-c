@@ -38,10 +38,6 @@ my_CFLAGS="\
 -Wstrict-prototypes \
 -Wtype-limits \
 "
-#AX_CHECK_COMPILE_FLAG(["-Wc90-c99-compat"],
-#                      [my_CFLAGS="$my_CFLAGS -Wc90-c99-compat"])
-AX_CHECK_COMPILE_FLAG(["-Wc99-c11-compat"],
-                      [my_CFLAGS="$my_CFLAGS -Wc99-c11-compat"])
 AX_CHECK_COMPILE_FLAG(["-Werror=incompatible-pointer-types"],
                       [my_CFLAGS="$my_CFLAGS -Werror=incompatible-pointer-types"])
 AX_CHECK_COMPILE_FLAG(["-Werror=int-conversion"],
