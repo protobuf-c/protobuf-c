@@ -1888,7 +1888,6 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 		for (i = 0; i < count; i++) {
 			unsigned len = boolean_pack(((protobuf_c_boolean *) array)[i], scratch);
 			buffer->append(buffer, len, scratch);
-			rv += len;
 		}
 		return count;
 	default:
@@ -2557,7 +2556,7 @@ parse_required_member(ScannedMember *scanned_member,
 
 		if (maybe_clear && *pstr != NULL) {
 			const char *def = scanned_member->field->default_value;
-			if (*pstr != NULL && *pstr != def)
+			if (*pstr != def)
 				do_free(allocator, *pstr);
 		}
 		*pstr = do_alloc(allocator, len - pref_len + 1);

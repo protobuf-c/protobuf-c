@@ -234,7 +234,7 @@ void PrintComment (io::Printer* printer, std::string comment)
       std::vector<std::string> comment_lines;
       SplitStringUsing (comment, "\r\n", &comment_lines);
       printer->Print ("/*\n");
-      for (int i = 0; i < comment_lines.size(); i++)
+      for (size_t i = 0; i < comment_lines.size(); i++)
       {
          if (!comment_lines[i].empty())
          {
@@ -286,7 +286,7 @@ const char* const kKeywordList[] = {
 
 std::set<std::string> MakeKeywordsMap() {
   std::set<std::string> result;
-  for (int i = 0; i < GOOGLE_ARRAYSIZE(kKeywordList); i++) {
+  for (size_t i = 0; i < GOOGLE_ARRAYSIZE(kKeywordList); i++) {
     result.insert(kKeywordList[i]);
   }
   return result;
@@ -526,7 +526,7 @@ static int CEscapeInternal(const char* src, int src_len, char* dest,
         if (!isprint(*src) || (last_hex_escape && isxdigit(*src))) {
           if (dest_len - used < 4) // need space for 4 letter escape
             return -1;
-          sprintf(dest + used, (use_hex ? "\\x%02x" : "\\%03o"),
+          snprintf(dest + used, dest_len - used, (use_hex ? "\\x%02x" : "\\%03o"),
                   static_cast<uint8>(*src));
           is_hex_escape = use_hex;
           used += 4;

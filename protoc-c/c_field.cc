@@ -159,6 +159,11 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   if (oneof != NULL)
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_ONEOF";
 
+  // Eliminate codesmell "or with 0"
+  if (variables["flags"].find("0 | ") == 0) {
+   variables["flags"].erase(0, 4);
+  }
+
   printer->Print("{\n");
   if (descriptor_->file()->options().has_optimize_for() &&
         descriptor_->file()->options().optimize_for() ==

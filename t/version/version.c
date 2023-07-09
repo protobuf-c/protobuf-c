@@ -35,7 +35,7 @@
 #include "protobuf-c.h"
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	printf("PACKAGE_VERSION = %s\n",
 	       PACKAGE_VERSION);
