@@ -139,11 +139,13 @@ LOG_COMPILER = $(VALGRIND)
 check_PROGRAMS += \
 	t/generated-code/test-generated-code \
 	t/generated-code2/test-generated-code2 \
+	t/generated-code3/test-generated-code3 \
 	t/version/version
 
 TESTS += \
 	t/generated-code/test-generated-code \
 	t/generated-code2/test-generated-code2 \
+	t/generated-code3/test-generated-code3 \
 	t/version/version
 
 t_generated_code_test_generated_code_SOURCES = \
@@ -157,6 +159,16 @@ t_generated_code2_test_generated_code2_SOURCES = \
 	t/test-full.pb-c.c \
 	t/test-optimized.pb-c.c
 t_generated_code2_test_generated_code2_LDADD = \
+	protobuf-c/libprotobuf-c.la
+
+t_generated_code3_test_generated_code3_CPPFLAGS = \
+	-DPROTO3
+
+t_generated_code3_test_generated_code3_SOURCES = \
+	t/generated-code/test-generated-code.c \
+	t/test-proto3.pb-c.c
+
+t_generated_code3_test_generated_code3_LDADD = \
 	protobuf-c/libprotobuf-c.la
 
 noinst_PROGRAMS += \
@@ -185,6 +197,9 @@ t/test-full.pb-c.c t/test-full.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EX
 t/test-full.pb.cc t/test-full.pb.h: @PROTOC@ $(top_srcdir)/t/test-full.proto
 	$(AM_V_GEN)@PROTOC@ -I$(top_srcdir) --cpp_out=$(top_builddir) $(top_srcdir)/t/test-full.proto
 
+t/test-proto3.pb-c.c t/test-proto3.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/test-proto3.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test-proto3.proto
+
 t/generated-code2/test-full-cxx-output.inc: t/generated-code2/cxx-generate-packed-data$(EXEEXT)
 	$(AM_V_GEN)$(top_builddir)/t/generated-code2/cxx-generate-packed-data$(EXEEXT) > $(top_builddir)/t/generated-code2/test-full-cxx-output.inc
 
@@ -193,33 +208,8 @@ BUILT_SOURCES += \
 	t/test-full.pb-c.c t/test-full.pb-c.h \
 	t/test-optimized.pb-c.c t/test-optimized.pb-c.h \
 	t/test-full.pb.cc t/test-full.pb.h \
+	t/test-proto3.pb-c.c t/test-proto3.pb-c.h \
 	t/generated-code2/test-full-cxx-output.inc
-
-if BUILD_PROTO3
-
-check_PROGRAMS += \
-	t/generated-code3/test-generated-code3
-
-TESTS += \
-	t/generated-code3/test-generated-code3
-
-t_generated_code3_test_generated_code3_CPPFLAGS = \
-	-DPROTO3
-
-t_generated_code3_test_generated_code3_LDADD = \
-	protobuf-c/libprotobuf-c.la
-
-t_generated_code3_test_generated_code3_SOURCES = \
-	t/generated-code/test-generated-code.c \
-	t/test-proto3.pb-c.c
-
-t/test-proto3.pb-c.c t/test-proto3.pb-c.h: $(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/test-proto3.proto
-	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/test-proto3.proto
-
-BUILT_SOURCES += \
-	t/test-proto3.pb-c.c t/test-proto3.pb-c.h
-
-endif # BUILD_PROTO3
 
 t_version_version_SOURCES = \
 	t/version/version.c
@@ -278,7 +268,6 @@ EXTRA_DIST += \
 	t/issue251/issue251.proto
 
 # Issue #330
-if BUILD_PROTO3
 check_PROGRAMS += \
 	t/issue330/issue330
 TESTS += \
@@ -292,6 +281,8 @@ t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h: $(top_builddir)/protoc-c/
 	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue330/issue330.proto
 BUILT_SOURCES += \
 	t/issue330/issue330.pb-c.c t/issue330/issue330.pb-c.h
+EXTRA_DIST += \
+	t/issue330/issue330.proto
 
 t_issue330_issue330_SOURCES += \
 	t/issue389/issue389.pb-c.c # Tack onto issue330 since there is no need for a separate binary here
@@ -317,9 +308,6 @@ BUILT_SOURCES += \
 	t/issue440/issue440.pb-c.c t/issue440/issue440.pb-c.h
 EXTRA_DIST += \
 	t/issue440/issue440.proto
-endif # BUILD_PROTO3
-EXTRA_DIST += \
-	t/issue330/issue330.proto
 
 # Issue #375
 check_PROGRAMS += \
