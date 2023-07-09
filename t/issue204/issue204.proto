@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 import "protobuf-c/protobuf-c.proto";
 
 option (pb_c_file).use_oneof_field_name = true;

@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 message TopLevel {
     oneof submessages {
         MessageType1 type1 = 1;
