@@ -29,10 +29,6 @@ if (${WORDS_BIGENDIAN})
 	ADD_DEFINITIONS(-DWORDS_BIGENDIAN)
 endif()
 
-IF (MSVC AND BUILD_SHARED_LIBS)
-	ADD_DEFINITIONS(-DPROTOBUF_C_USE_SHARED_LIB)
-ENDIF (MSVC AND BUILD_SHARED_LIBS)
-
 if(MSVC)
   # using Visual Studio C++
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4267 /wd4244")
@@ -106,13 +102,6 @@ target_include_directories(protoc-gen-c
 )
 target_link_libraries(protoc-gen-c protobuf::libprotoc protobuf::libprotobuf)
 
-IF (MSVC AND BUILD_SHARED_LIBS)
-	TARGET_COMPILE_DEFINITIONS(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
-	GET_FILENAME_COMPONENT(PROTOBUF_DLL_DIR ${Protobuf_PROTOC_EXECUTABLE} DIRECTORY)
-	FILE(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
-	FILE(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-ENDIF (MSVC AND BUILD_SHARED_LIBS)
-
 FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
 	ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
                    COMMAND ${Protobuf_PROTOC_EXECUTABLE}
@@ -138,9 +127,6 @@ GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full
 
 ADD_EXECUTABLE(cxx-generate-packed-data ${TEST_DIR}/generated-code2/cxx-generate-packed-data.cc t/test-full.pb.h t/test-full.pb.cc protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
 TARGET_LINK_LIBRARIES(cxx-generate-packed-data protobuf::libprotobuf)
-IF (MSVC AND BUILD_SHARED_LIBS)
-	TARGET_COMPILE_DEFINITIONS(cxx-generate-packed-data PRIVATE -DPROTOBUF_USE_DLLS)
-ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/t/generated-code2)
 ADD_CUSTOM_COMMAND(OUTPUT t/generated-code2/test-full-cxx-output.inc
