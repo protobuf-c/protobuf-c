@@ -11,9 +11,9 @@ Pod::Spec.new do |spec|
   spec.license     = { :type => "BSD", :file => "LICENSE" }
 
   spec.ios.deployment_target     = '12.0'
-  # spec.tvos.deployment_target    = '12.0'
+  spec.tvos.deployment_target    = '12.0'
   spec.macos.deployment_target   = '10.13'
-  # spec.watchos.deployment_target = '7.0'
+  spec.watchos.deployment_target = '7.0'
   spec.requires_arc              = false
 
   spec.source_files        = 'protobuf-c/protobuf-c.h', 'protobuf-c/protobuf-c.c'
