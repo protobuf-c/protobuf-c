@@ -391,7 +391,7 @@ protobuf-c (1.0.0)
 
   * The RPC code has been split out into a separate project, protobuf-c-rpc.
 
-  * Fix a potential use of an unitialized value in protobuf_c_message_unpack()
+  * Fix a potential use of an uninitialized value in protobuf_c_message_unpack()
     and several memory leaks in protoc-c, discovered by a commercial static code
     analysis tool.
 

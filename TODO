@@ -77,6 +77,6 @@ Document:
   - Rewrite the code-generator in C, including the parser.
   - This would have the huge advantage that we could use ".proto" files
     directly, instead of having to invoke the compilers.
-  - keep in a separate c file for static linking optimziation purposes
+  - keep in a separate c file for static linking optimization purposes
   - need alignment tests
   - the CAVEATS should discuss our structure-packing assumptions
