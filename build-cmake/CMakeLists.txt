@@ -232,13 +232,33 @@ IF (MSVC AND BUILD_SHARED_LIBS)
 	FILE(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
-FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
-	ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
-                   DEPENDS protoc-gen-c)
-ENDFUNCTION()
+if(WIN32)
 
+    # modify the environment to hint protoc where the plugin is
+    string(REGEX MATCHALL  "[A-Z]:[^;:]+;" PATH_VARIABLE "$ENV{PATH}" )
+    foreach (itvar ${PATH_VARIABLE})
+            string(REPLACE ";" "" itvar ${itvar})
+            set(WINDOWS_PATH_VARIABLE "${WINDOWS_PATH_VARIABLE}\\;${itvar}" )
+    endforeach( itvar )
+
+    FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
+        ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
+                       COMMAND ${CMAKE_COMMAND}
+                       ARGS -E env PATH="${WINDOWS_PATH_VARIABLE}\\;$<TARGET_FILE_DIR:protoc-gen-c>" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+                            --plugin=$<TARGET_FILE_NAME:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
+                       DEPENDS protoc-gen-c)
+    ENDFUNCTION()
+
+else(WIN32)
+
+    FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
+        ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
+                       COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+                       ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
+                       DEPENDS protoc-gen-c)
+    ENDFUNCTION()
+
+endif(WIN32)
 
 IF(BUILD_TESTS)
 ENABLE_TESTING()
@@ -247,7 +267,6 @@ GENERATE_TEST_SOURCES(${TEST_DIR}/test.proto t/test.pb-c.c t/test.pb-c.h)
 
 ADD_EXECUTABLE(test-generated-code ${TEST_DIR}/generated-code/test-generated-code.c t/test.pb-c.c t/test.pb-c.h )
 TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
-
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
@@ -267,7 +286,7 @@ ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/t/generated-code2)
 ADD_CUSTOM_COMMAND(OUTPUT t/generated-code2/test-full-cxx-output.inc
-                   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cxx-generate-packed-data ">t/generated-code2/test-full-cxx-output.inc"
+                   COMMAND cxx-generate-packed-data ">t/generated-code2/test-full-cxx-output.inc"
                    DEPENDS cxx-generate-packed-data
                    )
 
@@ -361,6 +380,18 @@ ADD_TEST(test-generated-code3 test-generated-code3)
 ADD_TEST(test-issue220 test-issue220)
 ADD_TEST(test-issue251 test-issue251)
 ADD_TEST(test-version test-version)
+
+if(WIN32)
+    set_tests_properties(
+        test-generated-code 
+        test-generated-code2 
+        test-generated-code3 
+        test-issue220 
+        test-issue251 
+        test-version 
+        PROPERTIES ENVIRONMENT "PATH=${WINDOWS_PATH_VARIABLE}\\;$<TARGET_FILE_DIR:protoc-gen-c>" )
+endif(WIN32)
+
 ENDIF()
 
 
