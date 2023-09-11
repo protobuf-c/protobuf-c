@@ -7,6 +7,7 @@ SET(PACKAGE_DESCRIPTION "Protocol Buffers implementation in C")
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0091 NEW)
+cmake_policy(SET CMP0112 NEW)
 
 PROJECT(protobuf-c C CXX)
 
@@ -15,100 +16,15 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 endif (MSVC AND NOT BUILD_SHARED_LIBS)
 
 FIND_PACKAGE(Protobuf REQUIRED)
+file(REAL_PATH "${PROTOBUF_INCLUDE_DIR}" PROTOBUF_INCLUDE_DIR)
 INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
+
+find_package(absl REQUIRED)
 
 # for static protobuf libraries include the dependencies
 if (Protobuf_USE_STATIC_LIBS)
-    find_package(absl REQUIRED)
-
-    set(protobuf_ABSL_USED_TARGETS
-        absl::log_severity
-        absl::raw_logging_internal
-        absl::spinlock_wait
-        absl::malloc_internal
-        absl::base
-        absl::throw_delegate
-        absl::scoped_set_env
-        absl::strerror
-        absl::hashtablez_sampler
-        absl::raw_hash_set
-        absl::crc_cpu_detect
-        absl::crc_internal
-        absl::crc32c
-        absl::crc_cord_state
-        absl::stacktrace
-        absl::symbolize
-        absl::examine_stack
-        absl::failure_signal_handler
-        absl::debugging_internal
-        absl::demangle_internal
-        absl::leak_check
-        absl::flags_program_name
-        absl::flags_config
-        absl::flags_marshalling
-        absl::flags_commandlineflag_internal
-        absl::flags_commandlineflag
-        absl::flags_private_handle_accessor
-        absl::flags_reflection
-        absl::flags_internal
-        absl::flags
-        absl::flags_usage_internal
-        absl::flags_usage
-        absl::flags_parse
-        absl::hash
-        absl::city
-        absl::low_level_hash
-        absl::log_internal_check_op
-        absl::log_internal_conditions
-        absl::log_internal_format
-        absl::log_internal_globals
-        absl::log_internal_proto
-        absl::log_internal_message
-        absl::log_internal_log_sink_set
-        absl::log_internal_nullguard
-        absl::die_if_null
-        absl::log_flags
-        absl::log_globals
-        absl::log_initialize
-        absl::log_entry
-        absl::log_sink
-        absl::log_internal_fnmatch
-        absl::int128
-        absl::exponential_biased
-        absl::periodic_sampler
-        absl::random_distributions
-        absl::random_seed_gen_exception
-        absl::random_seed_sequences
-        absl::random_internal_seed_material
-        absl::random_internal_pool_urbg
-        absl::random_internal_platform
-        absl::random_internal_randen
-        absl::random_internal_randen_slow
-        absl::random_internal_randen_hwaes
-        absl::random_internal_randen_hwaes_impl
-        absl::random_internal_distribution_test_util
-        absl::status
-        absl::statusor
-        absl::string_view
-        absl::strings
-        absl::strings_internal
-        absl::str_format_internal
-        absl::cord_internal
-        absl::cordz_functions
-        absl::cordz_handle
-        absl::cordz_info
-        absl::cordz_sample_token
-        absl::cord
-        absl::graphcycles_internal
-        absl::kernel_timeout_internal
-        absl::synchronization
-        absl::time
-        absl::civil_time
-        absl::time_zone
-        absl::bad_any_cast_impl
-        absl::bad_optional_access
-        absl::bad_variant_access
-    )
+    get_property(protobuf_ABSL_USED_TARGETS DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" PROPERTY IMPORTED_TARGETS)
+    list(FILTER protobuf_ABSL_USED_TARGETS INCLUDE REGEX "absl::")
 
     find_package(utf8_range REQUIRED)
 
@@ -116,6 +32,8 @@ if (Protobuf_USE_STATIC_LIBS)
         utf8_range::utf8_validity
         utf8_range::utf8_range
     )
+elseif(WIN32)
+    set(protobuf_ABSL_USED_TARGETS absl::abseil_dll)
 endif()
 
 #options
@@ -202,15 +120,46 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 	endforeach(flag_var)
 endif (MSVC AND NOT BUILD_SHARED_LIBS)
 
+if(WIN32)
+    # Modify the environment to hint protoc where the plugin is
+    # prepend to PATH because github host runners have abseil dll pre-installed.
+    # Use %PATH% instead of actually inserting it. On Github runners the PATH is so long
+    # it makes the NMake generated commands to fail.
+    set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:protoc-gen-c>\\;%PATH%")
+
+    if(BUILD_SHARED_LIBS)
+        set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:protobuf::protoc>\\;${OS_PATH_VARIABLE}")
+        set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:absl::abseil_dll>\\;${OS_PATH_VARIABLE}")
+    endif()
+
+else(WIN32)
+
+    set(OS_PATH_VARIABLE "$ENV{PATH}" )
+    set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:protoc-gen-c>:${OS_PATH_VARIABLE}")
+
+endif(WIN32)
+
 IF(BUILD_PROTOC)
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
-ADD_CUSTOM_COMMAND(OUTPUT protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${PROTOBUF_INCLUDE_DIR} -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
-FILE(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
-ADD_EXECUTABLE(protoc-gen-c ${PROTOC_GEN_C_SRC} protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
+
+add_custom_target(protoc-generated-files
+       COMMAND ${CMAKE_COMMAND} -E env PATH="${OS_PATH_VARIABLE}" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+            --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${PROTOBUF_INCLUDE_DIR}
+            -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto
+       COMMENT Running protoc on ${MAIN_DIR}/protobuf-c/protobuf-c.proto
+       BYPRODUCTS protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
+       SOURCES ${MAIN_DIR}/protobuf-c/protobuf-c.proto
+)
+
+file(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc )
+add_executable(protoc-gen-c
+    ${PROTOC_GEN_C_SRC}
+    ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.h
+)
+add_dependencies(protoc-gen-c protoc-generated-files)
 target_include_directories(protoc-gen-c
   PUBLIC
     $<BUILD_INTERFACE:${MAIN_DIR}>
@@ -232,33 +181,13 @@ IF (MSVC AND BUILD_SHARED_LIBS)
 	FILE(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
-if(WIN32)
-
-    # modify the environment to hint protoc where the plugin is
-    string(REGEX MATCHALL  "[A-Z]:[^;:]+;" PATH_VARIABLE "$ENV{PATH}" )
-    foreach (itvar ${PATH_VARIABLE})
-            string(REPLACE ";" "" itvar ${itvar})
-            set(WINDOWS_PATH_VARIABLE "${WINDOWS_PATH_VARIABLE}\\;${itvar}" )
-    endforeach( itvar )
-
-    FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
-        ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
-                       COMMAND ${CMAKE_COMMAND}
-                       ARGS -E env PATH="${WINDOWS_PATH_VARIABLE}\\;$<TARGET_FILE_DIR:protoc-gen-c>" -- ${PROTOBUF_PROTOC_EXECUTABLE}
-                            --plugin=$<TARGET_FILE_NAME:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
-                       DEPENDS protoc-gen-c)
-    ENDFUNCTION()
-
-else(WIN32)
-
-    FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
-        ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
-                       COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                       ARGS --plugin=$<TARGET_FILE:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
-                       DEPENDS protoc-gen-c)
-    ENDFUNCTION()
-
-endif(WIN32)
+FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
+    ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
+       COMMAND ${CMAKE_COMMAND}
+       ARGS -E env PATH="${OS_PATH_VARIABLE}" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+            --plugin=$<TARGET_FILE_NAME:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
+       DEPENDS protoc-gen-c)
+ENDFUNCTION()
 
 IF(BUILD_TESTS)
 ENABLE_TESTING()
@@ -269,8 +198,10 @@ ADD_EXECUTABLE(test-generated-code ${TEST_DIR}/generated-code/test-generated-cod
 TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
-                   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                   ARGS --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
+       COMMAND ${CMAKE_COMMAND}
+       ARGS -E env PATH="${OS_PATH_VARIABLE}" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+            --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto
+)
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full.pb-c.h)
 
@@ -286,16 +217,16 @@ ENDIF (MSVC AND BUILD_SHARED_LIBS)
 
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/t/generated-code2)
 ADD_CUSTOM_COMMAND(OUTPUT t/generated-code2/test-full-cxx-output.inc
-                   COMMAND cxx-generate-packed-data ">t/generated-code2/test-full-cxx-output.inc"
-                   DEPENDS cxx-generate-packed-data
-                   )
+       COMMAND ${CMAKE_COMMAND}
+       ARGS -E env PATH="${OS_PATH_VARIABLE}" -- cxx-generate-packed-data
+            ">t/generated-code2/test-full-cxx-output.inc"
+            DEPENDS cxx-generate-packed-data
+)
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/test-optimized.proto t/test-optimized.pb-c.c t/test-optimized.pb-c.h)
 
 ADD_EXECUTABLE(test-generated-code2 ${TEST_DIR}/generated-code2/test-generated-code2.c t/generated-code2/test-full-cxx-output.inc t/test-full.pb-c.h t/test-full.pb-c.c t/test-optimized.pb-c.h t/test-optimized.pb-c.c)
 TARGET_LINK_LIBRARIES(test-generated-code2 protobuf-c)
-
-
 
 GENERATE_TEST_SOURCES(${TEST_DIR}/issue220/issue220.proto t/issue220/issue220.pb-c.c t/issue220/issue220.pb-c.h)
 ADD_EXECUTABLE(test-issue220 ${TEST_DIR}/issue220/issue220.c t/issue220/issue220.pb-c.c t/issue220/issue220.pb-c.h)
@@ -393,6 +324,5 @@ if(WIN32)
 endif(WIN32)
 
 ENDIF()
-
 
 INCLUDE(CPack)
