@@ -5,7 +5,7 @@ on:
         inputs:
             protobuf_repo:
                 description: 'repo associated to the protobuf repo'
-                default: 'https://github.com/MiguelBarro/protobuf.git'
+                default: 'https://github.com/protocolbuffers/protobuf.git'
                 type: string
             protobuf_branch:
                 description: 'branch associated with the protobuf repo'
@@ -13,7 +13,7 @@ on:
                 type: string
             protobuf-c_repo:
                 description: 'repo associated to the protobuf-c repo'
-                default: 'https://github.com/MiguelBarro/protobuf-c.git'
+                default: 'https://github.com/protobuf-c/protobuf-c.git'
                 type: string
             protobuf-c_branch:
                 description: 'branch associated with the protobuf-c repo'
