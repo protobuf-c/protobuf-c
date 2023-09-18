@@ -19,21 +19,21 @@ FIND_PACKAGE(Protobuf REQUIRED)
 file(REAL_PATH "${PROTOBUF_INCLUDE_DIR}" PROTOBUF_INCLUDE_DIR)
 INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 
-find_package(absl REQUIRED)
+find_package(absl CONFIG)
 
 # for static protobuf libraries include the dependencies
 if (Protobuf_USE_STATIC_LIBS)
     get_property(protobuf_ABSL_USED_TARGETS DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" PROPERTY IMPORTED_TARGETS)
     list(FILTER protobuf_ABSL_USED_TARGETS INCLUDE REGEX "absl::")
 
-    find_package(utf8_range REQUIRED)
+    find_package(utf8_range CONFIG)
 
     set(protobuf_UTF8_USED_TARGETS
-        utf8_range::utf8_validity
-        utf8_range::utf8_range
+        $<TARGET_NAME_IF_EXISTS:utf8_range::utf8_validity>
+        $<TARGET_NAME_IF_EXISTS:utf8_range::utf8_range>
     )
 elseif(WIN32)
-    set(protobuf_ABSL_USED_TARGETS absl::abseil_dll)
+    set(protobuf_ABSL_USED_TARGETS $<TARGET_NAME_IF_EXISTS:absl::abseil_dll>)
 endif()
 
 #options
@@ -129,7 +129,9 @@ if(WIN32)
 
     if(BUILD_SHARED_LIBS)
         set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:protobuf::protoc>\\;${OS_PATH_VARIABLE}")
-        set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:absl::abseil_dll>\\;${OS_PATH_VARIABLE}")
+        if (TARGET absl::abseil_dll)
+            set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:absl::abseil_dll>\\;${OS_PATH_VARIABLE}")
+        endif()
     endif()
 
 else(WIN32)

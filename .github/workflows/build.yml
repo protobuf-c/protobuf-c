@@ -90,13 +90,13 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-20.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev libabsl-dev
+        run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
       - name: Install Mac dependencies
         if: startsWith(matrix.os, 'macos')
         run: brew install protobuf abseil
@@ -138,7 +138,7 @@ jobs:
         if: steps.abseil-cache.outputs.cache-hit != 'true'
         run: |
           cd ~
-          git clone https://github.com/abseil/abseil-cpp.git -b ${{ env.ABSEIL_VERSION }} abseil
+          git clone --depth=1 https://github.com/abseil/abseil-cpp.git -b ${{ env.ABSEIL_VERSION }} abseil
           cd ~/abseil && mkdir build && cd build
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/abseil-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }} -DCMAKE_CXX_STANDARD=17 ..
           nmake
@@ -147,7 +147,7 @@ jobs:
         if: matrix.shared-lib == 'OFF'
         run: |
           cd ~
-          git clone https://github.com/protocolbuffers/utf8_range.git utf8_range
+          git clone --depth=1 https://github.com/protocolbuffers/utf8_range.git utf8_range
           cd ~/utf8_range && mkdir build && cd build
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/utf8_range-bin -DCMAKE_CXX_STANDARD=17 -Dutf8_range_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -Dabsl_ROOT=~/abseil-bin -DCMAKE_POLICY_DEFAULT_CMP0074=NEW -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY='MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}' ..
           nmake
@@ -156,7 +156,7 @@ jobs:
         if: steps.protobuf-cache.outputs.cache-hit != 'true'
         run: |
           cd ~
-          git clone https://github.com/protocolbuffers/protobuf.git -b v${{ env.PROTOBUF_VERSION }} protobuf
+          git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v${{ env.PROTOBUF_VERSION }} protobuf
           cd ~/protobuf && mkdir build && cd build
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_EXAMPLES=OFF -Dprotobuf_ABSL_PROVIDER=package -Dabsl_ROOT=~/abseil-bin -DABSL_PROPAGATE_CXX_STD=ON ..
           nmake
