@@ -17,7 +17,7 @@ on:
                 type: string
             protobuf-c_branch:
                 description: 'branch associated with the protobuf-c repo'
-                default: 'master'
+                default: 'next'
                 type: string
             abseil_branch:
                 description: 'branch associated with the abseil-cpp repo'
