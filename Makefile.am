@@ -13,6 +13,8 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 EXTRA_DIST += LICENSE
 EXTRA_DIST += README.md
+EXTRA_DIST += CHANGELOG.md
+EXTRA_DIST += ChangeLog.old
 
 AM_CPPFLAGS = \
 	-include $(top_builddir)/config.h \
