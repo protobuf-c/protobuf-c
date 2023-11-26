@@ -1,5 +1,5 @@
 /* generate byte arrays that match the constructs in test-generated-code2.c.
- * these are tested against eachother to make sure the c and c++ agree. */
+ * these are tested against each other to make sure the c and c++ agree. */
 
 #define __STDC_LIMIT_MACROS
 #include "t/test-full.pb.h"
