@@ -2228,11 +2228,11 @@ merge_messages(ProtobufCMessage *earlier_msg,
 		} else if (fields[i].label == PROTOBUF_C_LABEL_OPTIONAL ||
 			   fields[i].label == PROTOBUF_C_LABEL_NONE) {
 			const ProtobufCFieldDescriptor *field;
-			uint32_t *earlier_case_p = STRUCT_MEMBER_PTR(uint32_t,
+			int32_t *earlier_case_p = STRUCT_MEMBER_PTR(int32_t,
 								     earlier_msg,
 								     fields[i].
 								     quantifier_offset);
-			uint32_t *latter_case_p = STRUCT_MEMBER_PTR(uint32_t,
+			int32_t *latter_case_p = STRUCT_MEMBER_PTR(int32_t,
 								    latter_msg,
 								    fields[i].
 								    quantifier_offset);
@@ -2635,7 +2635,7 @@ parse_oneof_member (ScannedMember *scanned_member,
 		    ProtobufCMessage *message,
 		    ProtobufCAllocator *allocator)
 {
-	uint32_t *oneof_case = STRUCT_MEMBER_PTR(uint32_t, message,
+	int32_t *oneof_case = STRUCT_MEMBER_PTR(int32_t, message,
 					       scanned_member->field->quantifier_offset);
 
 	/* If we have already parsed a member of this oneof, free it. */
