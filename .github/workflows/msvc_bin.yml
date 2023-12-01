@@ -1,0 +1,190 @@
+name: Windows/MSVC binary generation
+
+on:
+    workflow_dispatch:
+        inputs:
+            protobuf_repo:
+                description: 'repo associated to the protobuf repo'
+                default: 'https://github.com/protocolbuffers/protobuf.git'
+                type: string
+            protobuf_branch:
+                description: 'branch/tag/commit associated with the protobuf repo'
+                default: 'main'
+                type: string
+            protobuf-c_repo:
+                description: 'repo associated to the protobuf-c repo'
+                default: 'https://github.com/protobuf-c/protobuf-c.git'
+                type: string
+            protobuf-c_branch:
+                description: 'branch/tag/commit associated with the protobuf-c repo'
+                default: 'next'
+                type: string
+            abseil_branch:
+                description: 'branch/tag/commit associated with the abseil-cpp repo'
+                default: 'master'
+                type: string
+
+defaults:
+    run:
+        shell: pwsh
+
+jobs:
+    build-binaries:
+        strategy:
+            matrix:
+                config: [Debug, Release]
+                shared_libs: [ON, OFF]
+            fail-fast: false
+        runs-on: windows-latest
+        steps:
+            - name: Set up an independent abseil repo
+              run: |
+                   git clone https://github.com/abseil/abseil-cpp.git
+                   cd abseil-cpp
+                   git checkout ${{ inputs.abseil_branch }}
+                   $runtime = 'MultiThreaded$<$<CONFIG:Debug>:Debug>'
+                   if ('${{ matrix.shared_libs }}' -eq 'ON')
+                   { $runtime += 'DLL' }
+                   cmake -DABSL_USE_EXTERNAL_GOOGLETEST=ON -DABSL_FIND_GOOGLETEST=ON `
+                         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }} -DABSL_PROPAGATE_CXX_STD=ON `
+                         -DCMAKE_MSVC_RUNTIME_LIBRARY="$runtime" `
+                         -DCMAKE_CXX_STANDARD=17 -B build -A x64 -T host=x64 .
+                   cmake --build build --config ${{ matrix.config }}
+                   cmake --install build --config ${{ matrix.config }} --prefix "$Env:TMP/install/absl"
+
+            - name: Set up the utf8 compression algorithm
+              if: ${{ matrix.shared_libs == 'OFF' }}
+              run: |
+                   git clone https://github.com/protocolbuffers/utf8_range.git
+                   cd utf8_range
+                   cmake -DCMAKE_CXX_STANDARD=17 -Dutf8_range_ENABLE_TESTS=OFF `
+                         -DBUILD_SHARED_LIBS=OFF `
+                         -Dabsl_ROOT="$Env:TMP/install/absl" `
+                         -DCMAKE_POLICY_DEFAULT_CMP0074=NEW `
+                         -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+                         -DCMAKE_MSVC_RUNTIME_LIBRARY='MultiThreaded$<$<CONFIG:Debug>:Debug>' `
+                         -B build -A x64 -T host=x64 .
+                   cmake --build build --config ${{ matrix.config }}
+                   cmake --install build --config ${{ matrix.config }} --prefix "$Env:TMP/install/utf8_range"
+
+            - name: Set up protobuf repo
+              run: |
+                   git clone --recurse-submodules ${{ inputs.protobuf_repo }}
+                   cd protobuf
+                   git checkout ${{ inputs.protobuf_branch }} 
+                   cmake -DCMAKE_CXX_STANDARD=17 `
+                         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }} `
+                         -Dprotobuf_BUILD_TESTS=OFF `
+                         -Dprotobuf_BUILD_EXAMPLES=OFF `
+                         -Dprotobuf_ABSL_PROVIDER=package `
+                         -Dabsl_ROOT="$Env:TMP/install/absl" `
+                         -DABSL_PROPAGATE_CXX_STD=ON `
+                         -B build -A x64 -T host=x64 .
+                   cmake --build build --config ${{ matrix.config }}
+                   cmake --install build --config ${{ matrix.config }} --prefix "$Env:TMP/install/protobuf"
+
+            - name: Set up protobuf-c repo
+              id: build
+              run: |
+                   git clone --recurse-submodules ${{ inputs.protobuf-c_repo }}
+                   cd protobuf-c
+                   git checkout ${{ inputs.protobuf-c_branch }}
+                   cmake -DCMAKE_CXX_STANDARD=17 `
+                         -DProtobuf_ROOT="$Env:TMP/install/protobuf" `
+                         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }} `
+                         -DBUILD_TESTS=OFF `
+                         -Dabsl_ROOT="$Env:TMP/install/absl" `
+                         -Dutf8_range_ROOT="$Env:TMP/install/utf8_range" `
+                         -B build-cmake/build -A x64 -T host=x64 build-cmake
+                   cmake --build build-cmake/build --config ${{ matrix.config }}
+                   cmake --install build-cmake/build --config ${{ matrix.config }} --prefix "$Env:TMP/install/protobuf-c"
+                   "BINARYDIR=$Env:TMP/install" | Out-File $Env:GITHUB_OUTPUT
+
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v3
+              with:
+                name: protobuf-c-binaries-${{ matrix.config }}-${{ matrix.shared_libs == 'ON' && 'dll' || 'lib'}}
+                path: ${{ steps.build.outputs.BINARYDIR }}
+
+    build-binaries-nmake:
+        strategy:
+            matrix:
+                config: [Debug, Release]
+                shared_libs: [ON, OFF]
+            fail-fast: false
+        runs-on: windows-latest
+        steps:
+
+            - name: Enforce a developer console
+              uses: ilammy/msvc-dev-cmd@v1
+              with:
+                  arch: amd64
+
+            - name: Set up an independent abseil repo
+              run: |
+                   git clone https://github.com/abseil/abseil-cpp.git
+                   cd abseil-cpp
+                   git checkout ${{ inputs.abseil_branch }}
+                   $runtime = 'MultiThreaded$<$<CONFIG:Debug>:Debug>'
+                   if ('${{ matrix.shared_libs }}' -eq 'ON')
+                   { $runtime += 'DLL' }
+                   cmake -DABSL_USE_EXTERNAL_GOOGLETEST=ON -DABSL_FIND_GOOGLETEST=ON `
+                         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }} -DABSL_PROPAGATE_CXX_STD=ON `
+                         -DCMAKE_MSVC_RUNTIME_LIBRARY="$runtime" `
+                         -B build -DCMAKE_CXX_STANDARD=17 -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }} .
+                   cmake --build build
+                   cmake --install build --prefix "$Env:TMP/install/absl"
+
+            - name: Set up the utf8 compression algorithm
+              if: ${{ matrix.shared_libs == 'OFF' }}
+              run: |
+                   git clone https://github.com/protocolbuffers/utf8_range.git
+                   cd utf8_range
+                   cmake -DCMAKE_CXX_STANDARD=17 -Dutf8_range_ENABLE_TESTS=OFF `
+                         -DBUILD_SHARED_LIBS=OFF `
+                         -Dabsl_ROOT="$Env:TMP/install/absl" `
+                         -DCMAKE_POLICY_DEFAULT_CMP0074=NEW `
+                         -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+                         -DCMAKE_MSVC_RUNTIME_LIBRARY='MultiThreaded$<$<CONFIG:Debug>:Debug>' `
+                         -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }} .
+                   cmake --build build
+                   cmake --install build --prefix "$Env:TMP/install/utf8_range"
+
+            - name: Set up protobuf repo
+              run: |
+                   git clone --recurse-submodules ${{ inputs.protobuf_repo }}
+                   cd protobuf
+                   git checkout ${{ inputs.protobuf_branch }} 
+                   cmake -DCMAKE_CXX_STANDARD=17 `
+                         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }} `
+                         -Dprotobuf_BUILD_TESTS=OFF `
+                         -Dprotobuf_BUILD_EXAMPLES=OFF `
+                         -Dprotobuf_ABSL_PROVIDER=package `
+                         -Dabsl_ROOT="$Env:TMP/install/absl" `
+                         -DABSL_PROPAGATE_CXX_STD=ON `
+                         -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }} .
+                   cmake --build build
+                   cmake --install build --prefix "$Env:TMP/install/protobuf"
+
+            - name: Set up protobuf-c repo
+              id: build
+              run: |
+                   git clone --recurse-submodules ${{ inputs.protobuf-c_repo }}
+                   cd protobuf-c
+                   git checkout ${{ inputs.protobuf-c_branch }} 
+                   cmake -DCMAKE_CXX_STANDARD=17 `
+                         -DProtobuf_ROOT="$Env:TMP/install/protobuf" `
+                         -DBUILD_SHARED_LIBS=${{ matrix.shared_libs }} `
+                         -DBUILD_TESTS=OFF `
+                         -Dabsl_ROOT="$Env:TMP/install/absl" `
+                         -Dutf8_range_ROOT="$Env:TMP/install/utf8_range" `
+                         -B build-cmake/build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.config }} build-cmake
+                   cmake --build build-cmake/build
+                   cmake --install build-cmake/build --prefix "$Env:TMP/install/protobuf-c"
+                   "BINARYDIR=$Env:TMP/install" | Out-File $Env:GITHUB_OUTPUT
+
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v3
+              with:
+                name: nmake-protobuf-c-binaries-${{ matrix.config }}-${{ matrix.shared_libs == 'ON' && 'dll' || 'lib'}}
+                path: ${{ steps.build.outputs.BINARYDIR }}
