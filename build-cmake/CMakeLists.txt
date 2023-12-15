@@ -147,7 +147,7 @@ SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 
 add_custom_target(protoc-generated-files
-       COMMAND ${CMAKE_COMMAND} -E env PATH="${OS_PATH_VARIABLE}" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+       COMMAND ${CMAKE_COMMAND} -E env PATH="${OS_PATH_VARIABLE}" ${PROTOBUF_PROTOC_EXECUTABLE}
             --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${PROTOBUF_INCLUDE_DIR}
             -I${MAIN_DIR} ${MAIN_DIR}/protobuf-c/protobuf-c.proto
        COMMENT Running protoc on ${MAIN_DIR}/protobuf-c/protobuf-c.proto
@@ -186,7 +186,7 @@ ENDIF (MSVC AND BUILD_SHARED_LIBS)
 FUNCTION(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
     ADD_CUSTOM_COMMAND(OUTPUT ${SRC} ${HDR}
        COMMAND ${CMAKE_COMMAND}
-       ARGS -E env PATH="${OS_PATH_VARIABLE}" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+       ARGS -E env PATH="${OS_PATH_VARIABLE}" ${PROTOBUF_PROTOC_EXECUTABLE}
             --plugin=$<TARGET_FILE_NAME:protoc-gen-c> -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
        DEPENDS protoc-gen-c)
 ENDFUNCTION()
@@ -201,7 +201,7 @@ TARGET_LINK_LIBRARIES(test-generated-code protobuf-c)
 
 ADD_CUSTOM_COMMAND(OUTPUT t/test-full.pb.cc t/test-full.pb.h
        COMMAND ${CMAKE_COMMAND}
-       ARGS -E env PATH="${OS_PATH_VARIABLE}" -- ${PROTOBUF_PROTOC_EXECUTABLE}
+       ARGS -E env PATH="${OS_PATH_VARIABLE}" ${PROTOBUF_PROTOC_EXECUTABLE}
             --cpp_out ${CMAKE_CURRENT_BINARY_DIR} -I${MAIN_DIR} ${TEST_DIR}/test-full.proto
 )
 
@@ -220,7 +220,7 @@ ENDIF (MSVC AND BUILD_SHARED_LIBS)
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/t/generated-code2)
 ADD_CUSTOM_COMMAND(OUTPUT t/generated-code2/test-full-cxx-output.inc
        COMMAND ${CMAKE_COMMAND}
-       ARGS -E env PATH="${OS_PATH_VARIABLE}" -- cxx-generate-packed-data
+       ARGS -E env PATH="${OS_PATH_VARIABLE}" cxx-generate-packed-data
             ">t/generated-code2/test-full-cxx-output.inc"
             DEPENDS cxx-generate-packed-data
 )
