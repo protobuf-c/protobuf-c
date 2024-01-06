@@ -54,7 +54,7 @@ If using autotools, the `PKG_CHECK_MODULES` macro can be used to detect the pres
 
     PKG_CHECK_MODULES([PROTOBUF_C], [libprotobuf-c >= 1.0.0])
 
-This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable. Read [more information here](https://autotools.io/pkgconfig/pkg_check_modules.html) about the `PKG_CHECK_MODULES` macro.
+This will place compiler flags in the `PROTOBUF_C_CFLAGS` variable and linker flags in the `PROTOBUF_C_LDFLAGS` variable. Read [more information here](https://autotools.info/pkgconfig/pkg_check_modules.html) about the `PKG_CHECK_MODULES` macro.
 
 ## Versioning
 
