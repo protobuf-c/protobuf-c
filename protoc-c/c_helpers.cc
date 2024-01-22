@@ -66,7 +66,7 @@
 #include <stdio.h>		// for snprintf
 #include <float.h>
 
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/stubs/common.h>
 
 namespace google {
@@ -392,7 +392,7 @@ WriteIntRanges(io::Printer* printer, int n_values, const int *values, const std:
     return 0;
   }
 }
-    
+
 
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx

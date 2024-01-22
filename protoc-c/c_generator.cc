@@ -60,17 +60,17 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_generator.h>
+#include "protoc-c/c_generator.h"
 
 #include <memory>
 #include <vector>
 #include <utility>
 
-#include <protoc-c/c_file.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_file.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
-#include <protobuf-c/protobuf-c.pb.h>
+#include "protobuf-c/protobuf-c.pb.h"
 
 namespace google {
 namespace protobuf {

@@ -1,0 +1,7 @@
+common --spawn_strategy=local
+common --verbose_failures
+common --enable_bzlmod=false
+
+build -c opt
+
+build:msvc --copt=/wd4267 --copt=/wd4244 --copt=/wd4141 --copt=/wd4805 --copt=/wd4715

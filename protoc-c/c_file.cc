@@ -61,14 +61,14 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_file.h>
-#include <protoc-c/c_enum.h>
-#include <protoc-c/c_service.h>
-#include <protoc-c/c_extension.h>
-#include <protoc-c/c_helpers.h>
-#include <protoc-c/c_message.h>
+#include "protoc-c/c_file.h"
+#include "protoc-c/c_enum.h"
+#include "protoc-c/c_service.h"
+#include "protoc-c/c_extension.h"
+#include "protoc-c/c_helpers.h"
+#include "protoc-c/c_message.h"
 #include <google/protobuf/io/printer.h>
-#include <protobuf-c/protobuf-c.pb.h>
+#include "protobuf-c/protobuf-c.pb.h"
 
 #include "protobuf-c.h"
 
@@ -134,7 +134,7 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
     "#ifndef PROTOBUF_C_$filename_identifier$__INCLUDED\n"
     "#define PROTOBUF_C_$filename_identifier$__INCLUDED\n"
     "\n"
-    "#include <protobuf-c/protobuf-c.h>\n"
+    "#include \"protobuf-c/protobuf-c.h\"\n"
     "\n"
     "PROTOBUF_C__BEGIN_DECLS\n"
     "\n",

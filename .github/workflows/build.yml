@@ -169,3 +169,21 @@ jobs:
           nmake
           nmake test
           nmake install
+
+  bazel:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-20.04, windows-2019]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Init msbuild
+        if: startsWith(matrix.os, 'win')
+        uses: microsoft/setup-msbuild@v1.1
+        with:
+          vs-version: '[16,17)'
+          msbuild-architecture: x64
+      - name: Run tests
+        run: |
+          bazel --version
+          bazel test tests

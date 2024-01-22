@@ -63,14 +63,14 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <protoc-c/c_message.h>
-#include <protoc-c/c_enum.h>
-#include <protoc-c/c_extension.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_message.h"
+#include "protoc-c/c_enum.h"
+#include "protoc-c/c_extension.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format.h>
-#include <protobuf-c/protobuf-c.pb.h>
+#include "protobuf-c/protobuf-c.pb.h"
 
 namespace google {
 namespace protobuf {
@@ -494,7 +494,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 	case FieldDescriptor::CPPTYPE_BOOL:
 	  vars["field_dv_ctype"] = "protobuf_c_boolean";
 	  break;
-	  
+
 	case FieldDescriptor::CPPTYPE_MESSAGE:
 	  // NOTE: not supported by protobuf
 	  vars["maybe_static"] = "";
@@ -539,7 +539,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
     sorted_fields[i] = descriptor_->field(i);
   }
   qsort (sorted_fields, descriptor_->field_count(),
-       sizeof (const FieldDescriptor *), 
+       sizeof (const FieldDescriptor *),
        compare_pfields_by_number);
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = sorted_fields[i];

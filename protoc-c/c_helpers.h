@@ -67,7 +67,7 @@
 #include <vector>
 #include <sstream>
 #include <google/protobuf/descriptor.h>
-#include <protobuf-c/protobuf-c.pb.h>
+#include "protobuf-c/protobuf-c.pb.h"
 #include <google/protobuf/io/printer.h>
 
 #if GOOGLE_PROTOBUF_VERSION >= 4023000

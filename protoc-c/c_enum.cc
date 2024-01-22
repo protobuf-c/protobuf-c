@@ -63,8 +63,8 @@
 #include <set>
 #include <map>
 
-#include <protoc-c/c_enum.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_enum.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 
 namespace google {

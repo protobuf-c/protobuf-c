@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "t/issue251/issue251.pb-c.h"
+#include "t/issue204/issue204.pb-c.h"
 
 int main(void)
 {

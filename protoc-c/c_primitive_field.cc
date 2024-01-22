@@ -60,8 +60,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_primitive_field.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_primitive_field.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 
@@ -82,20 +82,20 @@ void PrimitiveFieldGenerator::GenerateStructMembers(io::Printer* printer) const
   std::string c_type;
   std::map<std::string, std::string> vars;
   switch (descriptor_->type()) {
-    case FieldDescriptor::TYPE_SINT32  : 
-    case FieldDescriptor::TYPE_SFIXED32: 
+    case FieldDescriptor::TYPE_SINT32  :
+    case FieldDescriptor::TYPE_SFIXED32:
     case FieldDescriptor::TYPE_INT32   : c_type = "int32_t"; break;
-    case FieldDescriptor::TYPE_SINT64  : 
+    case FieldDescriptor::TYPE_SINT64  :
     case FieldDescriptor::TYPE_SFIXED64:
     case FieldDescriptor::TYPE_INT64   : c_type = "int64_t"; break;
-    case FieldDescriptor::TYPE_UINT32  : 
+    case FieldDescriptor::TYPE_UINT32  :
     case FieldDescriptor::TYPE_FIXED32 : c_type = "uint32_t"; break;
-    case FieldDescriptor::TYPE_UINT64  : 
+    case FieldDescriptor::TYPE_UINT64  :
     case FieldDescriptor::TYPE_FIXED64 : c_type = "uint64_t"; break;
     case FieldDescriptor::TYPE_FLOAT   : c_type = "float"; break;
     case FieldDescriptor::TYPE_DOUBLE  : c_type = "double"; break;
     case FieldDescriptor::TYPE_BOOL    : c_type = "protobuf_c_boolean"; break;
-    case FieldDescriptor::TYPE_ENUM    : 
+    case FieldDescriptor::TYPE_ENUM    :
     case FieldDescriptor::TYPE_STRING  :
     case FieldDescriptor::TYPE_BYTES   :
     case FieldDescriptor::TYPE_GROUP   :
@@ -193,7 +193,7 @@ void PrimitiveFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer
     WRITE_CASE(BOOL)
   #undef WRITE_CASE
 
-    case FieldDescriptor::TYPE_ENUM    : 
+    case FieldDescriptor::TYPE_ENUM    :
     case FieldDescriptor::TYPE_STRING  :
     case FieldDescriptor::TYPE_BYTES   :
     case FieldDescriptor::TYPE_GROUP   :

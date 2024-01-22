@@ -41,3 +41,4 @@ t/version/version
 *.pb-c.h
 *.pb.cc
 *.pb.h
+/bazel-*

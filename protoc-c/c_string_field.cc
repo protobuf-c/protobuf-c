@@ -60,11 +60,11 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_string_field.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_string_field.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
-#include <protobuf-c/protobuf-c.pb.h>
+#include "protobuf-c/protobuf-c.pb.h"
 
 namespace google {
 namespace protobuf {

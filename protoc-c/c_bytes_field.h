@@ -65,7 +65,7 @@
 
 #include <map>
 #include <string>
-#include <protoc-c/c_field.h>
+#include "protoc-c/c_field.h"
 
 namespace google {
 namespace protobuf {

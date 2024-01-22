@@ -20,12 +20,28 @@ If building from a git checkout, the `autotools` (`autoconf`, `automake`, `libto
 
     ./autogen.sh && ./configure && make && make install
 
+### Use Bazel to build
+
+```shell
+bazel build :all
+# Use MSVC
+bazel build --config=msvc :all
+```
+
 ## Test
 
 If you want to execute test cases individually, please run the following command after running `./configure` once:
 
      make check
-	 
+
+### Use Bazel to test
+
+```shell
+bazel test :tests
+# Use MSVC
+bazel test --config=msvc :tests
+```
+
 ## Documentation
 
 See the [online Doxygen documentation here](https://protobuf-c.github.io/protobuf-c) or [the Wiki](https://github.com/protobuf-c/protobuf-c/wiki) for a detailed reference. The Doxygen documentation can be built from the source tree by running:

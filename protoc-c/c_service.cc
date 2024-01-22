@@ -60,8 +60,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_service.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_service.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 
 namespace google {

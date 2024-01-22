@@ -60,11 +60,11 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_bytes_field.h>
-#include <protoc-c/c_helpers.h>
+#include "protoc-c/c_bytes_field.h"
+#include "protoc-c/c_helpers.h"
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
-#include <protobuf-c/protobuf-c.pb.h>
+#include "protobuf-c/protobuf-c.pb.h"
 
 namespace google {
 namespace protobuf {
@@ -88,7 +88,7 @@ BytesFieldGenerator(const FieldDescriptor* descriptor)
   : FieldGenerator(descriptor) {
   SetBytesVariables(descriptor, &variables_);
   variables_["default_value"] = descriptor->has_default_value()
-                              ? GetDefaultValue() 
+                              ? GetDefaultValue()
 			      : std::string("{0,NULL}");
 }
 
