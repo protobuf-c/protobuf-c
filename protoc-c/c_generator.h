@@ -93,6 +93,11 @@ class PROTOC_C_EXPORT CGenerator : public CodeGenerator {
                 const std::string& parameter,
                 OutputDirectory* output_directory,
                 std::string* error) const;
+
+  uint64_t GetSupportedFeatures() const override {
+    // Indicate that this code generator supports proto3 optional fields.
+    return FEATURE_PROTO3_OPTIONAL;
+  }
 };
 
 }  // namespace c
