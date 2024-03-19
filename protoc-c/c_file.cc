@@ -118,7 +118,9 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   std::string filename_identifier = FilenameIdentifier(file_->name());
 
   int min_header_version = 1000000;
-#if GOOGLE_PROTOBUF_VERSION >= 4023000
+#if GOOGLE_PROTOBUF_VERSION >= 5026000
+  if (FileDescriptorLegacy(file_).edition() == Edition::EDITION_PROTO3) {
+#elif GOOGLE_PROTOBUF_VERSION >= 4023000
   if (FileDescriptorLegacy(file_).syntax() == FileDescriptorLegacy::SYNTAX_PROTO3) {
 #else
   if (file_->syntax() == FileDescriptor::SYNTAX_PROTO3) {

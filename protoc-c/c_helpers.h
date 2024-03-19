@@ -175,7 +175,9 @@ int compare_name_indices_by_name(const void*, const void*);
 // Return the syntax version of the file containing the field.
 // This wrapper is needed to be able to compile against protobuf2.
 inline int FieldSyntax(const FieldDescriptor* field) {
-#if GOOGLE_PROTOBUF_VERSION >= 4023000
+#if GOOGLE_PROTOBUF_VERSION >= 5026000
+  return FileDescriptorLegacy(field->file()).edition() == Edition::EDITION_PROTO3 ? 3 : 2;
+#elif GOOGLE_PROTOBUF_VERSION >= 4023000
   return FileDescriptorLegacy(field->file()).syntax() == FileDescriptorLegacy::SYNTAX_PROTO3 ? 3 : 2;
 #else
   return field->file()->syntax() == FileDescriptor::SYNTAX_PROTO3 ? 3 : 2;
