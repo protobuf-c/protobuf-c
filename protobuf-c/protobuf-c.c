@@ -3278,6 +3278,8 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 					      n_unknown * sizeof(ProtobufCMessageUnknownField));
 		if (rv->unknown_fields == NULL)
 			goto error_cleanup;
+	} else {
+		rv->unknown_fields = NULL;
 	}
 
 	/* do real parsing */
