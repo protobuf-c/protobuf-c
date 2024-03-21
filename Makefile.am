@@ -370,3 +370,4 @@ endif
 EXTRA_DIST += Doxyfile.in
 EXTRA_DIST += DoxygenLayout.xml
 EXTRA_DIST += build-cmake/CMakeLists.txt
+EXTRA_DIST += build-cmake/Config.cmake.in
