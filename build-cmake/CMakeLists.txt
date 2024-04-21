@@ -8,6 +8,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0091 NEW)
 cmake_policy(SET CMP0112 NEW)
+# TODO: Convert DART to CTEST
+cmake_policy(SET CMP0145 OLD)
 
 PROJECT(protobuf-c C CXX)
 
