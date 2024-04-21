@@ -20,7 +20,10 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 endif (MSVC AND NOT BUILD_SHARED_LIBS)
 
 FIND_PACKAGE(Protobuf CONFIG)
-if(NOT Protobuf_FOUND)
+if(Protobuf_FOUND)
+  # Keep compatibility with FindProtobuf CMake module
+  set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+else()
   MESSAGE(STATUS "Protobuf CMake config not found fallback to Cmake Module")
   FIND_PACKAGE(Protobuf REQUIRED)
 endif()
