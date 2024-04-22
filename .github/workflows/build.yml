@@ -120,6 +120,72 @@ jobs:
           make test
           make install
 
+  cmake-linux-latest:
+    runs-on: ubuntu-22.04
+
+    env:
+      LDFLAGS: "-Wl,-rpath=/opt/protobuf-c/lib -Wl,--disable-new-dtags"
+
+    steps:
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
+      - name: Checkout abseil/abseil-cpp
+        uses: actions/checkout@v4
+        with:
+          repository: abseil/abseil-cpp
+          ref: "lts_2024_01_16"
+          path: abseil-cpp
+
+      - name: Checkout protocolbuffers/protobuf
+        uses: actions/checkout@v4
+        with:
+          repository: protocolbuffers/protobuf
+          ref: "27.x"
+          path: protobuf
+
+      - name: Install ninja
+        run: |
+          sudo pip install ninja
+
+      - name: Build abseil-cpp
+        working-directory: "./abseil-cpp"
+        run: |
+          cmake -B build -G Ninja \
+            --install-prefix /opt/protobuf-c \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DABSL_PROPAGATE_CXX_STD=ON \
+            -DBUILD_SHARED_LIBS=ON \
+          ;
+          ninja -C build
+          sudo ninja -C build install
+
+      - name: Build protobuf
+        working-directory: "./protobuf"
+        run: |
+          cmake -B build -G Ninja \
+            --install-prefix /opt/protobuf-c \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DBUILD_SHARED_LIBS=ON \
+            -Dprotobuf_ABSL_PROVIDER=package \
+            -Dprotobuf_BUILD_TESTS=OFF \
+          ;
+          ninja -C build
+          sudo ninja -C build install
+
+      - name: Build protobuf-c
+        run: |
+          cd build-cmake
+          cmake -B build -G Ninja \
+            --install-prefix /opt/protobuf-c \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_TESTS=ON \
+          ;
+          ninja -C build
+          ninja -C build test
+          sudo ninja -C build install
+
   cmake-msvc:
     strategy:
       matrix:
