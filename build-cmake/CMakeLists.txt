@@ -23,6 +23,7 @@ else()
   MESSAGE(STATUS "Protobuf CMake config not found, falling back to Cmake Module")
   FIND_PACKAGE(Protobuf REQUIRED)
 endif()
+MESSAGE(STATUS "Protobuf version: ${Protobuf_VERSION}")
 file(REAL_PATH "${PROTOBUF_INCLUDE_DIR}" PROTOBUF_INCLUDE_DIR)
 INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 
