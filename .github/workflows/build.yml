@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-20.04]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -38,6 +39,7 @@ jobs:
           - arch: aarch64
           - arch: s390x
           - arch: ppc64le
+      fail-fast: false
     steps:
       - uses: actions/checkout@v2
       - uses: uraimo/run-on-arch-action@v2.0.9
@@ -97,6 +99,7 @@ jobs:
       matrix:
         build_type: [Debug, Release]
         os: [macos-latest, ubuntu-20.04]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -122,6 +125,7 @@ jobs:
       matrix:
         build-type: [Debug, Release]
         shared-lib: [ON, OFF]
+      fail-fast: false
     name: "MSVC CMake (${{ matrix.build-type }}, DLL: ${{ matrix.shared-lib }})"
     runs-on: windows-latest
     env:
