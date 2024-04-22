@@ -217,7 +217,7 @@ GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full
 
 ADD_EXECUTABLE(cxx-generate-packed-data ${TEST_DIR}/generated-code2/cxx-generate-packed-data.cc t/test-full.pb.h t/test-full.pb.cc protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
 TARGET_LINK_LIBRARIES(cxx-generate-packed-data
-    ${PROTOBUF_LIBRARY}
+    protobuf::libprotobuf
     ${protobuf_ABSL_USED_TARGETS}
     ${protobuf_UTF8_USED_TARGETS}
 )
