@@ -23,6 +23,7 @@ find_package(Protobuf CONFIG)
 if(Protobuf_FOUND)
   # Keep compatibility with FindProtobuf CMake module
   set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+  get_target_property(PROTOBUF_INCLUDE_DIR protobuf::libprotobuf INCLUDE_DIRECTORIES)
 else()
   message(STATUS "Protobuf CMake config not found fallback to Cmake Module")
   find_package(Protobuf REQUIRED)
