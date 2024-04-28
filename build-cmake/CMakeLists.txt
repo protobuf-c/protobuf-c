@@ -17,7 +17,7 @@ project(protobuf-c C CXX)
 
 if(MSVC AND NOT BUILD_SHARED_LIBS)
   set(Protobuf_USE_STATIC_LIBS ON)
-endif(MSVC AND NOT BUILD_SHARED_LIBS)
+endif()
 
 find_package(Protobuf CONFIG)
 if(Protobuf_FOUND)
@@ -98,7 +98,7 @@ target_include_directories(
                     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(protobuf-c PRIVATE -DPROTOBUF_C_EXPORT)
-endif(MSVC AND BUILD_SHARED_LIBS)
+endif()
 target_link_libraries(protobuf-c ${protobuf_ABSL_USED_TARGETS}
                       ${protobuf_UTF8_USED_TARGETS})
 target_compile_features(protobuf-c PRIVATE cxx_std_17)
@@ -132,7 +132,7 @@ if(MSVC AND NOT BUILD_SHARED_LIBS)
       string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
     endif(${flag_var} MATCHES "/MD")
   endforeach(flag_var)
-endif(MSVC AND NOT BUILD_SHARED_LIBS)
+endif()
 
 if(WIN32)
   # Modify the environment to hint protoc where the plugin is prepend to PATH
@@ -149,13 +149,10 @@ if(WIN32)
           "$<TARGET_FILE_DIR:absl::abseil_dll>\\;${OS_PATH_VARIABLE}")
     endif()
   endif()
-
 else(WIN32)
-
   set(OS_PATH_VARIABLE "$ENV{PATH}")
   set(OS_PATH_VARIABLE "$<TARGET_FILE_DIR:protoc-gen-c>:${OS_PATH_VARIABLE}")
-
-endif(WIN32)
+endif()
 
 if(BUILD_PROTOC)
   set(CMAKE_CXX_STANDARD 17)
@@ -194,7 +191,7 @@ if(BUILD_PROTOC)
                            DIRECTORY)
     file(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
     file(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  endif(MSVC AND BUILD_SHARED_LIBS)
+  endif()
 
   function(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
     add_custom_command(
@@ -236,7 +233,7 @@ if(BUILD_PROTOC)
     if(MSVC AND BUILD_SHARED_LIBS)
       target_compile_definitions(cxx-generate-packed-data
                                  PRIVATE -DPROTOBUF_USE_DLLS)
-    endif(MSVC AND BUILD_SHARED_LIBS)
+    endif()
 
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/t/generated-code2)
     add_custom_command(
@@ -281,7 +278,7 @@ if(BUILD_PROTOC)
     target_compile_definitions(test-generated-code3 PUBLIC -DPROTO3)
     target_link_libraries(test-generated-code3 protobuf-c)
 
-  endif() # BUILD_TESTS
+  endif()
 
   # https://github.com/protocolbuffers/protobuf/issues/5107
   if(CMAKE_HOST_UNIX)
@@ -362,7 +359,7 @@ if(BUILD_TESTS)
       PROPERTIES
         ENVIRONMENT
         "PATH=${WINDOWS_PATH_VARIABLE}\\;$<TARGET_FILE_DIR:protoc-gen-c>")
-  endif(WIN32)
+  endif()
 
 endif()
 
