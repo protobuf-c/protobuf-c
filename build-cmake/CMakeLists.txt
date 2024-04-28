@@ -8,10 +8,6 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0091 NEW)
 cmake_policy(SET CMP0112 NEW)
-# TODO: Convert DART to CTEST
-if(POLICY CMP0145)
-  cmake_policy(SET CMP0145 OLD)
-endif()
 
 project(protobuf-c C CXX)
 
@@ -340,9 +336,9 @@ export(EXPORT protobuf-c-targets
        FILE "${CMAKE_CURRENT_BINARY_DIR}/protobuf-c-targets.cmake")
 
 if(BUILD_TESTS)
-  include(Dart)
+  enable_testing()
 
-  set(DART_TESTING_TIMEOUT 5)
+  set(CTEST_TEST_TIMEOUT 5)
   add_test(test-generated-code test-generated-code)
   add_test(test-generated-code2 test-generated-code2)
   add_test(test-generated-code3 test-generated-code3)
