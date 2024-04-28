@@ -553,7 +553,7 @@ field_is_zeroish(const ProtobufCFieldDescriptor *field,
 		ret = (0 == *(const float *) member);
 		break;
 	case PROTOBUF_C_TYPE_DOUBLE:
-		ret = (0 == *(const double *) member);
+		ret = (0 == *(const protobuf_c_double *) member);
 		break;
 	case PROTOBUF_C_TYPE_STRING:
 		ret = (NULL == *(const char * const *) member) ||
