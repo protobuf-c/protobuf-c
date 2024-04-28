@@ -8,6 +8,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0091 NEW)
 cmake_policy(SET CMP0112 NEW)
+# TODO: Convert DART to CTEST
+if(POLICY CMP0145)
+  cmake_policy(SET CMP0145 OLD)
+endif()
 
 PROJECT(protobuf-c C CXX)
 
@@ -15,7 +19,14 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 	SET(Protobuf_USE_STATIC_LIBS ON)
 endif (MSVC AND NOT BUILD_SHARED_LIBS)
 
-FIND_PACKAGE(Protobuf REQUIRED)
+FIND_PACKAGE(Protobuf CONFIG)
+if(Protobuf_FOUND)
+  # Keep compatibility with FindProtobuf CMake module
+  set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+else()
+  MESSAGE(STATUS "Protobuf CMake config not found fallback to Cmake Module")
+  FIND_PACKAGE(Protobuf REQUIRED)
+endif()
 file(REAL_PATH "${PROTOBUF_INCLUDE_DIR}" PROTOBUF_INCLUDE_DIR)
 INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
 
@@ -112,7 +123,7 @@ if (MSVC AND NOT BUILD_SHARED_LIBS)
 	foreach(flag_var
 		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
 		CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-		CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE 
+		CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
 		CMAKE_C_FLAGS_MINSIZEREL CMAKE_FLAGS_RELWITHDEBINFO)
 	  if(${flag_var} MATCHES "/MD")
 		string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
@@ -209,7 +220,7 @@ GENERATE_TEST_SOURCES(${TEST_DIR}/test-full.proto t/test-full.pb-c.c t/test-full
 
 ADD_EXECUTABLE(cxx-generate-packed-data ${TEST_DIR}/generated-code2/cxx-generate-packed-data.cc t/test-full.pb.h t/test-full.pb.cc protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h)
 TARGET_LINK_LIBRARIES(cxx-generate-packed-data
-    ${PROTOBUF_LIBRARY}
+    protobuf::libprotobuf
     ${protobuf_ABSL_USED_TARGETS}
     ${protobuf_UTF8_USED_TARGETS}
 )
@@ -316,12 +327,12 @@ ADD_TEST(test-version test-version)
 
 if(WIN32)
     set_tests_properties(
-        test-generated-code 
-        test-generated-code2 
-        test-generated-code3 
-        test-issue220 
-        test-issue251 
-        test-version 
+        test-generated-code
+        test-generated-code2
+        test-generated-code3
+        test-issue220
+        test-issue251
+        test-version
         PROPERTIES ENVIRONMENT "PATH=${WINDOWS_PATH_VARIABLE}\\;$<TARGET_FILE_DIR:protoc-gen-c>" )
 endif(WIN32)
 
