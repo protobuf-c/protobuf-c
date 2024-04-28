@@ -23,13 +23,11 @@ find_package(Protobuf CONFIG)
 if(Protobuf_FOUND)
   # Keep compatibility with FindProtobuf CMake module
   set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
-  get_target_property(PROTOBUF_INCLUDE_DIR protobuf::libprotobuf INCLUDE_DIRECTORIES)
+  get_target_property(PROTOBUF_INCLUDE_DIR protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
 else()
   message(STATUS "Protobuf CMake config not found fallback to Cmake Module")
   find_package(Protobuf REQUIRED)
 endif()
-file(REAL_PATH "${PROTOBUF_INCLUDE_DIR}" PROTOBUF_INCLUDE_DIR)
-include_directories(${PROTOBUF_INCLUDE_DIR})
 
 find_package(absl CONFIG)
 
@@ -90,22 +88,20 @@ endif()
 get_filename_component(MAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR} PATH)
 set(TEST_DIR ${MAIN_DIR}/t)
 
-message(${MAIN_DIR})
-
 add_library(protobuf-c ${MAIN_DIR}/protobuf-c/protobuf-c.c)
 set_target_properties(protobuf-c PROPERTIES COMPILE_PDB_NAME protobuf-c)
+# Both <protobuf-c/protobuf-c.h> and "protobuf-c.h" are used
 target_include_directories(
   protobuf-c PUBLIC $<BUILD_INTERFACE:${MAIN_DIR}>
-                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+                    $<BUILD_INTERFACE:${MAIN_DIR}/protobuf-c>
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                    ${PROTOBUF_INCLUDE_DIR})
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(protobuf-c PRIVATE -DPROTOBUF_C_EXPORT)
 endif()
 target_link_libraries(protobuf-c ${protobuf_ABSL_USED_TARGETS}
                       ${protobuf_UTF8_USED_TARGETS})
 target_compile_features(protobuf-c PRIVATE cxx_std_17)
-
-include_directories(${MAIN_DIR})
-include_directories(${MAIN_DIR}/protobuf-c)
 
 if(BUILD_PROTOC)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}) # for generated files
@@ -181,7 +177,8 @@ if(BUILD_PROTOC)
     protoc-gen-c PUBLIC $<BUILD_INTERFACE:${MAIN_DIR}>
                         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
   target_link_libraries(
-    protoc-gen-c protobuf::libprotoc protobuf::libprotobuf
+    protoc-gen-c protobuf-c
+    protobuf::libprotoc protobuf::libprotobuf
     ${protobuf_ABSL_USED_TARGETS} ${protobuf_UTF8_USED_TARGETS})
 
   target_compile_features(protoc-gen-c PRIVATE cxx_std_17)
