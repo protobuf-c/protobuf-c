@@ -91,10 +91,7 @@ set(TEST_DIR ${MAIN_DIR}/t)
 
 message(${MAIN_DIR})
 
-set(PC_SOURCES ${MAIN_DIR}/protobuf-c/protobuf-c.c
-               ${MAIN_DIR}/protobuf-c/protobuf-c.h)
-
-add_library(protobuf-c ${PC_SOURCES})
+add_library(protobuf-c ${MAIN_DIR}/protobuf-c/protobuf-c.c)
 set_target_properties(protobuf-c PROPERTIES COMPILE_PDB_NAME protobuf-c)
 target_include_directories(
   protobuf-c PUBLIC $<BUILD_INTERFACE:${MAIN_DIR}>
@@ -111,7 +108,6 @@ include_directories(${MAIN_DIR}/protobuf-c)
 
 if(BUILD_PROTOC)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}) # for generated files
-
 endif()
 
 if(MSVC AND NOT BUILD_SHARED_LIBS)
@@ -178,11 +174,10 @@ if(BUILD_PROTOC)
     BYPRODUCTS protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
     SOURCES ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
 
-  file(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.h ${MAIN_DIR}/protoc-c/*.cc)
+  file(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.cc)
   add_executable(
     protoc-gen-c
-    ${PROTOC_GEN_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.h)
+    ${PROTOC_GEN_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc)
   add_dependencies(protoc-gen-c protoc-generated-files)
   target_include_directories(
     protoc-gen-c PUBLIC $<BUILD_INTERFACE:${MAIN_DIR}>
