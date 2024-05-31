@@ -899,6 +899,44 @@ size_t
 protobuf_c_message_get_packed_size(const ProtobufCMessage *message);
 
 /**
+ * Allocates a message dynamically
+ *
+ * \param desc
+ *      The `ProtobufCMessageDescriptor` object.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation. May be NULL to
+ *      specify the default allocator.
+ * \param recursive
+ *      Whether to recursively allocate sub-messages
+ * \return
+ *      A heap-allocated message object.
+ * \retval NULL
+ *      If an error occurred during allocation.
+ */
+PROTOBUF_C__API
+ProtobufCMessage *
+protobuf_c_message_new(
+	const ProtobufCMessageDescriptor *desc,
+	protobuf_c_boolean recursive,
+	ProtobufCAllocator *allocator);
+
+
+/**
+ * Frees a dynamically allocated message
+ *
+ * \param message
+ *      The message object to free.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation. May be NULL to
+ *      specify the default allocator.
+ */
+PROTOBUF_C__API
+void
+protobuf_c_message_free(
+	ProtobufCMessage *message,
+	ProtobufCAllocator *allocator);
+
+/**
  * Serialise a message from its in-memory representation.
  *
  * This function stores the serialised bytes of the message in a pre-allocated
