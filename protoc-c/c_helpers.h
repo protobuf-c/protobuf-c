@@ -86,6 +86,9 @@ template <typename T> std::string SimpleItoa(T n) {
   return stream.str();
 }
 
+std::string OverrideFullName(const std::string &full_name,
+			    const FileDescriptor *file);
+
 std::string SimpleFtoa(float f);
 std::string SimpleDtoa(double f);
 void SplitStringUsing(const std::string &str, const char *delim, std::vector<std::string> *out);
