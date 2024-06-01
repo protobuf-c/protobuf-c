@@ -97,6 +97,12 @@ class MessageGenerator {
   // Generate descriptor prototype
   void GenerateDescriptorDeclarations(io::Printer* printer);
 
+  // Generate static initializer prototypes
+  void GenerateStaticInitializerDeclarations(io::Printer* printer);
+
+  // Generate static initializers
+  void GenerateStaticInitializerDefinitions(io::Printer* printer);
+
   // Generate descriptor prototype
   void GenerateClosureTypedef(io::Printer* printer);
 
