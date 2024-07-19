@@ -963,6 +963,25 @@ protobuf_c_message_unpack(
 	const uint8_t *data);
 
 /**
+ * Clone a message object.
+ *
+ * \param msg_src
+ *      The message object to be cloned.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory deallocation. May be NULL to
+ *      specify the default allocator.
+ * \return
+ *      A cloned message object.
+ * \retval NULL
+ *      If an error occurred during cloning.
+ */
+PROTOBUF_C__API
+ProtobufCMessage *
+protobuf_c_message_clone(
+	const ProtobufCMessage *msg_src,
+	ProtobufCAllocator *allocator);
+
+/**
  * Free an unpacked message object.
  *
  * This function should be used to deallocate the memory used by a call to
