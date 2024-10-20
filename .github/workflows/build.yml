@@ -14,7 +14,7 @@ jobs:
         os: [macos-latest, ubuntu-20.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
@@ -37,8 +37,8 @@ jobs:
           - arch: s390x
           - arch: ppc64le
     steps:
-      - uses: actions/checkout@v2
-      - uses: uraimo/run-on-arch-action@v2.0.9
+      - uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v2.7.2
         name: Install dependencies and run distcheck
         id: runcmd
         with:
@@ -58,7 +58,7 @@ jobs:
   valgrind:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev valgrind
       - name: Run distcheck with valgrind
@@ -70,7 +70,7 @@ jobs:
   coverage:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev lcov
       - name: Run coverage build
@@ -93,7 +93,7 @@ jobs:
         os: [macos-latest, ubuntu-20.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
@@ -120,16 +120,16 @@ jobs:
       PROTOBUF_VERSION: 24.3
       ABSEIL_VERSION: "20230802.0"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
         with:
             arch: amd64
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: protobuf-cache
         with:
           path: ~/protobuf-bin
           key: ${{ env.PROTOBUF_VERSION }}-${{ matrix.shared-lib }}-${{ matrix.build-type}}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: abseil-cache
         with:
           path: ~/abseil-bin
