@@ -1,0 +1,32 @@
+name: Build Source Release
+
+# Trigger whenever a release is created
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Make setup.sh executable
+      run: chmod +x debian/setup.sh
+    
+    - name: Build package
+      working-directory: debian
+      run: ./setup.sh ${{ github.event.release.tag_name }}
+
+    - name: Upload debian package to release
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.release.tag_name }}
+        files: |
+          debian/*.deb

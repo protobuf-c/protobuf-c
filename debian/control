@@ -1,0 +1,11 @@
+Package: protobuf-c
+Version: 3.1.0
+Architecture: all
+Depends: pkg-config, protobuf-compiler (>= 3.0.0), libprotobuf-dev, libprotoc-dev
+Maintainer: Dave Benson <protobuf-c+subscribe@googlegroups.com>
+Description: C implementation of the Google Protocol Buffers data serialization format.
+ It includes libprotobuf-c, a pure C library that implements protobuf encoding and decoding,
+ and protoc-c, a code generator that converts Protocol Buffer .proto files to C descriptor code,
+ based on the original protoc. protobuf-c formerly included an RPC implementation; that code has
+ been split out into the protobuf-c-rpc project.
+ 
