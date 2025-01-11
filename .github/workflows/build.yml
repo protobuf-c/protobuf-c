@@ -6,7 +6,7 @@ on:
       - next
   pull_request:
   schedule:
-    - cron: '0 0 * * 0' # Every Sunday at 00:00
+    - cron: '0 0 * * 5' # Every Friday at 00:00
 jobs:
   distcheck:
     strategy:
