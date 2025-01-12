@@ -6,7 +6,7 @@ on:
       - next
   pull_request:
   schedule:
-    - cron: '0 0 * * 0' # Every Sunday at 00:00
+    - cron: '0 0 * * 5' # Every Friday at 00:00
 jobs:
   distcheck:
     strategy:
@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - uses: uraimo/run-on-arch-action@v2.7.2
+      - uses: uraimo/run-on-arch-action@v2
         name: Install dependencies and run distcheck
         id: runcmd
         with:
