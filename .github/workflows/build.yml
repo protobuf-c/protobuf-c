@@ -5,6 +5,7 @@ on:
       - master
       - next
   pull_request:
+    types: [ opened, reopened, synchronize, edited, ready_for_review, review_requested ]
   schedule:
     - cron: '0 0 * * 5' # Every Friday at 00:00
 jobs:
