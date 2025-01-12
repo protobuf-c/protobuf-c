@@ -95,7 +95,7 @@ class PROTOC_C_EXPORT CGenerator : public CodeGenerator {
                 std::string* error) const;
 
 #if GOOGLE_PROTOBUF_VERSION >= 5026000
-  uint64_t GetSupportedFeatures() const { return CodeGenerator::FEATURE_SUPPORTS_EDITIONS; }
+  uint64_t GetSupportedFeatures() const { return 0; }
   Edition GetMinimumEdition() const { return Edition::EDITION_PROTO2; }
   Edition GetMaximumEdition() const { return Edition::EDITION_PROTO3; }
 #endif
