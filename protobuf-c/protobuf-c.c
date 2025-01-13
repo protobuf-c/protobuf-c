@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2023, Dave Benson and the protobuf-c authors.
+ * Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -164,7 +164,11 @@ system_free(void *allocator_data, void *data)
 static inline void *
 do_alloc(ProtobufCAllocator *allocator, size_t size)
 {
-	return allocator->alloc(allocator->allocator_data, size);
+	void *data = allocator->alloc(allocator->allocator_data, size);
+	if (data != NULL) {
+		memset(data, 0, size);
+	}
+	return data;
 }
 
 static inline void
