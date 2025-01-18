@@ -128,8 +128,8 @@ jobs:
     name: "MSVC CMake (${{ matrix.build-type }}, DLL: ${{ matrix.shared-lib }})"
     runs-on: windows-latest
     env:
-      PROTOBUF_VERSION: 24.3
-      ABSEIL_VERSION: "20230802.0"
+      PROTOBUF_VERSION: "v29.3"
+      ABSEIL_VERSION: "20240722.0"
     steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
@@ -154,20 +154,11 @@ jobs:
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/abseil-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }} -DCMAKE_CXX_STANDARD=17 -S . -B "build"
           cmake --build "build" -j4
           cmake --build "build" --target install
-      - name: Build and install utf8 compression algorithm
-        if: matrix.shared-lib == 'OFF'
-        run: |
-          cd ~
-          git clone --depth=1 https://github.com/protocolbuffers/utf8_range.git utf8_range
-          cd ~/utf8_range
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/utf8_range-bin -DCMAKE_CXX_STANDARD=17 -Dutf8_range_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -Dabsl_ROOT=~/abseil-bin -DCMAKE_POLICY_DEFAULT_CMP0074=NEW -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY='MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}' -S . -B "build"
-          cmake --build "build" -j4
-          cmake --build "build" --target install
       - name: Build and install protobuf
         if: steps.protobuf-cache.outputs.cache-hit != 'true'
         run: |
           cd ~
-          git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v${{ env.PROTOBUF_VERSION }} protobuf
+          git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b ${{ env.PROTOBUF_VERSION }} protobuf
           cd ~/protobuf && mkdir build && cd build
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_EXAMPLES=OFF -Dprotobuf_ABSL_PROVIDER=package -Dabsl_ROOT=~/abseil-bin -DABSL_PROPAGATE_CXX_STD=ON -S . -B "build"
           cmake --build "build" -j4
