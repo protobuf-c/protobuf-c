@@ -135,18 +135,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
             arch: amd64
-      - uses: actions/cache@v4
-        id: protobuf-cache
-        with:
-          path: ~/protobuf-bin
-          key: ${{ env.PROTOBUF_VERSION }}-${{ matrix.shared-lib }}-${{ matrix.build-type}}
-      - uses: actions/cache@v4
-        id: abseil-cache
-        with:
-          path: ~/abseil-bin
-          key: ${{ env.ABSEIL_VERSION }}-${{ matrix.shared-lib }}-${{ matrix.build-type}}
       - name: Build and install abseil
-        if: steps.abseil-cache.outputs.cache-hit != 'true'
         run: |
           cd ~
           git clone --depth=1 https://github.com/abseil/abseil-cpp.git -b ${{ env.ABSEIL_VERSION }} abseil
@@ -162,7 +151,6 @@ jobs:
           cmake --build "build" -j4
           cmake --build "build" --target install
       - name: Build and install protobuf
-        if: steps.protobuf-cache.outputs.cache-hit != 'true'
         run: |
           cd ~
           git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b ${{ env.PROTOBUF_VERSION }} protobuf
