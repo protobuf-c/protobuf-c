@@ -159,7 +159,7 @@ jobs:
         run: |
           cd ~
           git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b ${{ env.PROTOBUF_VERSION }} protobuf
-          cd ~/protobuf && mkdir build && cd build
+          cd ~/protobuf
           cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_EXAMPLES=OFF -Dprotobuf_ABSL_PROVIDER=package -Dabsl_ROOT=~/abseil-bin -DABSL_PROPAGATE_CXX_STD=ON -S . -B "build"
           cmake --build "build" -j4
           cmake --build "build" --target install
