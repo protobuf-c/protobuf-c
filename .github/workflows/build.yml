@@ -138,6 +138,9 @@ jobs:
         with:
             arch: amd64
 
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@latest
+
       - name: Checkout protobuf-c
         uses: actions/checkout@v4
 
@@ -158,7 +161,7 @@ jobs:
       - name: Build and install abseil
         working-directory: "./abseil"
         run: |
-          cmake -B build -G "NMake Makefiles" `
+          cmake -B build -G Ninja `
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/abseil-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
@@ -166,13 +169,12 @@ jobs:
             -DABSL_PROPAGATE_CXX_STD=ON `
             -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
           ;
-          cmake --build "build" -j4
-          cmake --build "build" --target install
+          ninja -C build install
 
       - name: Build and install protobuf
         working-directory: "./protobuf"
         run: |
-          cmake -B build -G "NMake Makefiles" `
+          cmake -B build -G Ninja `
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
@@ -185,12 +187,11 @@ jobs:
             -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
             -Dprotobuf_BUILD_TESTS=OFF `
           ;
-          cmake --build "build" -j4
-          cmake --build "build" --target install
+          ninja -C build install
 
       - name: Build protobuf-c
         run: |
-          cmake -S build-cmake -B build -G "NMake Makefiles" `
+          cmake -S build-cmake -B build -G Ninja `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
             -DCMAKE_MSVC_RUNTIME_LIBRARY=${{ env.MSVC_RUNTIME_LIBRARY }} `
@@ -199,6 +200,6 @@ jobs:
             -DProtobuf_ROOT="~/protobuf-bin" `
             -Dabsl_ROOT="~/abseil-bin" `
           ;
-          cmake --build "build" -j3
+          ninja -C build
           cmake --build "build" --target test
           cmake --build "build" --target install
