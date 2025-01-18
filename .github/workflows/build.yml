@@ -151,7 +151,14 @@ jobs:
           cd ~
           git clone --depth=1 https://github.com/abseil/abseil-cpp.git -b ${{ env.ABSEIL_VERSION }} abseil
           cd ~/abseil
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/abseil-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }} -DCMAKE_CXX_STANDARD=17 -S . -B "build"
+          cmake -B build -G "NMake Makefiles" \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_INSTALL_PREFIX=~/abseil-bin \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }} \
+            -DABSL_PROPAGATE_CXX_STD=ON \
+            -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} \
+          ;
           cmake --build "build" -j4
           cmake --build "build" --target install
       - name: Build and install protobuf
@@ -160,12 +167,29 @@ jobs:
           cd ~
           git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b ${{ env.PROTOBUF_VERSION }} protobuf
           cd ~/protobuf
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_EXAMPLES=OFF -Dprotobuf_ABSL_PROVIDER=package -Dabsl_ROOT=~/abseil-bin -DABSL_PROPAGATE_CXX_STD=ON -S . -B "build"
+          cmake -B build -G "NMake Makefiles" \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_INSTALL_PREFIX=~/protobuf-bin \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+            -DABSL_PROPAGATE_CXX_STD=ON \
+            -Dabsl_ROOT=~/abseil-bin \
+            -Dprotobuf_ABSL_PROVIDER=package \
+            -Dprotobuf_BUILD_EXAMPLES=OFF \
+            -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} \
+            -Dprotobuf_BUILD_TESTS=OFF \
+          ;
           cmake --build "build" -j4
           cmake --build "build" --target install
       - name: Run cmake tests
         run: |
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DBUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DProtobuf_ROOT="~/protobuf-bin" -Dabsl_ROOT="~/abseil-bin" -Dutf8_range_ROOT="~/utf8_range-bin" -S "build-cmake" -B "build"
+          cmake -B build -G "NMake Makefiles" \
+            -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+            -DBUILD_TESTS=ON \
+            -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} \
+            -DProtobuf_ROOT="~/protobuf-bin" \
+            -Dabsl_ROOT="~/abseil-bin" \
+          ;
           cmake --build "build" -j3
           cmake --build "build" --target test
           cmake --build "build" --target install
