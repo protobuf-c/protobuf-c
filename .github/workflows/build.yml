@@ -120,26 +120,41 @@ jobs:
           cmake --build "build" --target install
 
   cmake-msvc:
+    runs-on: windows-latest
+
     strategy:
       matrix:
         build-type: [Debug, Release]
         shared-lib: [ON, OFF]
       fail-fast: false
+
     name: "MSVC CMake (${{ matrix.build-type }}, DLL: ${{ matrix.shared-lib }})"
-    runs-on: windows-latest
-    env:
-      PROTOBUF_VERSION: "v29.3"
-      ABSEIL_VERSION: "20240722.0"
+
     steps:
-      - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
         with:
             arch: amd64
+
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
+      - name: Checkout abseil
+        uses: actions/checkout@v4
+        with:
+          repository: abseil/abseil-cpp
+          path: "abseil"
+          ref: "20240722.0"
+
+      - name: Checkout protobuf
+        uses: actions/checkout@v4
+        with:
+          repository: protocolbuffers/protobuf
+          path: "protobuf"
+          ref: "v29.3"
+
       - name: Build and install abseil
+        working-directory: "./abseil"
         run: |
-          cd ~
-          git clone --depth=1 https://github.com/abseil/abseil-cpp.git -b ${{ env.ABSEIL_VERSION }} abseil
-          cd ~/abseil
           cmake -B build -G "NMake Makefiles" `
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/abseil-bin `
@@ -150,11 +165,10 @@ jobs:
           ;
           cmake --build "build" -j4
           cmake --build "build" --target install
+
       - name: Build and install protobuf
+        working-directory: "./protobuf"
         run: |
-          cd ~
-          git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b ${{ env.PROTOBUF_VERSION }} protobuf
-          cd ~/protobuf
           cmake -B build -G "NMake Makefiles" `
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-bin `
@@ -169,6 +183,7 @@ jobs:
           ;
           cmake --build "build" -j4
           cmake --build "build" --target install
+
       - name: Run cmake tests
         run: |
           cmake -B build -G "NMake Makefiles" `
