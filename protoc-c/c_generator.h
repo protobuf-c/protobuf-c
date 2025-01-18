@@ -93,6 +93,12 @@ class PROTOC_C_EXPORT CGenerator : public CodeGenerator {
                 const std::string& parameter,
                 OutputDirectory* output_directory,
                 std::string* error) const;
+
+#if GOOGLE_PROTOBUF_VERSION >= 5026000
+  uint64_t GetSupportedFeatures() const { return 0; }
+  Edition GetMinimumEdition() const { return Edition::EDITION_PROTO2; }
+  Edition GetMaximumEdition() const { return Edition::EDITION_PROTO3; }
+#endif
 };
 
 }  // namespace c
