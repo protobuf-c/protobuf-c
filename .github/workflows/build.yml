@@ -184,9 +184,9 @@ jobs:
           cmake --build "build" -j4
           cmake --build "build" --target install
 
-      - name: Run cmake tests
+      - name: Build protobuf-c
         run: |
-          cmake -B build -G "NMake Makefiles" `
+          cmake -S build-cmake -B build -G "NMake Makefiles" `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
             -DBUILD_TESTS=ON `
