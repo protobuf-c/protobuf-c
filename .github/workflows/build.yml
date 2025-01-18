@@ -174,7 +174,6 @@ jobs:
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
-            -DABSL_PROPAGATE_CXX_STD=ON `
             -Dabsl_ROOT=~/abseil-bin `
             -Dprotobuf_ABSL_PROVIDER=package `
             -Dprotobuf_BUILD_EXAMPLES=OFF `
