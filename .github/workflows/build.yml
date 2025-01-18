@@ -130,6 +130,9 @@ jobs:
 
     name: "MSVC CMake (${{ matrix.build-type }}, DLL: ${{ matrix.shared-lib }})"
 
+    env:
+      MSVC_RUNTIME_LIBRARY: "MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }}"
+
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -159,7 +162,7 @@ jobs:
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/abseil-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }} `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=${{ env.MSVC_RUNTIME_LIBRARY }} `
             -DABSL_PROPAGATE_CXX_STD=ON `
             -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
           ;
@@ -173,6 +176,7 @@ jobs:
             -DCMAKE_CXX_STANDARD=17 `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=${{ env.MSVC_RUNTIME_LIBRARY }} `
             -DABSL_PROPAGATE_CXX_STD=ON `
             -Dabsl_ROOT=~/abseil-bin `
             -Dprotobuf_ABSL_PROVIDER=package `
@@ -189,6 +193,7 @@ jobs:
           cmake -S build-cmake -B build -G "NMake Makefiles" `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=${{ env.MSVC_RUNTIME_LIBRARY }} `
             -DBUILD_TESTS=ON `
             -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
             -DProtobuf_ROOT="~/protobuf-bin" `
