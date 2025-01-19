@@ -12,7 +12,7 @@ jobs:
   distcheck:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-20.04]
+        os: [macos-latest, ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,12 +32,13 @@ jobs:
           make -j${nproc} distcheck VERBOSE=1
 
   distcheck-multiarch:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
           - arch: armv7
           - arch: aarch64
+          - arch: riscv64
           - arch: s390x
           - arch: ppc64le
       fail-fast: false
@@ -49,7 +50,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           githubToken: ${{ github.token }}
-          distro: ubuntu20.04
+          distro: ubuntu22.04
           install: |
             apt-get update -q -y
             apt-get install -q -y build-essential autoconf automake libtool pkg-config
@@ -61,7 +62,7 @@ jobs:
             make -j3 distcheck VERBOSE=1
 
   valgrind:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
@@ -75,7 +76,7 @@ jobs:
           make -j${nproc} distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" VERBOSE=1
 
   coverage:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
@@ -99,7 +100,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        os: [macos-latest, ubuntu-20.04]
+        os: [macos-latest, ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
