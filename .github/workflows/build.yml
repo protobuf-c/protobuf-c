@@ -12,7 +12,7 @@ jobs:
   distcheck:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        os: [macos-latest, ubuntu-22.04, ubuntu-24.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -100,7 +100,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        os: [macos-latest, ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        os: [macos-latest, ubuntu-22.04, ubuntu-24.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
