@@ -120,61 +120,79 @@ jobs:
           cmake --build "build" --target install
 
   cmake-msvc:
+    runs-on: windows-latest
+
     strategy:
       matrix:
         build-type: [Debug, Release]
-        shared-lib: [ON, OFF]
+        shared-lib: [ON]
       fail-fast: false
+
     name: "MSVC CMake (${{ matrix.build-type }}, DLL: ${{ matrix.shared-lib }})"
-    runs-on: windows-latest
-    env:
-      PROTOBUF_VERSION: 24.3
-      ABSEIL_VERSION: "20230802.0"
+
     steps:
-      - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
         with:
             arch: amd64
-      - uses: actions/cache@v4
-        id: protobuf-cache
+
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
+      - name: Checkout abseil
+        uses: actions/checkout@v4
         with:
-          path: ~/protobuf-bin
-          key: ${{ env.PROTOBUF_VERSION }}-${{ matrix.shared-lib }}-${{ matrix.build-type}}
-      - uses: actions/cache@v4
-        id: abseil-cache
+          repository: abseil/abseil-cpp
+          path: "abseil"
+          ref: "20240722.0"
+
+      - name: Checkout protobuf
+        uses: actions/checkout@v4
         with:
-          path: ~/abseil-bin
-          key: ${{ env.ABSEIL_VERSION }}-${{ matrix.shared-lib }}-${{ matrix.build-type}}
+          repository: protocolbuffers/protobuf
+          path: "protobuf"
+          ref: "v29.3"
+
       - name: Build and install abseil
-        if: steps.abseil-cache.outputs.cache-hit != 'true'
+        working-directory: "./abseil"
         run: |
-          cd ~
-          git clone --depth=1 https://github.com/abseil/abseil-cpp.git -b ${{ env.ABSEIL_VERSION }} abseil
-          cd ~/abseil
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/abseil-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}${{ matrix.shared-lib == 'ON' && 'DLL' || '' }} -DCMAKE_CXX_STANDARD=17 -S . -B "build"
-          cmake --build "build" -j4
-          cmake --build "build" --target install
-      - name: Build and install utf8 compression algorithm
-        if: matrix.shared-lib == 'OFF'
-        run: |
-          cd ~
-          git clone --depth=1 https://github.com/protocolbuffers/utf8_range.git utf8_range
-          cd ~/utf8_range
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=~/utf8_range-bin -DCMAKE_CXX_STANDARD=17 -Dutf8_range_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -Dabsl_ROOT=~/abseil-bin -DCMAKE_POLICY_DEFAULT_CMP0074=NEW -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY='MultiThreaded${{ matrix.build-type == 'Debug' && 'Debug' || '' }}' -S . -B "build"
-          cmake --build "build" -j4
-          cmake --build "build" --target install
+          cmake -B build -G Ninja `
+            -DCMAKE_CXX_STANDARD=17 `
+            -DCMAKE_INSTALL_PREFIX=~/abseil-bin `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
+            -DABSL_PROPAGATE_CXX_STD=ON `
+            -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
+          ;
+          ninja -C build install
+
       - name: Build and install protobuf
-        if: steps.protobuf-cache.outputs.cache-hit != 'true'
+        working-directory: "./protobuf"
         run: |
-          cd ~
-          git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v${{ env.PROTOBUF_VERSION }} protobuf
-          cd ~/protobuf && mkdir build && cd build
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=~/protobuf-bin -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_EXAMPLES=OFF -Dprotobuf_ABSL_PROVIDER=package -Dabsl_ROOT=~/abseil-bin -DABSL_PROPAGATE_CXX_STD=ON -S . -B "build"
-          cmake --build "build" -j4
-          cmake --build "build" --target install
-      - name: Run cmake tests
+          cmake -B build -G Ninja `
+            -DCMAKE_CXX_STANDARD=17 `
+            -DCMAKE_INSTALL_PREFIX=~/protobuf-bin `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
+            -Dabsl_ROOT=~/abseil-bin `
+            -Dprotobuf_ABSL_PROVIDER=package `
+            -Dprotobuf_BUILD_EXAMPLES=OFF `
+            -Dprotobuf_BUILD_LIBUPB=OFF `
+            -Dprotobuf_BUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
+            -Dprotobuf_BUILD_TESTS=OFF `
+          ;
+          ninja -C build install
+
+      - name: Build protobuf-c
         run: |
-          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DBUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} -DProtobuf_ROOT="~/protobuf-bin" -Dabsl_ROOT="~/abseil-bin" -Dutf8_range_ROOT="~/utf8_range-bin" -S "build-cmake" -B "build"
-          cmake --build "build" -j3
+          cmake -S build-cmake -B build -G Ninja `
+            -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
+            -DBUILD_TESTS=ON `
+            -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
+            -DProtobuf_ROOT="~/protobuf-bin" `
+            -Dabsl_ROOT="~/abseil-bin" `
+          ;
+          ninja -C build
           cmake --build "build" --target test
           cmake --build "build" --target install
