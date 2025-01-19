@@ -188,7 +188,6 @@ jobs:
           cmake -S build-cmake -B build -G Ninja `
             -DCMAKE_INSTALL_PREFIX=~/protobuf-c-bin `
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} `
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=${{ env.MSVC_RUNTIME_LIBRARY }} `
             -DBUILD_TESTS=ON `
             -DBUILD_SHARED_LIBS=${{ matrix.shared-lib }} `
             -DProtobuf_ROOT="~/protobuf-bin" `
