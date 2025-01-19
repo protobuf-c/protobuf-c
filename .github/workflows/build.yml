@@ -1,30 +1,44 @@
-name: Test Build
+name: Test Builds
+
 on:
   push:
     branches:
       - master
       - next
+
   pull_request:
     types: [ opened, reopened, synchronize, edited, ready_for_review, review_requested ]
+
   schedule:
     - cron: '0 0 * * 5' # Every Friday at 00:00
+
 jobs:
   distcheck:
+    runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         os: [macos-latest, ubuntu-22.04, ubuntu-24.04]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y \
+            libprotobuf-dev \
+            libprotoc-dev \
+            protobuf-compiler \
+          ;
+
       - name: Install Mac dependencies
         if: startsWith(matrix.os, 'macos')
         run: brew install protobuf automake libtool
+
       - name: Run distcheck
         run: |
           ./autogen.sh
@@ -33,6 +47,7 @@ jobs:
 
   distcheck-multiarch:
     runs-on: ubuntu-24.04
+
     strategy:
       matrix:
         include:
@@ -42,10 +57,13 @@ jobs:
           - arch: s390x
           - arch: ppc64le
       fail-fast: false
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: uraimo/run-on-arch-action@v2
-        name: Install dependencies and run distcheck
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
+      - name: Install dependencies and run distcheck on multiple arches
+        uses: uraimo/run-on-arch-action@v2
         id: runcmd
         with:
           arch: ${{ matrix.arch }}
@@ -53,8 +71,16 @@ jobs:
           distro: ubuntu22.04
           install: |
             apt-get update -q -y
-            apt-get install -q -y build-essential autoconf automake libtool pkg-config
-            apt-get install -q -y protobuf-compiler libprotobuf-dev libprotoc-dev
+            apt-get install -q -y \
+              autoconf \
+              automake \
+              build-essential \
+              libprotobuf-dev \
+              libprotoc-dev \
+              libtool \
+              pkg-config \
+              protobuf-compiler \
+            ;
 
           run: |
             ./autogen.sh
@@ -63,27 +89,52 @@ jobs:
 
   valgrind:
     runs-on: ubuntu-24.04
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
       - name: Install dependencies
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev valgrind
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y \
+            libprotobuf-dev \
+            libprotoc-dev \
+            protobuf-compiler \
+            valgrind \
+          ;
+
       - name: Run distcheck with valgrind
         run: |
           ./autogen.sh
-          ./configure --enable-valgrind-tests CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined"
-          make -j${nproc} distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" VERBOSE=1
+          ./configure \
+            --enable-valgrind-tests \
+            CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined" \
+          ;
+          make -j${nproc} \
+            distcheck \
+            DISTCHECK_CONFIGURE_FLAGS="--enable-valgrind-tests CFLAGS=\"-fsanitize=undefined -fno-sanitize-recover=undefined\"" \
+            VERBOSE=1 \
+          ;
 
   coverage:
     runs-on: ubuntu-24.04
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
       - name: Install dependencies
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev lcov
-      - name: Run coverage build
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y \
+            lcov \
+            libprotobuf-dev \
+            libprotoc-dev \
+            protobuf-compiler \
+          ;
+
+      - name: Build protobuf-c and run coverage build
         run: |
           ./autogen.sh
           ./configure --enable-code-coverage
@@ -92,30 +143,42 @@ jobs:
           lcov --no-external --capture --initial --directory . --output-file ./coverage/lcov.info --include '*protobuf-c.c'
           make check
           lcov --no-external --capture --directory . --output-file ./coverage/lcov.info --include '*protobuf-c.c'
-      - uses: coverallsapp/github-action@master
+
+      - name: Upload Coveralls results
+        uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   cmake:
+    runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         build_type: [Debug, Release]
         os: [macos-latest, ubuntu-22.04, ubuntu-24.04]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update -y
           sudo apt-get install -y protobuf-compiler libprotobuf-dev libprotoc-dev
+
       - name: Install Mac dependencies
         if: startsWith(matrix.os, 'macos')
         run: brew install protobuf abseil
-      - name: Run cmake tests
+
+      - name: Build protobuf-c and run tests
         run: |
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=protobuf-c-bin -S "build-cmake" -B "build"
+          cmake -S build-cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_INSTALL_PREFIX=protobuf-c-bin \
+            -DBUILD_TESTS=ON \
+          ;
           cmake --build "build" -j3
           cmake --build "build" --target test
           cmake --build "build" --target install
