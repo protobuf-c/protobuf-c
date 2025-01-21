@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -63,6 +64,9 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <string_view>
+#include <tuple>
+#include <vector>
 #include <protoc-c/c_message.h>
 #include <protoc-c/c_enum.h>
 #include <protoc-c/c_extension.h>
@@ -211,15 +215,28 @@ GenerateStructDefinition(io::Printer* printer) {
 
     printer->Print("union {\n");
     printer->Indent();
+
+    std::vector<std::tuple<int, std::string_view, const FieldDescriptor *>> sorted_fds;
+
     for (int j = 0; j < oneof->field_count(); j++) {
       const FieldDescriptor *field = oneof->field(j);
+      std::string_view name = field->name();
+      int order = MessageGenerator::GetOneofUnionOrder(field);
+      sorted_fds.push_back({order, name, field});
+    }
+
+    std::sort(sorted_fds.begin(), sorted_fds.end());
+
+    for (const auto& tuple : sorted_fds) {
+      const auto& [order, name, field] = tuple;
       SourceLocation fieldSourceLoc;
       field->GetSourceLocation(&fieldSourceLoc);
 
-      PrintComment (printer, fieldSourceLoc.leading_comments);
-      PrintComment (printer, fieldSourceLoc.trailing_comments);
+      PrintComment(printer, fieldSourceLoc.leading_comments);
+      PrintComment(printer, fieldSourceLoc.trailing_comments);
       field_generators_.get(field).GenerateStructMembers(printer);
     }
+
     printer->Outdent();
     printer->Print(vars, "};\n");
   }
@@ -625,6 +642,60 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
   printer->Print(vars,
       "  NULL,NULL,NULL    /* reserved[123] */\n"
       "};\n");
+}
+
+int MessageGenerator::GetOneofUnionOrder(const FieldDescriptor *fd)
+{
+  auto cpp_type = fd->cpp_type();
+  auto pb_type = fd->type();
+
+  switch (cpp_type) {
+    case FieldDescriptor::CPPTYPE_STRING:
+      if (pb_type == FieldDescriptor::TYPE_BYTES) {
+        return 1;
+      } else if (pb_type == FieldDescriptor::TYPE_STRING) {
+        return 4;
+      } else {
+        GOOGLE_LOG(FATAL)
+          << fd->full_name()
+          << ": Unhandled combination of CPPTYPE ("
+          << cpp_type
+          << ") and protobuf type ("
+          << pb_type
+          << ")";
+        return -1;
+      }
+
+    case FieldDescriptor::CPPTYPE_DOUBLE:
+      return 2;
+
+    case FieldDescriptor::CPPTYPE_INT64:
+    case FieldDescriptor::CPPTYPE_UINT64:
+      return 3;
+
+    case FieldDescriptor::CPPTYPE_MESSAGE:
+      return 5;
+
+    case FieldDescriptor::CPPTYPE_FLOAT:
+      return 6;
+
+    case FieldDescriptor::CPPTYPE_INT32:
+    case FieldDescriptor::CPPTYPE_UINT32:
+      return 7;
+
+    case FieldDescriptor::CPPTYPE_ENUM:
+      return 8;
+
+    case FieldDescriptor::CPPTYPE_BOOL:
+      return 9;
+
+    default:
+      GOOGLE_LOG(FATAL)
+        << fd->full_name()
+        << ": Unhandled CPPTYPE "
+        << cpp_type;
+      return -1;
+  }
 }
 
 }  // namespace c
