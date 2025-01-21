@@ -253,6 +253,7 @@ GenerateStructDefinition(io::Printer* printer) {
 
   printer->Print(vars, "#define $ucclassname$__INIT \\\n"
 		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor) \\\n    ");
+
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
     if (field->containing_oneof() == NULL) {
@@ -260,16 +261,32 @@ GenerateStructDefinition(io::Printer* printer) {
       field_generators_.get(field).GenerateStaticInit(printer);
     }
   }
+
   for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
     const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
     vars["foneofname"] = FullNameToUpper(oneof->full_name(), oneof->file());
+
     // Initialize the case enum
     printer->Print(vars, ", $foneofname$__NOT_SET");
-    // Initialize the union
-    printer->Print(", {0}");
-  }
-  printer->Print(" }\n\n\n");
 
+    // Initialize the union
+    bool want_extra_braces = false;
+    for (int j = 0; j < oneof->field_count(); j++) {
+      const FieldDescriptor *field = oneof->field(j);
+      if (field->cpp_type() == FieldDescriptor::CPPTYPE_STRING &&
+          field->type() == FieldDescriptor::TYPE_BYTES)
+      {
+        want_extra_braces = true;
+      }
+    }
+    if (want_extra_braces) {
+      printer->Print(", { {0} }");
+    } else {
+      printer->Print(", {0}");
+    }
+  }
+
+  printer->Print(" }\n\n\n");
 }
 
 void MessageGenerator::
