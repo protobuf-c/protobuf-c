@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+enum E {
+	FIRST_VALUE = 0;
+	SECOND_VALUE = 1;
+}
+
+message M {
+	int32 test = 1;
+}
+
+message T {
+	oneof test_oneof {
+		bool test_bool = 1;
+		E test_enum = 2;
+		float test_float = 3;
+		fixed32 test_fixed32 = 4;
+		int32 test_int32 = 5;
+		sfixed32 test_sfixed32 = 6;
+		sint32 test_sint32 = 7;
+		uint32 test_uint32 = 8;
+		M test_message = 9;
+		string test_string = 10;
+		double test_double = 11;
+		fixed64 test_fixed64 = 12;
+		int64 test_int64 = 13;
+		sfixed64 test_sfixed64 = 14;
+		sint64 test_sint64 = 15;
+		uint64 test_uint64 = 16;
+		bytes test_bytes = 17;
+	}
+}
