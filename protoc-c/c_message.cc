@@ -489,7 +489,7 @@ GenerateMessageDescriptor(io::Printer* printer, bool gen_init) {
 	  vars["field_dv_ctype"] = "float";
 	  break;
 	case FieldDescriptor::CPPTYPE_DOUBLE:
-	  vars["field_dv_ctype"] = "double";
+	  vars["field_dv_ctype"] = "protobuf_c_double";
 	  break;
 	case FieldDescriptor::CPPTYPE_BOOL:
 	  vars["field_dv_ctype"] = "protobuf_c_boolean";
