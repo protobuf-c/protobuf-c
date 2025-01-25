@@ -220,6 +220,12 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
     service_generators_[i]->GenerateDescriptorDeclarations(printer);
   }
 
+  printer->Print("\n/* --- static initializers --- */\n\n");
+
+  for (int i = 0; i < file_->message_type_count(); i++) {
+    message_generators_[i]->GenerateStaticInitializerDeclarations(printer);
+  }
+
   printer->Print(
     "\n"
     "PROTOBUF_C__END_DECLS\n"
@@ -253,6 +259,7 @@ void FileGenerator::GenerateSource(io::Printer* printer) {
   for (int i = 0; i < file_->message_type_count(); i++) {
     message_generators_[i]->GenerateMessageDescriptor(printer,
 						      opt.gen_init_helpers());
+    message_generators_[i]->GenerateStaticInitializerDefinitions(printer);
   }
   for (int i = 0; i < file_->enum_type_count(); i++) {
     enum_generators_[i]->GenerateEnumDescriptor(printer);

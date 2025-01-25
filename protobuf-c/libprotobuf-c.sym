@@ -6,9 +6,11 @@ global:
         protobuf_c_message_check;
         protobuf_c_message_descriptor_get_field;
         protobuf_c_message_descriptor_get_field_by_name;
+        protobuf_c_message_free;
         protobuf_c_message_free_unpacked;
         protobuf_c_message_get_packed_size;
         protobuf_c_message_init;
+        protobuf_c_message_new;
         protobuf_c_message_pack;
         protobuf_c_message_pack_to_buffer;
         protobuf_c_message_unpack;

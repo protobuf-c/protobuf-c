@@ -63,6 +63,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <stack>
 #include <protoc-c/c_message.h>
 #include <protoc-c/c_enum.h>
 #include <protoc-c/c_extension.h>
@@ -233,26 +234,67 @@ GenerateStructDefinition(io::Printer* printer) {
       field_generators_.get(field).GenerateDefaultValueDeclarations(printer);
     }
   }
+  printer->Print(vars, "#define $ucclassname$__INIT_EX(msg) \\\n");
+  printer->Print(vars, "  do { \\\n");
 
-  printer->Print(vars, "#define $ucclassname$__INIT \\\n"
-		       " { PROTOBUF_C_MESSAGE_INIT (&$lcclassname$__descriptor) \\\n    ");
+  std::stack<const FieldDescriptor*> stack;
+
+  /* push first-level messages onto the stack */
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor *field = descriptor_->field(i);
-    if (field->containing_oneof() == NULL) {
-      printer->Print(", ");
-      field_generators_.get(field).GenerateStaticInit(printer);
+    if (field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      stack.push(field);
     }
   }
-  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
-    const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
-    vars["foneofname"] = FullNameToUpper(oneof->full_name(), oneof->file());
-    // Initialize the case enum
-    printer->Print(vars, ", $foneofname$__NOT_SET");
-    // Initialize the union
-    printer->Print(", {0}");
-  }
-  printer->Print(" }\n\n\n");
 
+  /* do a post-order traversal */
+  std::vector<const FieldDescriptor*> vec;
+  const FieldDescriptor *root;
+  while (!stack.empty()) {
+    root = stack.top();
+    vec.push_back(root);
+    stack.pop();
+    const Descriptor *desc = root->message_type();
+    for (int i = 0; i < desc->field_count(); i++) {
+      const FieldDescriptor *cfield = desc->field(i);
+      if (cfield->type() == FieldDescriptor::TYPE_MESSAGE) {
+        stack.push(cfield);
+      }
+    }
+  }
+
+  /* final step to get post-order */
+  reverse(vec.begin(), vec.end());
+
+  /* iterate over the fields and generate code */
+  for (const FieldDescriptor* & field : vec) {
+    std::map<std::string, std::string> vars;
+    vars["classname"] = FullNameToC(field->message_type()->full_name(), field->message_type()->file());
+    vars["lcclassname"] = FullNameToLower(field->message_type()->full_name(), field->message_type()->file());
+    vars["ucclassname"] = FullNameToUpper(field->message_type()->full_name(), field->message_type()->file());
+    printer->Print(vars, "    $classname$ __$lcclassname$ = $ucclassname$__INIT; \\\n");
+    const Descriptor *desc = field->message_type();
+    for (int i = 0; i < desc->field_count() - 1; i++) {
+      const FieldDescriptor *cfield = desc->field(i);
+      if (cfield->type() == FieldDescriptor::TYPE_MESSAGE) {
+        vars["clcclassname"] = FullNameToLower(cfield->message_type()->full_name(), cfield->message_type()->file());
+        vars["name"] = cfield->lowercase_name();
+        printer->Print(vars, "    __$lcclassname$.$name$ = &__$clcclassname$; \\\n");
+      }
+    }
+  }
+  printer->Print(vars, "    (*msg) = $ucclassname$__INIT; \\\n");
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const FieldDescriptor *field = descriptor_->field(i);
+    std::vector<std::string> pieces;
+    SplitStringUsing(OverrideFullName(field->full_name(), field->file()), ".", &pieces);
+    vars["name"] = field->lowercase_name();
+    vars["lcclassname"] = CamelToLower(field->name());
+    if (field->type() == FieldDescriptor::TYPE_MESSAGE) {
+      printer->Print(vars, "    (msg)->$name$ = &__$lcclassname$; \\\n");
+    }
+  }
+  printer->Print(vars, "  } while(0)\n\n");
 }
 
 void MessageGenerator::
@@ -280,9 +322,10 @@ GenerateHelperFunctionDeclarations(io::Printer* printer,
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+  if (gen_init || gen_pack)
+    printer->Print(vars, "/* $classname$ methods */\n");
   if (gen_init) {
     printer->Print(vars,
-		 "/* $classname$ methods */\n"
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message);\n"
 		);
@@ -322,6 +365,49 @@ GenerateDescriptorDeclarations(io::Printer* printer) {
     enum_generators_[i]->GenerateDescriptorDeclarations(printer);
   }
 }
+
+void MessageGenerator::
+GenerateStaticInitializerDeclarations(io::Printer* printer) {
+  std::map<std::string, std::string> vars;
+
+  vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
+
+  printer->Print(vars, "extern const $classname$ $ucclassname$__INIT;\n");
+}
+
+void MessageGenerator::
+GenerateStaticInitializerDefinitions(io::Printer* printer) {
+  std::map<std::string, std::string> vars;
+
+  vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+  vars["ucclassname"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
+  printer->Print(vars,
+    "const $classname$ $ucclassname$__INIT =\n"
+    "{\n"
+    "  PROTOBUF_C_MESSAGE_INIT(&$lcclassname$__descriptor),\n"
+  );
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const FieldDescriptor *field = descriptor_->field(i);
+    if (field->containing_oneof() == NULL) {
+      printer->Print("  ");
+      field_generators_.get(field).GenerateStaticInit(printer);
+      printer->Print(",\n");
+    }
+  }
+  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+    const OneofDescriptor *oneof = descriptor_->oneof_decl(i);
+    vars["foneofname"] = FullNameToUpper(oneof->full_name(), oneof->file());
+    // Initialize the case enum
+    printer->Print(vars, "  $foneofname$__NOT_SET,\n");
+    // Initialize the union
+    printer->Print("  {0}\n");
+  }
+  printer->Print("};\n");
+}
+
+
 void MessageGenerator::GenerateClosureTypedef(io::Printer* printer)
 {
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
@@ -377,8 +463,7 @@ GenerateHelperFunctionDefinitions(io::Printer* printer,
 		 "void   $lcclassname$__init\n"
 		 "                     ($classname$         *message)\n"
 		 "{\n"
-		 "  static const $classname$ init_value = $ucclassname$__INIT;\n"
-		 "  *message = init_value;\n"
+		 "  *message = $ucclassname$__INIT;\n"
 		 "}\n");
   }
   if (gen_pack) {

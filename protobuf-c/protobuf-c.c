@@ -753,6 +753,65 @@ size_t protobuf_c_message_get_packed_size(const ProtobufCMessage *message)
 	return rv;
 }
 
+/*
+ * Allocates a message dynamically
+ */
+ProtobufCMessage *
+protobuf_c_message_new(const ProtobufCMessageDescriptor *desc,
+			protobuf_c_boolean recursive,
+			ProtobufCAllocator *allocator)
+{
+	ProtobufCMessage *rv = NULL;
+
+	if (allocator == NULL)
+		allocator = &protobuf_c__allocator;
+
+	rv = do_alloc(allocator, desc->sizeof_message);
+	if (rv == NULL)
+		return NULL;
+
+	protobuf_c_message_init(desc, rv);
+
+	if (recursive) {
+		for (unsigned i = 0; i < desc->n_fields; i++) {
+			const ProtobufCFieldDescriptor *field = &desc->fields[i];
+			if (field->type == PROTOBUF_C_TYPE_MESSAGE)
+				STRUCT_MEMBER(ProtobufCMessage *, rv, field->offset) =
+					protobuf_c_message_new(field->descriptor, allocator, recursive);
+		}
+	}
+
+	return rv;
+}
+
+/*
+ * Frees a dynamically allocated message
+ */
+void
+protobuf_c_message_free(ProtobufCMessage *message,
+			ProtobufCAllocator *allocator)
+{
+	const ProtobufCMessageDescriptor *desc;
+
+	if (message == NULL)
+		return;
+
+	desc = message->descriptor;
+
+	if (allocator == NULL)
+		allocator = &protobuf_c__allocator;
+
+	for (unsigned i = 0; i < desc->n_fields; i++) {
+		const ProtobufCFieldDescriptor *field = &desc->fields[i];
+		if (field->type == PROTOBUF_C_TYPE_MESSAGE)
+			protobuf_c_message_free(STRUCT_MEMBER(ProtobufCMessage *,
+				message, field->offset), allocator);
+	}
+
+	do_free(allocator, message);
+}
+
+
 /**
  * \defgroup pack protobuf_c_message_pack() implementation
  *
