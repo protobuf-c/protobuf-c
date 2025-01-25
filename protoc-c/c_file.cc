@@ -127,6 +127,7 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
     "#ifndef PROTOBUF_C_$filename_identifier$__INCLUDED\n"
     "#define PROTOBUF_C_$filename_identifier$__INCLUDED\n"
     "\n"
+    "#include <math.h>\n"
     "#include <protobuf-c/protobuf-c.h>\n"
     "\n"
     "PROTOBUF_C__BEGIN_DECLS\n"
