@@ -31,6 +31,7 @@
 #include <google/protobuf/compiler/plugin.h>
 
 #include "c_generator.h"
+#include "c_helpers.h"
 
 int main(int argc, char* argv[]) {
   protobuf_c::CGenerator c_generator;
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]) {
   const std::string standalone_name = "protoc-c";
 
   if (invocation_basename == standalone_name) {
+    GOOGLE_LOG(WARNING) << "`protoc-c` is deprecated. Please use `protoc` instead!";
     google::protobuf::compiler::CommandLineInterface cli;
     cli.RegisterGenerator("--c_out", &c_generator, "Generate C/H files.");
     cli.SetVersionInfo(PACKAGE_STRING);
