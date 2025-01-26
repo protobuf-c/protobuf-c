@@ -53,7 +53,6 @@ jobs:
         include:
           - arch: armv7
           - arch: aarch64
-          - arch: riscv64
           - arch: s390x
           - arch: ppc64le
       fail-fast: false
@@ -68,7 +67,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           githubToken: ${{ github.token }}
-          distro: ubuntu22.04
+          distro: bookworm
           install: |
             apt-get update -q -y
             apt-get install -q -y \
