@@ -32,7 +32,7 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2014, Dave Benson and the protobuf-c authors.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,16 +61,17 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_file.h>
-#include <protoc-c/c_enum.h>
-#include <protoc-c/c_service.h>
-#include <protoc-c/c_extension.h>
-#include <protoc-c/c_helpers.h>
-#include <protoc-c/c_message.h>
 #include <google/protobuf/io/printer.h>
-#include <protobuf-c/protobuf-c.pb.h>
 
+#include <protobuf-c/protobuf-c.pb.h>
 #include "protobuf-c.h"
+
+#include "c_enum.h"
+#include "c_extension.h"
+#include "c_file.h"
+#include "c_helpers.h"
+#include "c_message.h"
+#include "c_service.h"
 
 namespace google {
 namespace protobuf {

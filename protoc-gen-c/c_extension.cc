@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,9 +61,9 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_extension.h>
-#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
+
+#include "c_extension.h"
 
 namespace google {
 namespace protobuf {

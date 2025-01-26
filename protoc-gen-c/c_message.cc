@@ -63,18 +63,20 @@
 
 #include <algorithm>
 #include <map>
-#include <memory>
 #include <string_view>
 #include <tuple>
 #include <vector>
-#include <protoc-c/c_message.h>
-#include <protoc-c/c_enum.h>
-#include <protoc-c/c_extension.h>
-#include <protoc-c/c_helpers.h>
-#include <google/protobuf/io/printer.h>
+
 #include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
+
 #include <protobuf-c/protobuf-c.pb.h>
+
+#include "c_enum.h"
+#include "c_extension.h"
+#include "c_helpers.h"
+#include "c_message.h"
 
 namespace google {
 namespace protobuf {

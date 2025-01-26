@@ -66,22 +66,18 @@
 
 #include <memory>
 #include <string>
+
+#include <google/protobuf/io/printer.h>
 #include <google/protobuf/stubs/common.h>
-#include <protoc-c/c_field.h>
+
+#include "c_enum.h"
+#include "c_extension.h"
+#include "c_field.h"
 
 namespace google {
 namespace protobuf {
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
-
-namespace protobuf {
 namespace compiler {
 namespace c {
-
-class EnumGenerator;           // enum.h
-class ExtensionGenerator;      // extension.h
 
 class MessageGenerator {
  public:
