@@ -63,49 +63,43 @@
 
 // Generates C code for a given .proto file.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_GENERATOR_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_GENERATOR_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_GENERATOR_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_GENERATOR_H__
 
 #include <string>
 
 #include <google/protobuf/compiler/code_generator.h>
 
 #if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
-# define PROTOC_C_EXPORT __declspec(dllexport)
+# define PROTOBUF_C_EXPORT __declspec(dllexport)
 #else
-# define PROTOC_C_EXPORT
+# define PROTOBUF_C_EXPORT
 #endif
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 // CodeGenerator implementation which generates a C++ source file and
 // header.  If you create your own protocol compiler binary and you want
 // it to support C++ output, you can do so by registering an instance of this
 // CodeGenerator with the CommandLineInterface in your main() function.
-class PROTOC_C_EXPORT CGenerator : public CodeGenerator {
+class PROTOBUF_C_EXPORT CGenerator : public google::protobuf::compiler::CodeGenerator {
  public:
   CGenerator();
   ~CGenerator();
 
   // implements CodeGenerator ----------------------------------------
-  bool Generate(const FileDescriptor* file,
+  bool Generate(const google::protobuf::FileDescriptor* file,
                 const std::string& parameter,
-                OutputDirectory* output_directory,
+                google::protobuf::compiler::OutputDirectory* output_directory,
                 std::string* error) const;
 
 #if GOOGLE_PROTOBUF_VERSION >= 5026000
   uint64_t GetSupportedFeatures() const { return 0; }
-  Edition GetMinimumEdition() const { return Edition::EDITION_PROTO2; }
-  Edition GetMaximumEdition() const { return Edition::EDITION_PROTO3; }
+  google::protobuf::Edition GetMinimumEdition() const { return google::protobuf::Edition::EDITION_PROTO2; }
+  google::protobuf::Edition GetMaximumEdition() const { return google::protobuf::Edition::EDITION_PROTO3; }
 #endif
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_GENERATOR_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_GENERATOR_H__

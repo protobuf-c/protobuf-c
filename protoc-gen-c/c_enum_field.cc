@@ -67,21 +67,16 @@
 #include "c_enum_field.h"
 #include "c_helpers.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
-
-using internal::WireFormat;
+namespace protobuf_c {
 
 // TODO(kenton):  Factor out a "SetCommonFieldVariables()" to get rid of
 //   repeat code between this and the other field types.
-void SetEnumVariables(const FieldDescriptor* descriptor,
+void SetEnumVariables(const google::protobuf::FieldDescriptor* descriptor,
                       std::map<std::string, std::string>* variables) {
 
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name(), descriptor->enum_type()->file());
-  const EnumValueDescriptor* default_value = descriptor->default_value_enum();
+  const google::protobuf::EnumValueDescriptor* default_value = descriptor->default_value_enum();
   (*variables)["default"] = FullNameToUpper(default_value->type()->full_name(), default_value->type()->file())
                           + "__" + default_value->name();
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
@@ -90,7 +85,7 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
 // ===================================================================
 
 EnumFieldGenerator::
-EnumFieldGenerator(const FieldDescriptor* descriptor)
+EnumFieldGenerator(const google::protobuf::FieldDescriptor* descriptor)
   : FieldGenerator(descriptor)
 {
   SetEnumVariables(descriptor, &variables_);
@@ -98,18 +93,18 @@ EnumFieldGenerator(const FieldDescriptor* descriptor)
 
 EnumFieldGenerator::~EnumFieldGenerator() {}
 
-void EnumFieldGenerator::GenerateStructMembers(io::Printer* printer) const
+void EnumFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
 {
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$type$ $name$$deprecated$;\n");
       break;
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (descriptor_->containing_oneof() == NULL && FieldSyntax(descriptor_) == 2)
         printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
       printer->Print(variables_, "$type$ $name$$deprecated$;\n");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
       printer->Print(variables_, "$type$ *$name$$deprecated$;\n");
       break;
@@ -120,32 +115,28 @@ std::string EnumFieldGenerator::GetDefaultValue(void) const
 {
   return variables_.find("default")->second;
 }
-void EnumFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+void EnumFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$default$");
       break;
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (FieldSyntax(descriptor_) == 2)
         printer->Print(variables_, "0, ");
       printer->Print(variables_, "$default$");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       // no support for default?
       printer->Print("0,NULL");
       break;
   }
 }
 
-void EnumFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
+void EnumFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
 {
   std::string addr = "&" + FullNameToLower(descriptor_->enum_type()->full_name(), descriptor_->enum_type()->file()) + "__descriptor";
   GenerateDescriptorInitializerGeneric(printer, true, "ENUM", addr);
 }
 
-
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

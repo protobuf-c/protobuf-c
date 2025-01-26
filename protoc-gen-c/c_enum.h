@@ -61,23 +61,20 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_ENUM_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_ENUM_H__
 
 #include <string>
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 class EnumGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit EnumGenerator(const EnumDescriptor* descriptor,
+  explicit EnumGenerator(const google::protobuf::EnumDescriptor* descriptor,
                          const std::string& dllexport_decl);
   ~EnumGenerator();
 
@@ -86,28 +83,25 @@ class EnumGenerator {
   // Generate header code defining the enum.  This code should be placed
   // within the enum's package namespace, but NOT within any class, even for
   // nested enums.
-  void GenerateDefinition(io::Printer* printer);
+  void GenerateDefinition(google::protobuf::io::Printer* printer);
 
-  void GenerateDescriptorDeclarations(io::Printer* printer);
+  void GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer);
 
 
   // Source file stuff.
 
   // Generate the ProtobufCEnumDescriptor for this enum
-  void GenerateEnumDescriptor(io::Printer* printer);
+  void GenerateEnumDescriptor(google::protobuf::io::Printer* printer);
 
   // Generate static initializer for a ProtobufCEnumValue
   // given the index of the value in the enum.
-  void GenerateValueInitializer(io::Printer *printer, int index);
+  void GenerateValueInitializer(google::protobuf::io::Printer *printer, int index);
 
  private:
-  const EnumDescriptor* descriptor_;
+  const google::protobuf::EnumDescriptor* descriptor_;
   std::string dllexport_decl_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_ENUM_H__

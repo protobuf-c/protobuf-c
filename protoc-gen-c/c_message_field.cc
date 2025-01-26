@@ -61,40 +61,34 @@
 
 // Modified to implement C code by Dave Benson.
 
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 
 #include "c_helpers.h"
 #include "c_message_field.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
-
-using internal::WireFormat;
-
-// ===================================================================
+namespace protobuf_c {
 
 MessageFieldGenerator::
-MessageFieldGenerator(const FieldDescriptor* descriptor)
+MessageFieldGenerator(const google::protobuf::FieldDescriptor* descriptor)
   : FieldGenerator(descriptor) {
 }
 
 MessageFieldGenerator::~MessageFieldGenerator() {}
 
-void MessageFieldGenerator::GenerateStructMembers(io::Printer* printer) const
+void MessageFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
   vars["name"] = FieldName(descriptor_);
   vars["type"] = FullNameToC(descriptor_->message_type()->full_name(), descriptor_->message_type()->file());
   vars["deprecated"] = FieldDeprecated(descriptor_);
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       printer->Print(vars, "$type$ *$name$$deprecated$;\n");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print(vars, "size_t n_$name$$deprecated$;\n");
       printer->Print(vars, "$type$ **$name$$deprecated$;\n");
       break;
@@ -107,25 +101,22 @@ std::string MessageFieldGenerator::GetDefaultValue(void) const
    */
   return "NULL";
 }
-void MessageFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+void MessageFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       printer->Print("NULL");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print("0,NULL");
       break;
   }
 }
-void MessageFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
+void MessageFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
 {
   std::string addr = "&" + FullNameToLower(descriptor_->message_type()->full_name(), descriptor_->message_type()->file()) + "__descriptor";
   GenerateDescriptorInitializerGeneric(printer, false, "MESSAGE", addr);
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

@@ -61,17 +61,15 @@
 
 // Modified to implement C code by Dave Benson.
 
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 
 #include "c_helpers.h"
 #include "c_service.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
-ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
+ServiceGenerator::ServiceGenerator(const google::protobuf::ServiceDescriptor* descriptor,
                                    const std::string& dllexport_decl)
   : descriptor_(descriptor) {
   vars_["name"] = descriptor_->name();
@@ -91,13 +89,13 @@ ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
 ServiceGenerator::~ServiceGenerator() {}
 
 // Header stuff.
-void ServiceGenerator::GenerateMainHFile(io::Printer* printer)
+void ServiceGenerator::GenerateMainHFile(google::protobuf::io::Printer* printer)
 {
   GenerateVfuncs(printer);
   GenerateInitMacros(printer);
   GenerateCallersDeclarations(printer);
 }
-void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
+void ServiceGenerator::GenerateVfuncs(google::protobuf::io::Printer* printer)
 {
   printer->Print(vars_,
 		 "typedef struct $cname$_Service $cname$_Service;\n"
@@ -105,7 +103,7 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
 		 "{\n"
 		 "  ProtobufCService base;\n");
   for (int i = 0; i < descriptor_->method_count(); i++) {
-    const MethodDescriptor *method = descriptor_->method(i);
+    const google::protobuf::MethodDescriptor* method = descriptor_->method(i);
     std::string lcname = CamelToLower(method->name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
@@ -124,7 +122,7 @@ void ServiceGenerator::GenerateVfuncs(io::Printer* printer)
 		 "void $lcfullname$__init ($cname$_Service *service,\n"
 		 "     $lcfullpadd$        $cname$_ServiceDestroy destroy);\n");
 }
-void ServiceGenerator::GenerateInitMacros(io::Printer* printer)
+void ServiceGenerator::GenerateInitMacros(google::protobuf::io::Printer* printer)
 {
   printer->Print(vars_,
 		 "#define $ucfullname$__BASE_INIT \\\n"
@@ -132,7 +130,7 @@ void ServiceGenerator::GenerateInitMacros(io::Printer* printer)
 		 "#define $ucfullname$__INIT(function_prefix__) \\\n"
 		 "    { $ucfullname$__BASE_INIT");
   for (int i = 0; i < descriptor_->method_count(); i++) {
-    const MethodDescriptor *method = descriptor_->method(i);
+    const google::protobuf::MethodDescriptor* method = descriptor_->method(i);
     std::string lcname = CamelToLower(method->name());
     vars_["method"] = lcname;
     vars_["metpad"] = ConvertToSpaces(lcname);
@@ -142,10 +140,10 @@ void ServiceGenerator::GenerateInitMacros(io::Printer* printer)
   printer->Print(vars_,
 		 "  }\n");
 }
-void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
+void ServiceGenerator::GenerateCallersDeclarations(google::protobuf::io::Printer* printer)
 {
   for (int i = 0; i < descriptor_->method_count(); i++) {
-    const MethodDescriptor *method = descriptor_->method(i);
+    const google::protobuf::MethodDescriptor* method = descriptor_->method(i);
     std::string lcname = CamelToLower(method->name());
     std::string lcfullname = FullNameToLower(descriptor_->full_name(), descriptor_->file());
     vars_["method"] = lcname;
@@ -161,20 +159,20 @@ void ServiceGenerator::GenerateCallersDeclarations(io::Printer* printer)
   }
 }
 
-void ServiceGenerator::GenerateDescriptorDeclarations(io::Printer* printer)
+void ServiceGenerator::GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer)
 {
   printer->Print(vars_, "extern const ProtobufCServiceDescriptor $lcfullname$__descriptor;\n");
 }
 
 
 // Source file stuff.
-void ServiceGenerator::GenerateCFile(io::Printer* printer)
+void ServiceGenerator::GenerateCFile(google::protobuf::io::Printer* printer)
 {
   GenerateServiceDescriptor(printer);
   GenerateCallersImplementations(printer);
   GenerateInit(printer);
 }
-void ServiceGenerator::GenerateInit(io::Printer* printer)
+void ServiceGenerator::GenerateInit(google::protobuf::io::Printer* printer)
 {
   printer->Print(vars_,
 		 "void $lcfullname$__init ($cname$_Service *service,\n"
@@ -195,20 +193,20 @@ compare_method_index_and_name_by_name (const void *a, const void *b)
   return strcmp (ma->name, mb->name);
 }
 
-void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
+void ServiceGenerator::GenerateServiceDescriptor(google::protobuf::io::Printer* printer)
 {
   int n_methods = descriptor_->method_count();
   MethodIndexAndName *mi_array = new MethodIndexAndName[n_methods];
 
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
-    FileOptions_OptimizeMode_CODE_SIZE;
+    google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
 
   vars_["n_methods"] = SimpleItoa(n_methods);
   printer->Print(vars_, "static const ProtobufCMethodDescriptor $lcfullname$__method_descriptors[$n_methods$] =\n"
                        "{\n");
   for (int i = 0; i < n_methods; i++) {
-    const MethodDescriptor *method = descriptor_->method(i);
+    const google::protobuf::MethodDescriptor* method = descriptor_->method(i);
     vars_["method"] = method->name();
     vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name(), method->input_type()->file()) + "__descriptor";
     vars_["output_descriptor"] = "&" + FullNameToLower(method->output_type()->full_name(), method->output_type()->file()) + "__descriptor";
@@ -264,10 +262,10 @@ void ServiceGenerator::GenerateServiceDescriptor(io::Printer* printer)
   delete[] mi_array;
 }
 
-void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
+void ServiceGenerator::GenerateCallersImplementations(google::protobuf::io::Printer* printer)
 {
   for (int i = 0; i < descriptor_->method_count(); i++) {
-    const MethodDescriptor *method = descriptor_->method(i);
+    const google::protobuf::MethodDescriptor* method = descriptor_->method(i);
     std::string lcname = CamelToLower(method->name());
     std::string lcfullname = FullNameToLower(descriptor_->full_name(), descriptor_->file());
     vars_["method"] = lcname;
@@ -289,8 +287,4 @@ void ServiceGenerator::GenerateCallersImplementations(io::Printer* printer)
   }
 }
 
-
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

@@ -61,8 +61,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_SERVICE_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_SERVICE_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_SERVICE_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_SERVICE_H__
 
 #include <map>
 #include <string>
@@ -70,38 +70,32 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 class ServiceGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit ServiceGenerator(const ServiceDescriptor* descriptor,
+  explicit ServiceGenerator(const google::protobuf::ServiceDescriptor* descriptor,
                             const std::string& dllexport_decl);
   ~ServiceGenerator();
 
   // Header stuff.
-  void GenerateMainHFile(io::Printer* printer);
-  void GenerateVfuncs(io::Printer* printer);
-  void GenerateInitMacros(io::Printer* printer);
-  void GenerateDescriptorDeclarations(io::Printer* printer);
-  void GenerateCallersDeclarations(io::Printer* printer);
+  void GenerateMainHFile(google::protobuf::io::Printer* printer);
+  void GenerateVfuncs(google::protobuf::io::Printer* printer);
+  void GenerateInitMacros(google::protobuf::io::Printer* printer);
+  void GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer);
+  void GenerateCallersDeclarations(google::protobuf::io::Printer* printer);
 
   // Source file stuff.
-  void GenerateCFile(io::Printer* printer);
-  void GenerateServiceDescriptor(io::Printer* printer);
-  void GenerateInit(io::Printer* printer);
-  void GenerateCallersImplementations(io::Printer* printer);
+  void GenerateCFile(google::protobuf::io::Printer* printer);
+  void GenerateServiceDescriptor(google::protobuf::io::Printer* printer);
+  void GenerateInit(google::protobuf::io::Printer* printer);
+  void GenerateCallersImplementations(google::protobuf::io::Printer* printer);
 
-  const ServiceDescriptor* descriptor_;
+  const google::protobuf::ServiceDescriptor* descriptor_;
   std::map<std::string, std::string> vars_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_SERVICE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_SERVICE_H__

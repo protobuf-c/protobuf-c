@@ -61,8 +61,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_FILE_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_FILE_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_FILE_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_FILE_H__
 
 #include <memory>
 #include <string>
@@ -72,30 +72,26 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/stubs/common.h>
 
+#include "c_enum.h"
+#include "c_extension.h"
 #include "c_field.h"
+#include "c_message.h"
+#include "c_service.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
-
-class EnumGenerator;           // enum.h
-class MessageGenerator;        // message.h
-class ServiceGenerator;        // service.h
-class ExtensionGenerator;      // extension.h
+namespace protobuf_c {
 
 class FileGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit FileGenerator(const FileDescriptor* file,
+  explicit FileGenerator(const google::protobuf::FileDescriptor* file,
                          const std::string& dllexport_decl);
   ~FileGenerator();
 
-  void GenerateHeader(io::Printer* printer);
-  void GenerateSource(io::Printer* printer);
+  void GenerateHeader(google::protobuf::io::Printer* printer);
+  void GenerateSource(google::protobuf::io::Printer* printer);
 
  private:
-  const FileDescriptor* file_;
+  const google::protobuf::FileDescriptor* file_;
 
   std::unique_ptr<std::unique_ptr<MessageGenerator>[]> message_generators_;
   std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
@@ -103,9 +99,6 @@ class FileGenerator {
   std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_FILE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_FILE_H__

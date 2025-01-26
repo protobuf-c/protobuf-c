@@ -61,8 +61,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_MESSAGE_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_MESSAGE_H__
 
 #include <memory>
 #include <string>
@@ -74,41 +74,38 @@
 #include "c_extension.h"
 #include "c_field.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 class MessageGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit MessageGenerator(const Descriptor* descriptor,
+  explicit MessageGenerator(const google::protobuf::Descriptor* descriptor,
                             const std::string& dllexport_decl);
   ~MessageGenerator();
 
   // Header stuff.
 
   // Generate typedef.
-  void GenerateStructTypedef(io::Printer* printer);
+  void GenerateStructTypedef(google::protobuf::io::Printer* printer);
 
   // Generate descriptor prototype
-  void GenerateDescriptorDeclarations(io::Printer* printer);
+  void GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer);
 
   // Generate descriptor prototype
-  void GenerateClosureTypedef(io::Printer* printer);
+  void GenerateClosureTypedef(google::protobuf::io::Printer* printer);
 
   // Generate definitions of all nested enums (must come before class
   // definitions because those classes use the enums definitions).
-  void GenerateEnumDefinitions(io::Printer* printer);
+  void GenerateEnumDefinitions(google::protobuf::io::Printer* printer);
 
   // Generate definitions for this class and all its nested types.
-  void GenerateStructDefinition(io::Printer* printer);
+  void GenerateStructDefinition(google::protobuf::io::Printer* printer);
 
   // Generate __INIT macro for populating this structure
-  void GenerateStructStaticInitMacro(io::Printer* printer);
+  void GenerateStructStaticInitMacro(google::protobuf::io::Printer* printer);
 
   // Generate standard helper functions declarations for this message.
-  void GenerateHelperFunctionDeclarations(io::Printer* printer,
+  void GenerateHelperFunctionDeclarations(google::protobuf::io::Printer* printer,
 					  bool is_pack_deep,
 					  bool gen_pack,
 					  bool gen_init);
@@ -117,17 +114,17 @@ class MessageGenerator {
 
   // Generate code that initializes the global variable storing the message's
   // descriptor.
-  void GenerateMessageDescriptor(io::Printer* printer, bool gen_init);
-  void GenerateHelperFunctionDefinitions(io::Printer* printer,
+  void GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init);
+  void GenerateHelperFunctionDefinitions(google::protobuf::io::Printer* printer,
 					 bool is_pack_deep,
 					 bool gen_pack,
 					 bool gen_init);
 
  private:
 
-  int GetOneofUnionOrder(const FieldDescriptor *fd);
+  int GetOneofUnionOrder(const google::protobuf::FieldDescriptor *fd);
 
-  const Descriptor* descriptor_;
+  const google::protobuf::Descriptor* descriptor_;
   std::string dllexport_decl_;
   FieldGeneratorMap field_generators_;
   std::unique_ptr<std::unique_ptr<MessageGenerator>[]> nested_generators_;
@@ -135,9 +132,6 @@ class MessageGenerator {
   std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_MESSAGE_H__

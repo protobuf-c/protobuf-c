@@ -61,6 +61,7 @@
 
 // Modified to implement C code by Dave Benson.
 
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 
@@ -69,14 +70,9 @@
 #include "c_helpers.h"
 #include "c_string_field.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
-using internal::WireFormat;
-
-void SetStringVariables(const FieldDescriptor* descriptor,
+void SetStringVariables(const google::protobuf::FieldDescriptor* descriptor,
                         std::map<std::string, std::string>* variables) {
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["default"] = FullNameToLower(descriptor->full_name(), descriptor->file())
@@ -87,25 +83,25 @@ void SetStringVariables(const FieldDescriptor* descriptor,
 // ===================================================================
 
 StringFieldGenerator::
-StringFieldGenerator(const FieldDescriptor* descriptor)
+StringFieldGenerator(const google::protobuf::FieldDescriptor* descriptor)
   : FieldGenerator(descriptor) {
   SetStringVariables(descriptor, &variables_);
 }
 
 StringFieldGenerator::~StringFieldGenerator() {}
 
-void StringFieldGenerator::GenerateStructMembers(io::Printer* printer) const
+void StringFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
 {
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
 
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (opt.const_strings())
         printer->Print(variables_, "const ");
       printer->Print(variables_, "char *$name$$deprecated$;\n");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
       if (opt.const_strings())
         printer->Print(variables_, "const ");
@@ -113,11 +109,11 @@ void StringFieldGenerator::GenerateStructMembers(io::Printer* printer) const
       break;
   }
 }
-void StringFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer) const
+void StringFieldGenerator::GenerateDefaultValueDeclarations(google::protobuf::io::Printer* printer) const
 {
   printer->Print(variables_, "extern char $default$[];\n");
 }
-void StringFieldGenerator::GenerateDefaultValueImplementations(io::Printer* printer) const
+void StringFieldGenerator::GenerateDefaultValueImplementations(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
   vars["default"] = variables_.find("default")->second;
@@ -129,7 +125,7 @@ std::string StringFieldGenerator::GetDefaultValue(void) const
 {
   return variables_.find("default")->second;
 }
-void StringFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
@@ -143,21 +139,18 @@ void StringFieldGenerator::GenerateStaticInit(io::Printer* printer) const
     vars["default"] = "(char *)protobuf_c_empty_string";
   }
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       printer->Print(vars, "$default$");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print(vars, "0,NULL");
       break;
   }
 }
-void StringFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
+void StringFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
 {
   GenerateDescriptorInitializerGeneric(printer, false, "STRING", "NULL");
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

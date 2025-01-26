@@ -61,40 +61,33 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_STRING_FIELD_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_STRING_FIELD_H__
 
 #include <map>
 #include <string>
 
 #include "c_field.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 class StringFieldGenerator : public FieldGenerator {
  public:
-  explicit StringFieldGenerator(const FieldDescriptor* descriptor);
+  explicit StringFieldGenerator(const google::protobuf::FieldDescriptor* descriptor);
   ~StringFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
-  void GenerateStructMembers(io::Printer* printer) const;
-  void GenerateDescriptorInitializer(io::Printer* printer) const;
-  void GenerateDefaultValueDeclarations(io::Printer* printer) const;
-  void GenerateDefaultValueImplementations(io::Printer* printer) const;
+  void GenerateStructMembers(google::protobuf::io::Printer* printer) const;
+  void GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const;
+  void GenerateDefaultValueDeclarations(google::protobuf::io::Printer* printer) const;
+  void GenerateDefaultValueImplementations(google::protobuf::io::Printer* printer) const;
   std::string GetDefaultValue(void) const;
-  void GenerateStaticInit(io::Printer* printer) const;
+  void GenerateStaticInit(google::protobuf::io::Printer* printer) const;
 
  private:
   std::map<std::string, std::string> variables_;
 };
 
+}  // namespace protobuf_c
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_STRING_FIELD_H__

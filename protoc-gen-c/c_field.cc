@@ -61,6 +61,7 @@
 
 // Modified to implement C code by Dave Benson.
 
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/stubs/common.h>
 
@@ -74,43 +75,41 @@
 #include "c_primitive_field.h"
 #include "c_string_field.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 FieldGenerator::~FieldGenerator()
 {
 }
-static bool is_packable_type(FieldDescriptor::Type type)
+
+static bool is_packable_type(google::protobuf::FieldDescriptor::Type type)
 {
-  return type == FieldDescriptor::TYPE_DOUBLE
-      || type == FieldDescriptor::TYPE_FLOAT
-      || type == FieldDescriptor::TYPE_INT64
-      || type == FieldDescriptor::TYPE_UINT64
-      || type == FieldDescriptor::TYPE_INT32
-      || type == FieldDescriptor::TYPE_FIXED64
-      || type == FieldDescriptor::TYPE_FIXED32
-      || type == FieldDescriptor::TYPE_BOOL
-      || type == FieldDescriptor::TYPE_UINT32
-      || type == FieldDescriptor::TYPE_ENUM
-      || type == FieldDescriptor::TYPE_SFIXED32
-      || type == FieldDescriptor::TYPE_SFIXED64
-      || type == FieldDescriptor::TYPE_SINT32
-      || type == FieldDescriptor::TYPE_SINT64;
+  return type == google::protobuf::FieldDescriptor::TYPE_DOUBLE
+      || type == google::protobuf::FieldDescriptor::TYPE_FLOAT
+      || type == google::protobuf::FieldDescriptor::TYPE_INT64
+      || type == google::protobuf::FieldDescriptor::TYPE_UINT64
+      || type == google::protobuf::FieldDescriptor::TYPE_INT32
+      || type == google::protobuf::FieldDescriptor::TYPE_FIXED64
+      || type == google::protobuf::FieldDescriptor::TYPE_FIXED32
+      || type == google::protobuf::FieldDescriptor::TYPE_BOOL
+      || type == google::protobuf::FieldDescriptor::TYPE_UINT32
+      || type == google::protobuf::FieldDescriptor::TYPE_ENUM
+      || type == google::protobuf::FieldDescriptor::TYPE_SFIXED32
+      || type == google::protobuf::FieldDescriptor::TYPE_SFIXED64
+      || type == google::protobuf::FieldDescriptor::TYPE_SINT32
+      || type == google::protobuf::FieldDescriptor::TYPE_SINT64;
     //TYPE_BYTES
     //TYPE_STRING
     //TYPE_GROUP
     //TYPE_MESSAGE
 }
 
-void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
+void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::Printer* printer,
 							  bool optional_uses_has,
 							  const std::string &type_macro,
 							  const std::string &descriptor_addr) const
 {
   std::map<std::string, std::string> variables;
-  const OneofDescriptor *oneof = descriptor_->containing_oneof();
+  const google::protobuf::OneofDescriptor *oneof = descriptor_->containing_oneof();
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
   variables["TYPE"] = type_macro;
   variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name(), FieldScope(descriptor_)->file());
@@ -125,7 +124,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
     variables["oneofname"] = CamelToLower(oneof->name());
 
   if (FieldSyntax(descriptor_) == 3 &&
-    descriptor_->label() == FieldDescriptor::LABEL_OPTIONAL) {
+    descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_OPTIONAL) {
     variables["LABEL"] = "NONE";
     optional_uses_has = false;
   } else {
@@ -137,7 +136,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
                                + FullNameToLower(descriptor_->full_name(), descriptor_->file())
 			       + "__default_value";
   } else if (FieldSyntax(descriptor_) == 3 &&
-    descriptor_->type() == FieldDescriptor::TYPE_STRING) {
+    descriptor_->type() == google::protobuf::FieldDescriptor::TYPE_STRING) {
     variables["default_value"] = "&protobuf_c_empty_string";
   } else {
     variables["default_value"] = "NULL";
@@ -145,11 +144,11 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 
   variables["flags"] = "0";
 
-  if (descriptor_->label() == FieldDescriptor::LABEL_REPEATED
+  if (descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
    && descriptor_->options().packed()) {
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
-  } else if (descriptor_->label() == FieldDescriptor::LABEL_REPEATED
+  } else if (descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
    && FieldSyntax(descriptor_) == 3
    && !descriptor_->options().has_packed()) {
@@ -170,7 +169,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   printer->Print("{\n");
   if (descriptor_->file()->options().has_optimize_for() &&
         descriptor_->file()->options().optimize_for() ==
-        FileOptions_OptimizeMode_CODE_SIZE) {
+        google::protobuf::FileOptions_OptimizeMode_CODE_SIZE) {
      printer->Print("  NULL, /* CODE_SIZE */\n");
   } else {
      printer->Print(variables, "  \"$proto_name$\",\n");
@@ -180,10 +179,10 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
     "  PROTOBUF_C_LABEL_$LABEL$,\n"
     "  PROTOBUF_C_TYPE_$TYPE$,\n");
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables, "  0,   /* quantifier_offset */\n");
       break;
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (oneof != NULL) {
         printer->Print(variables, "  offsetof($classname$, $oneofname$_case),\n");
       } else if (optional_uses_has) {
@@ -192,7 +191,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
 	printer->Print(variables, "  0,   /* quantifier_offset */\n");
       }
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print(variables, "  offsetof($classname$, n_$name$),\n");
       break;
   }
@@ -204,7 +203,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(io::Printer* printer,
   printer->Print("},\n");
 }
 
-FieldGeneratorMap::FieldGeneratorMap(const Descriptor* descriptor)
+FieldGeneratorMap::FieldGeneratorMap(const google::protobuf::Descriptor* descriptor)
   : descriptor_(descriptor),
     field_generators_(
       new std::unique_ptr<FieldGenerator>[descriptor->field_count()]) {
@@ -214,21 +213,21 @@ FieldGeneratorMap::FieldGeneratorMap(const Descriptor* descriptor)
   }
 }
 
-FieldGenerator* FieldGeneratorMap::MakeGenerator(const FieldDescriptor* field) {
+FieldGenerator* FieldGeneratorMap::MakeGenerator(const google::protobuf::FieldDescriptor* field) {
   const ProtobufCFieldOptions opt = field->options().GetExtension(pb_c_field);
   switch (field->type()) {
-    case FieldDescriptor::TYPE_MESSAGE:
+    case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
       return new MessageFieldGenerator(field);
-    case FieldDescriptor::TYPE_STRING:
+    case google::protobuf::FieldDescriptor::TYPE_STRING:
       if (opt.string_as_bytes())
         return new BytesFieldGenerator(field);
       else
         return new StringFieldGenerator(field);
-    case FieldDescriptor::TYPE_BYTES:
+    case google::protobuf::FieldDescriptor::TYPE_BYTES:
       return new BytesFieldGenerator(field);
-    case FieldDescriptor::TYPE_ENUM:
+    case google::protobuf::FieldDescriptor::TYPE_ENUM:
       return new EnumFieldGenerator(field);
-    case FieldDescriptor::TYPE_GROUP:
+    case google::protobuf::FieldDescriptor::TYPE_GROUP:
       return 0;			// XXX
     default:
       return new PrimitiveFieldGenerator(field);
@@ -238,12 +237,9 @@ FieldGenerator* FieldGeneratorMap::MakeGenerator(const FieldDescriptor* field) {
 FieldGeneratorMap::~FieldGeneratorMap() {}
 
 const FieldGenerator& FieldGeneratorMap::get(
-    const FieldDescriptor* field) const {
+    const google::protobuf::FieldDescriptor* field) const {
   GOOGLE_CHECK_EQ(field->containing_type(), descriptor_);
   return *field_generators_[field->index()];
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

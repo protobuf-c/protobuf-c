@@ -73,10 +73,7 @@
 #include "c_generator.h"
 #include "c_helpers.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 // Parses a set of comma-delimited name/value pairs, e.g.:
 //   "foo=bar,baz,qux=corge"
@@ -103,9 +100,9 @@ void ParseOptions(const std::string& text, std::vector<std::pair<std::string, st
 CGenerator::CGenerator() {}
 CGenerator::~CGenerator() {}
 
-bool CGenerator::Generate(const FileDescriptor* file,
+bool CGenerator::Generate(const google::protobuf::FileDescriptor* file,
                             const std::string& parameter,
-                            OutputDirectory* output_directory,
+                            google::protobuf::compiler::OutputDirectory* output_directory,
                             std::string* error) const {
   if (file->options().GetExtension(pb_c_file).no_generate())
     return true;
@@ -154,24 +151,21 @@ bool CGenerator::Generate(const FileDescriptor* file,
 
   // Generate header.
   {
-    std::unique_ptr<io::ZeroCopyOutputStream> output(
+    std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
       output_directory->Open(basename + ".h"));
-    io::Printer printer(output.get(), '$');
+    google::protobuf::io::Printer printer(output.get(), '$');
     file_generator.GenerateHeader(&printer);
   }
 
   // Generate cc file.
   {
-    std::unique_ptr<io::ZeroCopyOutputStream> output(
+    std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
       output_directory->Open(basename + ".c"));
-    io::Printer printer(output.get(), '$');
+    google::protobuf::io::Printer printer(output.get(), '$');
     file_generator.GenerateSource(&printer);
   }
 
   return true;
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

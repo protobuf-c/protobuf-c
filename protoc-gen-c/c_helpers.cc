@@ -61,6 +61,7 @@
 
 // Modified to implement C code by Dave Benson.
 
+#include <cstdint>
 #include <memory>
 #include <set>
 #include <vector>
@@ -68,14 +69,12 @@
 #include <float.h>
 #include <stdio.h>		// for snprintf
 
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/stubs/common.h>
 
 #include "c_helpers.h"
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 #if defined(_MSC_VER)
 // FIXME: In the case where the generated string is longer than the buffer,
@@ -180,8 +179,7 @@ std::string ToCamel(const std::string &name) {
   return rv;
 }
 
-std::string OverrideFullName(const std::string &full_name,
-			    const FileDescriptor *file) {
+std::string OverrideFullName(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
   const ProtobufCFileOptions opt = file->options().GetExtension(pb_c_file);
   if (!opt.has_c_package())
     return full_name;
@@ -193,8 +191,7 @@ std::string OverrideFullName(const std::string &full_name,
   return new_name + full_name.substr(file->package().length());
 }
 
-std::string FullNameToLower(const std::string &full_name,
-			    const FileDescriptor *file) {
+std::string FullNameToLower(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
   std::vector<std::string> pieces;
   SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
@@ -205,8 +202,7 @@ std::string FullNameToLower(const std::string &full_name,
   }
   return rv;
 }
-std::string FullNameToUpper(const std::string &full_name,
-			    const FileDescriptor *file) {
+std::string FullNameToUpper(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
   std::vector<std::string> pieces;
   SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
@@ -217,8 +213,7 @@ std::string FullNameToUpper(const std::string &full_name,
   }
   return rv;
 }
-std::string FullNameToC(const std::string &full_name,
-			const FileDescriptor *file) {
+std::string FullNameToC(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
   std::vector<std::string> pieces;
   SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
@@ -230,7 +225,7 @@ std::string FullNameToC(const std::string &full_name,
   return rv;
 }
 
-void PrintComment (io::Printer* printer, std::string comment)
+void PrintComment(google::protobuf::io::Printer* printer, std::string comment)
 {
    if (!comment.empty())
    {
@@ -297,7 +292,7 @@ std::set<std::string> MakeKeywordsMap() {
 
 std::set<std::string> kKeywords = MakeKeywordsMap();
 
-std::string FieldName(const FieldDescriptor* field) {
+std::string FieldName(const google::protobuf::FieldDescriptor* field) {
   std::string result = ToLower(field->name());
   if (kKeywords.count(result) > 0) {
     result.append("_");
@@ -305,7 +300,7 @@ std::string FieldName(const FieldDescriptor* field) {
   return result;
 }
 
-std::string FieldDeprecated(const FieldDescriptor* field) {
+std::string FieldDeprecated(const google::protobuf::FieldDescriptor* field) {
   if (field->options().deprecated()) {
     return " PROTOBUF_C__DEPRECATED";
   }
@@ -331,7 +326,7 @@ std::string FilenameIdentifier(const std::string& filename) {
       // use the hex code for the character.
       result.push_back('_');
       char buffer[32];
-      result.append(FastHexToBuffer(static_cast<uint8>(filename[i]), buffer));
+      result.append(FastHexToBuffer(static_cast<std::uint8_t>(filename[i]), buffer));
     }
   }
   return result;
@@ -342,17 +337,17 @@ std::string GlobalBuildDescriptorsName(const std::string& filename) {
   return "proto_BuildDescriptors_" + FilenameIdentifier(filename);
 }
 
-std::string GetLabelName(FieldDescriptor::Label label) {
+std::string GetLabelName(google::protobuf::FieldDescriptor::Label label) {
   switch (label) {
-    case FieldDescriptor::LABEL_OPTIONAL: return "optional";
-    case FieldDescriptor::LABEL_REQUIRED: return "required";
-    case FieldDescriptor::LABEL_REPEATED: return "repeated";
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL: return "optional";
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED: return "required";
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED: return "repeated";
   }
   return "bad-label";
 }
 
 unsigned
-WriteIntRanges(io::Printer* printer, int n_values, const int *values, const std::string &name)
+WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, const std::string &name)
 {
   std::map<std::string, std::string> vars;
   vars["name"] = name;
@@ -530,7 +525,7 @@ static int CEscapeInternal(const char* src, int src_len, char* dest,
           if (dest_len - used < 4) // need space for 4 letter escape
             return -1;
           snprintf(dest + used, dest_len - used, (use_hex ? "\\x%02x" : "\\%03o"),
-                  static_cast<uint8>(*src));
+                  static_cast<std::uint8_t>(*src));
           is_hex_escape = use_hex;
           used += 4;
         } else {
@@ -555,7 +550,4 @@ std::string CEscape(const std::string& src) {
   return std::string(dest.get(), len);
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

@@ -61,8 +61,8 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_EXTENSION_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_EXTENSION_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_EXTENSION_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_EXTENSION_H__
 
 #include <string>
 
@@ -70,10 +70,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/stubs/common.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
 // Generates code for an extension, which may be within the scope of some
 // message or may be at file scope.  This is much simpler than FieldGenerator
@@ -81,25 +78,22 @@ namespace c {
 class ExtensionGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit ExtensionGenerator(const FieldDescriptor* descriptor,
+  explicit ExtensionGenerator(const google::protobuf::FieldDescriptor* descriptor,
                               const std::string& dllexport_decl);
   ~ExtensionGenerator();
 
   // Header stuff.
-  void GenerateDeclaration(io::Printer* printer);
+  void GenerateDeclaration(google::protobuf::io::Printer* printer);
 
   // Source file stuff.
-  void GenerateDefinition(io::Printer* printer);
+  void GenerateDefinition(google::protobuf::io::Printer* printer);
 
  private:
-  const FieldDescriptor* descriptor_;
+  const google::protobuf::FieldDescriptor* descriptor_;
   std::string type_traits_;
   std::string dllexport_decl_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_EXTENSION_H__
