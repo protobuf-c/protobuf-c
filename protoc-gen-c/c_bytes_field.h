@@ -61,87 +61,35 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_BYTES_FIELD_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_BYTES_FIELD_H__
 
-#include <memory>
+#include <map>
 #include <string>
-#include <google/protobuf/stubs/common.h>
-#include <protoc-c/c_field.h>
 
-namespace google {
-namespace protobuf {
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
+#include <google/protobuf/io/printer.h>
 
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include "c_field.h"
 
-class EnumGenerator;           // enum.h
-class ExtensionGenerator;      // extension.h
+namespace protobuf_c {
 
-class MessageGenerator {
+class BytesFieldGenerator : public FieldGenerator {
  public:
-  // See generator.cc for the meaning of dllexport_decl.
-  explicit MessageGenerator(const Descriptor* descriptor,
-                            const std::string& dllexport_decl);
-  ~MessageGenerator();
+  explicit BytesFieldGenerator(const google::protobuf::FieldDescriptor* descriptor);
+  ~BytesFieldGenerator();
 
-  // Header stuff.
-
-  // Generate typedef.
-  void GenerateStructTypedef(io::Printer* printer);
-
-  // Generate descriptor prototype
-  void GenerateDescriptorDeclarations(io::Printer* printer);
-
-  // Generate descriptor prototype
-  void GenerateClosureTypedef(io::Printer* printer);
-
-  // Generate definitions of all nested enums (must come before class
-  // definitions because those classes use the enums definitions).
-  void GenerateEnumDefinitions(io::Printer* printer);
-
-  // Generate definitions for this class and all its nested types.
-  void GenerateStructDefinition(io::Printer* printer);
-
-  // Generate __INIT macro for populating this structure
-  void GenerateStructStaticInitMacro(io::Printer* printer);
-
-  // Generate standard helper functions declarations for this message.
-  void GenerateHelperFunctionDeclarations(io::Printer* printer,
-					  bool is_pack_deep,
-					  bool gen_pack,
-					  bool gen_init);
-
-  // Source file stuff.
-
-  // Generate code that initializes the global variable storing the message's
-  // descriptor.
-  void GenerateMessageDescriptor(io::Printer* printer, bool gen_init);
-  void GenerateHelperFunctionDefinitions(io::Printer* printer,
-					 bool is_pack_deep,
-					 bool gen_pack,
-					 bool gen_init);
+  // implements FieldGenerator ---------------------------------------
+  void GenerateStructMembers(google::protobuf::io::Printer* printer) const;
+  void GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const;
+  void GenerateDefaultValueDeclarations(google::protobuf::io::Printer* printer) const;
+  void GenerateDefaultValueImplementations(google::protobuf::io::Printer* printer) const;
+  std::string GetDefaultValue(void) const;
+  void GenerateStaticInit(google::protobuf::io::Printer* printer) const;
 
  private:
-
-  int GetOneofUnionOrder(const FieldDescriptor *fd);
-
-  const Descriptor* descriptor_;
-  std::string dllexport_decl_;
-  FieldGeneratorMap field_generators_;
-  std::unique_ptr<std::unique_ptr<MessageGenerator>[]> nested_generators_;
-  std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
-  std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
+  std::map<std::string, std::string> variables_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_BYTES_FIELD_H__

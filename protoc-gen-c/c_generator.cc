@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,22 +61,19 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_generator.h>
-
 #include <memory>
-#include <vector>
 #include <utility>
+#include <vector>
 
-#include <protoc-c/c_file.h>
-#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
-#include <protobuf-c/protobuf-c.pb.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include <protobuf-c/protobuf-c.pb.h>
+#include "c_file.h"
+#include "c_generator.h"
+#include "c_helpers.h"
+
+namespace protobuf_c {
 
 // Parses a set of comma-delimited name/value pairs, e.g.:
 //   "foo=bar,baz,qux=corge"
@@ -102,9 +100,9 @@ void ParseOptions(const std::string& text, std::vector<std::pair<std::string, st
 CGenerator::CGenerator() {}
 CGenerator::~CGenerator() {}
 
-bool CGenerator::Generate(const FileDescriptor* file,
+bool CGenerator::Generate(const google::protobuf::FileDescriptor* file,
                             const std::string& parameter,
-                            OutputDirectory* output_directory,
+                            google::protobuf::compiler::OutputDirectory* output_directory,
                             std::string* error) const {
   if (file->options().GetExtension(pb_c_file).no_generate())
     return true;
@@ -153,24 +151,21 @@ bool CGenerator::Generate(const FileDescriptor* file,
 
   // Generate header.
   {
-    std::unique_ptr<io::ZeroCopyOutputStream> output(
+    std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
       output_directory->Open(basename + ".h"));
-    io::Printer printer(output.get(), '$');
+    google::protobuf::io::Printer printer(output.get(), '$');
     file_generator.GenerateHeader(&printer);
   }
 
   // Generate cc file.
   {
-    std::unique_ptr<io::ZeroCopyOutputStream> output(
+    std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
       output_directory->Open(basename + ".c"));
-    io::Printer printer(output.get(), '$');
+    google::protobuf::io::Printer printer(output.get(), '$');
     file_generator.GenerateSource(&printer);
   }
 
   return true;
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

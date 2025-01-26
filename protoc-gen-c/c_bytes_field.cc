@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,20 +61,17 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_bytes_field.h>
-#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
+
 #include <protobuf-c/protobuf-c.pb.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include "c_bytes_field.h"
+#include "c_helpers.h"
 
-using internal::WireFormat;
+namespace protobuf_c {
 
-void SetBytesVariables(const FieldDescriptor* descriptor,
+void SetBytesVariables(const google::protobuf::FieldDescriptor* descriptor,
                         std::map<std::string, std::string>* variables) {
   (*variables)["name"] = FieldName(descriptor);
   (*variables)["default"] =
@@ -84,7 +82,7 @@ void SetBytesVariables(const FieldDescriptor* descriptor,
 // ===================================================================
 
 BytesFieldGenerator::
-BytesFieldGenerator(const FieldDescriptor* descriptor)
+BytesFieldGenerator(const google::protobuf::FieldDescriptor* descriptor)
   : FieldGenerator(descriptor) {
   SetBytesVariables(descriptor, &variables_);
   variables_["default_value"] = descriptor->has_default_value()
@@ -94,24 +92,24 @@ BytesFieldGenerator(const FieldDescriptor* descriptor)
 
 BytesFieldGenerator::~BytesFieldGenerator() {}
 
-void BytesFieldGenerator::GenerateStructMembers(io::Printer* printer) const
+void BytesFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
 {
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (descriptor_->containing_oneof() == NULL && FieldSyntax(descriptor_) == 2)
         printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
       printer->Print(variables_, "ProtobufCBinaryData *$name$$deprecated$;\n");
       break;
   }
 }
-void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer) const
+void BytesFieldGenerator::GenerateDefaultValueDeclarations(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
   vars["default_value_data"] = FullNameToLower(descriptor_->full_name(), descriptor_->file())
@@ -119,7 +117,7 @@ void BytesFieldGenerator::GenerateDefaultValueDeclarations(io::Printer* printer)
   printer->Print(vars, "extern uint8_t $default_value_data$[];\n");
 }
 
-void BytesFieldGenerator::GenerateDefaultValueImplementations(io::Printer* printer) const
+void BytesFieldGenerator::GenerateDefaultValueImplementations(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
   vars["default_value_data"] = FullNameToLower(descriptor_->full_name(), descriptor_->file())
@@ -135,29 +133,26 @@ std::string BytesFieldGenerator::GetDefaultValue(void) const
 	+ FullNameToLower(descriptor_->full_name(), descriptor_->file())
 	+ "__default_value_data }";
 }
-void BytesFieldGenerator::GenerateStaticInit(io::Printer* printer) const
+void BytesFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
   switch (descriptor_->label()) {
-    case FieldDescriptor::LABEL_REQUIRED:
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$default_value$");
       break;
-    case FieldDescriptor::LABEL_OPTIONAL:
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (FieldSyntax(descriptor_) == 2)
         printer->Print(variables_, "0, ");
       printer->Print(variables_, "$default_value$");
       break;
-    case FieldDescriptor::LABEL_REPEATED:
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
       // no support for default?
       printer->Print("0,NULL");
       break;
   }
 }
-void BytesFieldGenerator::GenerateDescriptorInitializer(io::Printer* printer) const
+void BytesFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
 {
   GenerateDescriptorInitializerGeneric(printer, true, "BYTES", "NULL");
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,49 +61,59 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_EXTENSION_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_EXTENSION_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_FIELD_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_FIELD_H__
 
-#include <string>
+#include <memory>
+
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/io/printer.h>
 #include <google/protobuf/stubs/common.h>
 
-namespace google {
-namespace protobuf {
-  class FieldDescriptor;       // descriptor.h
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
+namespace protobuf_c {
 
-namespace protobuf {
-namespace compiler {
-namespace c {
-
-// Generates code for an extension, which may be within the scope of some
-// message or may be at file scope.  This is much simpler than FieldGenerator
-// since extensions are just simple identifiers with interesting types.
-class ExtensionGenerator {
+class FieldGenerator {
  public:
-  // See generator.cc for the meaning of dllexport_decl.
-  explicit ExtensionGenerator(const FieldDescriptor* descriptor,
-                              const std::string& dllexport_decl);
-  ~ExtensionGenerator();
+  explicit FieldGenerator(const google::protobuf::FieldDescriptor *descriptor) : descriptor_(descriptor) {}
+  virtual ~FieldGenerator();
 
-  // Header stuff.
-  void GenerateDeclaration(io::Printer* printer);
+  // Generate definitions to be included in the structure.
+  virtual void GenerateStructMembers(google::protobuf::io::Printer* printer) const = 0;
 
-  // Source file stuff.
-  void GenerateDefinition(io::Printer* printer);
+  // Generate a static initializer for this field.
+  virtual void GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const = 0;
 
- private:
-  const FieldDescriptor* descriptor_;
-  std::string type_traits_;
-  std::string dllexport_decl_;
+  virtual void GenerateDefaultValueDeclarations(google::protobuf::io::Printer* printer) const { }
+  virtual void GenerateDefaultValueImplementations(google::protobuf::io::Printer* printer) const { }
+  virtual std::string GetDefaultValue() const = 0;
+
+  // Generate members to initialize this field from a static initializer
+  virtual void GenerateStaticInit(google::protobuf::io::Printer* printer) const = 0;
+
+
+ protected:
+  void GenerateDescriptorInitializerGeneric(google::protobuf::io::Printer* printer,
+                                            bool optional_uses_has,
+                                            const std::string &type_macro,
+                                            const std::string &descriptor_addr) const;
+  const google::protobuf::FieldDescriptor *descriptor_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+// Convenience class which constructs FieldGenerators for a Descriptor.
+class FieldGeneratorMap {
+ public:
+  explicit FieldGeneratorMap(const google::protobuf::Descriptor* descriptor);
+  ~FieldGeneratorMap();
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_MESSAGE_H__
+  const FieldGenerator& get(const google::protobuf::FieldDescriptor* field) const;
+
+ private:
+  const google::protobuf::Descriptor* descriptor_;
+  std::unique_ptr<std::unique_ptr<FieldGenerator>[]> field_generators_;
+
+  static FieldGenerator* MakeGenerator(const google::protobuf::FieldDescriptor* field);
+};
+
+}  // namespace protobuf_c
+
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_FIELD_H__

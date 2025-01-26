@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,51 +61,77 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_SERVICE_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_SERVICE_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_MESSAGE_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_MESSAGE_H__
 
-#include <map>
+#include <memory>
 #include <string>
-#include <google/protobuf/descriptor.h>
 
-namespace google {
-namespace protobuf {
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/stubs/common.h>
 
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include "c_enum.h"
+#include "c_extension.h"
+#include "c_field.h"
 
-class ServiceGenerator {
+namespace protobuf_c {
+
+class MessageGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit ServiceGenerator(const ServiceDescriptor* descriptor,
+  explicit MessageGenerator(const google::protobuf::Descriptor* descriptor,
                             const std::string& dllexport_decl);
-  ~ServiceGenerator();
+  ~MessageGenerator();
 
   // Header stuff.
-  void GenerateMainHFile(io::Printer* printer);
-  void GenerateVfuncs(io::Printer* printer);
-  void GenerateInitMacros(io::Printer* printer);
-  void GenerateDescriptorDeclarations(io::Printer* printer);
-  void GenerateCallersDeclarations(io::Printer* printer);
+
+  // Generate typedef.
+  void GenerateStructTypedef(google::protobuf::io::Printer* printer);
+
+  // Generate descriptor prototype
+  void GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer);
+
+  // Generate descriptor prototype
+  void GenerateClosureTypedef(google::protobuf::io::Printer* printer);
+
+  // Generate definitions of all nested enums (must come before class
+  // definitions because those classes use the enums definitions).
+  void GenerateEnumDefinitions(google::protobuf::io::Printer* printer);
+
+  // Generate definitions for this class and all its nested types.
+  void GenerateStructDefinition(google::protobuf::io::Printer* printer);
+
+  // Generate __INIT macro for populating this structure
+  void GenerateStructStaticInitMacro(google::protobuf::io::Printer* printer);
+
+  // Generate standard helper functions declarations for this message.
+  void GenerateHelperFunctionDeclarations(google::protobuf::io::Printer* printer,
+					  bool is_pack_deep,
+					  bool gen_pack,
+					  bool gen_init);
 
   // Source file stuff.
-  void GenerateCFile(io::Printer* printer);
-  void GenerateServiceDescriptor(io::Printer* printer);
-  void GenerateInit(io::Printer* printer);
-  void GenerateCallersImplementations(io::Printer* printer);
 
-  const ServiceDescriptor* descriptor_;
-  std::map<std::string, std::string> vars_;
+  // Generate code that initializes the global variable storing the message's
+  // descriptor.
+  void GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init);
+  void GenerateHelperFunctionDefinitions(google::protobuf::io::Printer* printer,
+					 bool is_pack_deep,
+					 bool gen_pack,
+					 bool gen_init);
+
+ private:
+
+  int GetOneofUnionOrder(const google::protobuf::FieldDescriptor *fd);
+
+  const google::protobuf::Descriptor* descriptor_;
+  std::string dllexport_decl_;
+  FieldGeneratorMap field_generators_;
+  std::unique_ptr<std::unique_ptr<MessageGenerator>[]> nested_generators_;
+  std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
+  std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_SERVICE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_MESSAGE_H__

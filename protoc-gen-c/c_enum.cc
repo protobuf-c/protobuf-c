@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,19 +61,16 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <set>
 #include <map>
 
-#include <protoc-c/c_enum.h>
-#include <protoc-c/c_helpers.h>
 #include <google/protobuf/io/printer.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include "c_enum.h"
+#include "c_helpers.h"
 
-EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor,
+namespace protobuf_c {
+
+EnumGenerator::EnumGenerator(const google::protobuf::EnumDescriptor* descriptor,
                              const std::string& dllexport_decl)
   : descriptor_(descriptor),
     dllexport_decl_(dllexport_decl) {
@@ -80,21 +78,21 @@ EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor,
 
 EnumGenerator::~EnumGenerator() {}
 
-void EnumGenerator::GenerateDefinition(io::Printer* printer) {
+void EnumGenerator::GenerateDefinition(google::protobuf::io::Printer* printer) {
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["shortname"] = descriptor_->name();
   vars["uc_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
 
-  SourceLocation sourceLoc;
+  google::protobuf::SourceLocation sourceLoc;
   descriptor_->GetSourceLocation(&sourceLoc);
   PrintComment (printer, sourceLoc.leading_comments);
 
   printer->Print(vars, "typedef enum _$classname$ {\n");
   printer->Indent();
 
-  const EnumValueDescriptor* min_value = descriptor_->value(0);
-  const EnumValueDescriptor* max_value = descriptor_->value(0);
+  const google::protobuf::EnumValueDescriptor* min_value = descriptor_->value(0);
+  const google::protobuf::EnumValueDescriptor* max_value = descriptor_->value(0);
 
 
   vars["opt_comma"] = ",";
@@ -105,7 +103,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
 
-    SourceLocation valSourceLoc;
+    google::protobuf::SourceLocation valSourceLoc;
     descriptor_->value(i)->GetSourceLocation(&valSourceLoc);
 
     PrintComment (printer, valSourceLoc.leading_comments);
@@ -125,7 +123,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   printer->Print(vars, "} $classname$;\n");
 }
 
-void EnumGenerator::GenerateDescriptorDeclarations(io::Printer* printer) {
+void EnumGenerator::GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer) {
   std::map<std::string, std::string> vars;
   if (dllexport_decl_.empty()) {
     vars["dllexport"] = "";
@@ -146,13 +144,13 @@ struct ValueIndex
   unsigned final_index;		/* index in uniqified array of values */
   const char *name;
 };
-void EnumGenerator::GenerateValueInitializer(io::Printer *printer, int index)
+void EnumGenerator::GenerateValueInitializer(google::protobuf::io::Printer *printer, int index)
 {
-  const EnumValueDescriptor *vd = descriptor_->value(index);
+  const google::protobuf::EnumValueDescriptor *vd = descriptor_->value(index);
   std::map<std::string, std::string> vars;
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
-    FileOptions_OptimizeMode_CODE_SIZE;
+    google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
   vars["enum_value_name"] = vd->name();
   vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file()) + "__" + vd->name();
   vars["value"] = SimpleItoa(vd->number());
@@ -181,7 +179,7 @@ static int compare_value_indices_by_name(const void *a, const void *b)
   return strcmp (vi_a->name, vi_b->name);
 }
 
-void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
+void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printer) {
   std::map<std::string, std::string> vars;
   vars["fullname"] = descriptor_->full_name();
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
@@ -192,14 +190,14 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
 
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
-    FileOptions_OptimizeMode_CODE_SIZE;
+    google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
 
   // Sort by name and value, dropping duplicate values if they appear later.
   // TODO: use a c++ paradigm for this!
   NameIndex *name_index = new NameIndex[descriptor_->value_count()];
   ValueIndex *value_index = new ValueIndex[descriptor_->value_count()];
   for (int j = 0; j < descriptor_->value_count(); j++) {
-    const EnumValueDescriptor *vd = descriptor_->value(j);
+    const google::protobuf::EnumValueDescriptor *vd = descriptor_->value(j);
     name_index[j].index = j;
     name_index[j].name = vd->name().c_str();
     value_index[j].index = j;
@@ -326,9 +324,4 @@ void EnumGenerator::GenerateEnumDescriptor(io::Printer* printer) {
   delete[] name_index;
 }
 
-
-
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protobuf_c

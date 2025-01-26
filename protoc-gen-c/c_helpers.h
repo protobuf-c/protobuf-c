@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,20 +61,19 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_HELPERS_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_HELPERS_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_HELPERS_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_HELPERS_H__
 
 #include <string>
 #include <vector>
 #include <sstream>
+
 #include <google/protobuf/descriptor.h>
-#include <protobuf-c/protobuf-c.pb.h>
 #include <google/protobuf/io/printer.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include <protobuf-c/protobuf-c.pb.h>
+
+namespace protobuf_c {
 
 // --- Borrowed from stubs. ---
 template <typename T> std::string SimpleItoa(T n) {
@@ -96,14 +96,14 @@ char* FastHexToBuffer(int i, char* buffer);
 // The name is coerced to lower-case to emulate proto1 behavior.  People
 // should be using lowercase-with-underscores style for proto field names
 // anyway, so normally this just returns field->name().
-std::string FieldName(const FieldDescriptor* field);
+std::string FieldName(const google::protobuf::FieldDescriptor* field);
 
 // Get macro string for deprecated field
-std::string FieldDeprecated(const FieldDescriptor* field);
+std::string FieldDeprecated(const google::protobuf::FieldDescriptor* field);
 
 // Returns the scope where the field was defined (for extensions, this is
 // different from the message type to which the field applies).
-inline const Descriptor* FieldScope(const FieldDescriptor* field) {
+inline const google::protobuf::Descriptor* FieldScope(const google::protobuf::FieldDescriptor* field) {
   return field->is_extension() ?
     field->extension_scope() : field->containing_type();
 }
@@ -121,14 +121,14 @@ std::string ToLower(const std::string &class_name);
 std::string ToUpper(const std::string &class_name);
 
 // full_name() to lowercase with underscores
-std::string FullNameToLower(const std::string &full_name, const FileDescriptor *file);
-std::string FullNameToUpper(const std::string &full_name, const FileDescriptor *file);
+std::string FullNameToLower(const std::string &full_name, const google::protobuf::FileDescriptor *file);
+std::string FullNameToUpper(const std::string &full_name, const google::protobuf::FileDescriptor *file);
 
 // full_name() to c-typename (with underscores for packages, otherwise camel case)
-std::string FullNameToC(const std::string &class_name, const FileDescriptor *file);
+std::string FullNameToC(const std::string &class_name, const google::protobuf::FileDescriptor *file);
 
 // Splits, indents, formats, and prints comment lines
-void PrintComment (io::Printer* printer, std::string comment);
+void PrintComment(google::protobuf::io::Printer* printer, std::string comment);
 
 // make a string of spaces as long as input
 std::string ConvertToSpaces(const std::string &input);
@@ -141,11 +141,11 @@ std::string StripProto(const std::string& filename);
 // with a ::.  If you are using the type as a template parameter, you will
 // need to insure there is a space between the < and the ::, because the
 // ridiculous C++ standard defines "<:" to be a synonym for "[".
-const char* PrimitiveTypeName(FieldDescriptor::CppType type);
+const char* PrimitiveTypeName(google::protobuf::FieldDescriptor::CppType type);
 
 // Get the declared type name in CamelCase format, as is used e.g. for the
 // methods of WireFormat.  For example, TYPE_INT32 becomes "Int32".
-const char* DeclaredTypeMethodName(FieldDescriptor::Type type);
+const char* DeclaredTypeMethodName(google::protobuf::FieldDescriptor::Type type);
 
 // Convert a file name into a valid identifier.
 std::string FilenameIdentifier(const std::string& filename);
@@ -154,12 +154,12 @@ std::string FilenameIdentifier(const std::string& filename);
 std::string GlobalBuildDescriptorsName(const std::string& filename);
 
 // return 'required', 'optional', or 'repeated'
-std::string GetLabelName(FieldDescriptor::Label label);
+std::string GetLabelName(google::protobuf::FieldDescriptor::Label label);
 
 
 // write IntRanges entries for a bunch of sorted values.
 // returns the number of ranges there are to bsearch.
-unsigned WriteIntRanges(io::Printer* printer, int n_values, const int *values, const std::string &name);
+unsigned WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, const std::string &name);
 
 struct NameIndex
 {
@@ -169,8 +169,8 @@ struct NameIndex
 int compare_name_indices_by_name(const void*, const void*);
 
 // Return the syntax version of the file containing the field.
-inline int FieldSyntax(const FieldDescriptor* field) {
-  auto proto = FileDescriptorProto();
+inline int FieldSyntax(const google::protobuf::FieldDescriptor* field) {
+  auto proto = google::protobuf::FileDescriptorProto();
   field->file()->CopyTo(&proto);
 
   if (proto.has_syntax()) {
@@ -196,9 +196,6 @@ inline int FieldSyntax(const FieldDescriptor* field) {
 # define GOOGLE_LOG		ABSL_LOG
 #endif
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_HELPERS_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_HELPERS_H__

@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,54 +61,41 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_FILE_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_FILE_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_SERVICE_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_SERVICE_H__
 
-#include <memory>
+#include <map>
 #include <string>
-#include <vector>
-#include <google/protobuf/stubs/common.h>
-#include <protoc-c/c_field.h>
 
-namespace google {
-namespace protobuf {
-  class FileDescriptor;        // descriptor.h
-  namespace io {
-    class Printer;             // printer.h
-  }
-}
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/io/printer.h>
 
-namespace protobuf {
-namespace compiler {
-namespace c {
+namespace protobuf_c {
 
-class EnumGenerator;           // enum.h
-class MessageGenerator;        // message.h
-class ServiceGenerator;        // service.h
-class ExtensionGenerator;      // extension.h
-
-class FileGenerator {
+class ServiceGenerator {
  public:
   // See generator.cc for the meaning of dllexport_decl.
-  explicit FileGenerator(const FileDescriptor* file,
-                         const std::string& dllexport_decl);
-  ~FileGenerator();
+  explicit ServiceGenerator(const google::protobuf::ServiceDescriptor* descriptor,
+                            const std::string& dllexport_decl);
+  ~ServiceGenerator();
 
-  void GenerateHeader(io::Printer* printer);
-  void GenerateSource(io::Printer* printer);
+  // Header stuff.
+  void GenerateMainHFile(google::protobuf::io::Printer* printer);
+  void GenerateVfuncs(google::protobuf::io::Printer* printer);
+  void GenerateInitMacros(google::protobuf::io::Printer* printer);
+  void GenerateDescriptorDeclarations(google::protobuf::io::Printer* printer);
+  void GenerateCallersDeclarations(google::protobuf::io::Printer* printer);
 
- private:
-  const FileDescriptor* file_;
+  // Source file stuff.
+  void GenerateCFile(google::protobuf::io::Printer* printer);
+  void GenerateServiceDescriptor(google::protobuf::io::Printer* printer);
+  void GenerateInit(google::protobuf::io::Printer* printer);
+  void GenerateCallersImplementations(google::protobuf::io::Printer* printer);
 
-  std::unique_ptr<std::unique_ptr<MessageGenerator>[]> message_generators_;
-  std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
-  std::unique_ptr<std::unique_ptr<ServiceGenerator>[]> service_generators_;
-  std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
+  const google::protobuf::ServiceDescriptor* descriptor_;
+  std::map<std::string, std::string> vars_;
 };
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
+}  // namespace protobuf_c
 
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_FILE_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_SERVICE_H__

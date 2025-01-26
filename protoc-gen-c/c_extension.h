@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,37 +61,39 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_ENUM_FIELD_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_ENUM_FIELD_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_EXTENSION_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_EXTENSION_H__
 
-#include <map>
 #include <string>
-#include <protoc-c/c_field.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/stubs/common.h>
 
-class EnumFieldGenerator : public FieldGenerator {
+namespace protobuf_c {
+
+// Generates code for an extension, which may be within the scope of some
+// message or may be at file scope.  This is much simpler than FieldGenerator
+// since extensions are just simple identifiers with interesting types.
+class ExtensionGenerator {
  public:
-  explicit EnumFieldGenerator(const FieldDescriptor* descriptor);
-  ~EnumFieldGenerator();
+  // See generator.cc for the meaning of dllexport_decl.
+  explicit ExtensionGenerator(const google::protobuf::FieldDescriptor* descriptor,
+                              const std::string& dllexport_decl);
+  ~ExtensionGenerator();
 
-  // implements FieldGenerator ---------------------------------------
-  void GenerateStructMembers(io::Printer* printer) const;
-  void GenerateDescriptorInitializer(io::Printer* printer) const;
-  std::string GetDefaultValue(void) const;
-  void GenerateStaticInit(io::Printer* printer) const;
+  // Header stuff.
+  void GenerateDeclaration(google::protobuf::io::Printer* printer);
+
+  // Source file stuff.
+  void GenerateDefinition(google::protobuf::io::Printer* printer);
 
  private:
-  std::map<std::string, std::string> variables_;
+  const google::protobuf::FieldDescriptor* descriptor_;
+  std::string type_traits_;
+  std::string dllexport_decl_;
 };
 
+}  // namespace protobuf_c
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_ENUM_FIELD_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_EXTENSION_H__

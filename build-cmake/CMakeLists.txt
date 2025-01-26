@@ -164,7 +164,7 @@ if(BUILD_PROTOC)
     BYPRODUCTS protobuf-c/protobuf-c.pb.cc protobuf-c/protobuf-c.pb.h
     SOURCES ${MAIN_DIR}/protobuf-c/protobuf-c.proto)
 
-  file(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-c/*.cc)
+  file(GLOB PROTOC_GEN_C_SRC ${MAIN_DIR}/protoc-gen-c/*.cc)
   add_executable(
     protoc-gen-c
     ${PROTOC_GEN_C_SRC} ${CMAKE_CURRENT_BINARY_DIR}/protobuf-c/protobuf-c.pb.cc)

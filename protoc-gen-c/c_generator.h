@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,39 +61,45 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_BYTES_FIELD_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_BYTES_FIELD_H__
+// Generates C code for a given .proto file.
 
-#include <map>
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_GENERATOR_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_GENERATOR_H__
+
 #include <string>
-#include <protoc-c/c_field.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include <google/protobuf/compiler/code_generator.h>
 
-class BytesFieldGenerator : public FieldGenerator {
+#if defined(_WIN32) && defined(PROTOBUF_C_USE_SHARED_LIB)
+# define PROTOBUF_C_EXPORT __declspec(dllexport)
+#else
+# define PROTOBUF_C_EXPORT
+#endif
+
+namespace protobuf_c {
+
+// CodeGenerator implementation which generates a C++ source file and
+// header.  If you create your own protocol compiler binary and you want
+// it to support C++ output, you can do so by registering an instance of this
+// CodeGenerator with the CommandLineInterface in your main() function.
+class PROTOBUF_C_EXPORT CGenerator : public google::protobuf::compiler::CodeGenerator {
  public:
-  explicit BytesFieldGenerator(const FieldDescriptor* descriptor);
-  ~BytesFieldGenerator();
+  CGenerator();
+  ~CGenerator();
 
-  // implements FieldGenerator ---------------------------------------
-  void GenerateStructMembers(io::Printer* printer) const;
-  void GenerateDescriptorInitializer(io::Printer* printer) const;
-  void GenerateDefaultValueDeclarations(io::Printer* printer) const;
-  void GenerateDefaultValueImplementations(io::Printer* printer) const;
-  std::string GetDefaultValue(void) const;
-  void GenerateStaticInit(io::Printer* printer) const;
+  // implements CodeGenerator ----------------------------------------
+  bool Generate(const google::protobuf::FileDescriptor* file,
+                const std::string& parameter,
+                google::protobuf::compiler::OutputDirectory* output_directory,
+                std::string* error) const;
 
- private:
-  std::map<std::string, std::string> variables_;
+#if GOOGLE_PROTOBUF_VERSION >= 5026000
+  uint64_t GetSupportedFeatures() const { return 0; }
+  google::protobuf::Edition GetMinimumEdition() const { return google::protobuf::Edition::EDITION_PROTO2; }
+  google::protobuf::Edition GetMaximumEdition() const { return google::protobuf::Edition::EDITION_PROTO3; }
+#endif
 };
 
+}  // namespace protobuf_c
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
-
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_GENERATOR_H__

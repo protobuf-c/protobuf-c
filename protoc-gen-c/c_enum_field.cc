@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,57 +61,82 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/wire_format.h>
 
-#include <string>
-#include <google/protobuf/descriptor.h>
+#include "c_enum_field.h"
+#include "c_helpers.h"
 
-namespace google {
-namespace protobuf {
-  namespace io {
-    class Printer;             // printer.h
+namespace protobuf_c {
+
+// TODO(kenton):  Factor out a "SetCommonFieldVariables()" to get rid of
+//   repeat code between this and the other field types.
+void SetEnumVariables(const google::protobuf::FieldDescriptor* descriptor,
+                      std::map<std::string, std::string>* variables) {
+
+  (*variables)["name"] = FieldName(descriptor);
+  (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name(), descriptor->enum_type()->file());
+  const google::protobuf::EnumValueDescriptor* default_value = descriptor->default_value_enum();
+  (*variables)["default"] = FullNameToUpper(default_value->type()->full_name(), default_value->type()->file())
+                          + "__" + default_value->name();
+  (*variables)["deprecated"] = FieldDeprecated(descriptor);
+}
+
+// ===================================================================
+
+EnumFieldGenerator::
+EnumFieldGenerator(const google::protobuf::FieldDescriptor* descriptor)
+  : FieldGenerator(descriptor)
+{
+  SetEnumVariables(descriptor, &variables_);
+}
+
+EnumFieldGenerator::~EnumFieldGenerator() {}
+
+void EnumFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
+{
+  switch (descriptor_->label()) {
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
+      printer->Print(variables_, "$type$ $name$$deprecated$;\n");
+      break;
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
+      if (descriptor_->containing_oneof() == NULL && FieldSyntax(descriptor_) == 2)
+        printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
+      printer->Print(variables_, "$type$ $name$$deprecated$;\n");
+      break;
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
+      printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
+      printer->Print(variables_, "$type$ *$name$$deprecated$;\n");
+      break;
   }
 }
 
-namespace protobuf {
-namespace compiler {
-namespace c {
+std::string EnumFieldGenerator::GetDefaultValue(void) const
+{
+  return variables_.find("default")->second;
+}
+void EnumFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
+{
+  switch (descriptor_->label()) {
+    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
+      printer->Print(variables_, "$default$");
+      break;
+    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
+      if (FieldSyntax(descriptor_) == 2)
+        printer->Print(variables_, "0, ");
+      printer->Print(variables_, "$default$");
+      break;
+    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
+      // no support for default?
+      printer->Print("0,NULL");
+      break;
+  }
+}
 
-class EnumGenerator {
- public:
-  // See generator.cc for the meaning of dllexport_decl.
-  explicit EnumGenerator(const EnumDescriptor* descriptor,
-                         const std::string& dllexport_decl);
-  ~EnumGenerator();
+void EnumFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
+{
+  std::string addr = "&" + FullNameToLower(descriptor_->enum_type()->full_name(), descriptor_->enum_type()->file()) + "__descriptor";
+  GenerateDescriptorInitializerGeneric(printer, true, "ENUM", addr);
+}
 
-  // Header stuff.
-
-  // Generate header code defining the enum.  This code should be placed
-  // within the enum's package namespace, but NOT within any class, even for
-  // nested enums.
-  void GenerateDefinition(io::Printer* printer);
-
-  void GenerateDescriptorDeclarations(io::Printer* printer);
-
-
-  // Source file stuff.
-
-  // Generate the ProtobufCEnumDescriptor for this enum
-  void GenerateEnumDescriptor(io::Printer* printer);
-
-  // Generate static initializer for a ProtobufCEnumValue
-  // given the index of the value in the enum.
-  void GenerateValueInitializer(io::Printer *printer, int index);
-
- private:
-  const EnumDescriptor* descriptor_;
-  std::string dllexport_decl_;
-};
-
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_ENUM_H__
+}  // namespace protobuf_c

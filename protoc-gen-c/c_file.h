@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,39 +61,44 @@
 
 // Modified to implement C code by Dave Benson.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
-#define GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#ifndef PROTOBUF_C_PROTOC_GEN_C_C_FILE_H__
+#define PROTOBUF_C_PROTOC_GEN_C_C_FILE_H__
 
-#include <map>
+#include <memory>
 #include <string>
-#include <protoc-c/c_field.h>
+#include <vector>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/stubs/common.h>
 
-class StringFieldGenerator : public FieldGenerator {
+#include "c_enum.h"
+#include "c_extension.h"
+#include "c_field.h"
+#include "c_message.h"
+#include "c_service.h"
+
+namespace protobuf_c {
+
+class FileGenerator {
  public:
-  explicit StringFieldGenerator(const FieldDescriptor* descriptor);
-  ~StringFieldGenerator();
+  // See generator.cc for the meaning of dllexport_decl.
+  explicit FileGenerator(const google::protobuf::FileDescriptor* file,
+                         const std::string& dllexport_decl);
+  ~FileGenerator();
 
-  // implements FieldGenerator ---------------------------------------
-  void GenerateStructMembers(io::Printer* printer) const;
-  void GenerateDescriptorInitializer(io::Printer* printer) const;
-  void GenerateDefaultValueDeclarations(io::Printer* printer) const;
-  void GenerateDefaultValueImplementations(io::Printer* printer) const;
-  std::string GetDefaultValue(void) const;
-  void GenerateStaticInit(io::Printer* printer) const;
+  void GenerateHeader(google::protobuf::io::Printer* printer);
+  void GenerateSource(google::protobuf::io::Printer* printer);
 
  private:
-  std::map<std::string, std::string> variables_;
+  const google::protobuf::FileDescriptor* file_;
+
+  std::unique_ptr<std::unique_ptr<MessageGenerator>[]> message_generators_;
+  std::unique_ptr<std::unique_ptr<EnumGenerator>[]> enum_generators_;
+  std::unique_ptr<std::unique_ptr<ServiceGenerator>[]> service_generators_;
+  std::unique_ptr<std::unique_ptr<ExtensionGenerator>[]> extension_generators_;
 };
 
+}  // namespace protobuf_c
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_COMPILER_C_STRING_FIELD_H__
+#endif  // PROTOBUF_C_PROTOC_GEN_C_C_FILE_H__

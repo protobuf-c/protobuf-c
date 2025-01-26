@@ -32,7 +32,8 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 
-// Copyright (c) 2008-2013, Dave Benson.  All rights reserved.
+// Copyright (c) 2008-2025, Dave Benson and the protobuf-c authors.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -60,16 +61,14 @@
 
 // Modified to implement C code by Dave Benson.
 
-#include <protoc-c/c_extension.h>
-#include <protoc-c/c_helpers.h>
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace c {
+#include "c_extension.h"
 
-ExtensionGenerator::ExtensionGenerator(const FieldDescriptor* descriptor,
+namespace protobuf_c {
+
+ExtensionGenerator::ExtensionGenerator(const google::protobuf::FieldDescriptor* descriptor,
                                        const std::string& dllexport_decl)
   : descriptor_(descriptor),
     dllexport_decl_(dllexport_decl) {
@@ -77,14 +76,10 @@ ExtensionGenerator::ExtensionGenerator(const FieldDescriptor* descriptor,
 
 ExtensionGenerator::~ExtensionGenerator() {}
 
-void ExtensionGenerator::GenerateDeclaration(io::Printer* printer) {
+void ExtensionGenerator::GenerateDeclaration(google::protobuf::io::Printer* printer) {
 }
 
-void ExtensionGenerator::GenerateDefinition(io::Printer* printer) {
+void ExtensionGenerator::GenerateDefinition(google::protobuf::io::Printer* printer) {
 }
 
-}  // namespace c
-}  // namespace compiler
-}  // namespace protobuf
-
-}  // namespace google
+}  // namespace protobuf_c
