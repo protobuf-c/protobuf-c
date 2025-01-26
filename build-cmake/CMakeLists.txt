@@ -157,7 +157,7 @@ if(BUILD_PROTOC)
     COMMAND
       ${CMAKE_COMMAND} -E env PATH="${OS_PATH_VARIABLE}"
       ${PROTOBUF_PROTOC_EXECUTABLE} --cpp_out ${CMAKE_CURRENT_BINARY_DIR}
-      -I${PROTOBUF_INCLUDE_DIR} -I${MAIN_DIR}
+      -I${MAIN_DIR} -I${PROTOBUF_INCLUDE_DIR}
       ${MAIN_DIR}/protobuf-c/protobuf-c.proto
     COMMENT Running
     protoc on ${MAIN_DIR}/protobuf-c/protobuf-c.proto
