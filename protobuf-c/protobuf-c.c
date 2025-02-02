@@ -1138,6 +1138,102 @@ required_field_pack(const ProtobufCFieldDescriptor *field,
 }
 
 /**
+ * Clone a required field.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param member_src
+ *      The field member to be cloned.
+ * \param member_dst
+ *      The field member to be cloned to.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation.
+ * \return
+ *      TRUE for success, FALSE for failure.
+ */
+static protobuf_c_boolean
+required_field_clone(const ProtobufCFieldDescriptor *field,
+                    const void *member_src,
+                    void *member_dst,
+                    ProtobufCAllocator *allocator)
+{
+    char **pstr = NULL;
+    const char *str_src = NULL;
+    size_t str_len = 0;
+    ProtobufCBinaryData *bd_dst = NULL;
+    const ProtobufCBinaryData *bd_src = NULL;
+    ProtobufCMessage **msg_dst = NULL;
+    const ProtobufCMessage *const *msg_src = NULL;
+
+    switch (field->type) {
+    case PROTOBUF_C_TYPE_SINT32:
+    case PROTOBUF_C_TYPE_ENUM:
+    case PROTOBUF_C_TYPE_INT32:
+        *(int32_t *)member_dst = *(const int32_t *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_UINT32:
+        *(uint32_t *)member_dst = *(const uint32_t *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_SINT64:
+        *(int64_t *)member_dst = *(const int64_t *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_INT64:
+    case PROTOBUF_C_TYPE_UINT64:
+        *(uint64_t *)member_dst = *(const uint64_t *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_SFIXED32:
+    case PROTOBUF_C_TYPE_FIXED32:
+    case PROTOBUF_C_TYPE_FLOAT:
+        *(uint32_t *)member_dst = *(const uint32_t *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_SFIXED64:
+    case PROTOBUF_C_TYPE_FIXED64:
+    case PROTOBUF_C_TYPE_DOUBLE:
+        *(uint64_t *)member_dst = *(const uint64_t *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_BOOL:
+        *(protobuf_c_boolean *)member_dst = *(const protobuf_c_boolean *)member_src;
+        return TRUE;
+    case PROTOBUF_C_TYPE_STRING:
+        pstr = member_dst;
+        str_src = *(char **)member_src;
+        str_len = strlen(str_src);
+        *pstr = do_alloc(allocator, str_len + 1);
+        if (*pstr == NULL)
+            return FALSE;
+        memcpy(*pstr, str_src, str_len);
+        (*pstr)[str_len] = 0;
+        return TRUE;
+    case PROTOBUF_C_TYPE_BYTES:
+        bd_dst = member_dst;
+        bd_src = member_src;
+        if (bd_src->len) {
+            bd_dst->data = do_alloc(allocator, bd_src->len);
+            if (bd_dst->data == NULL)
+                return FALSE;
+            memcpy(bd_dst->data, bd_src->data, bd_src->len);
+        }
+        else {
+            bd_dst->data = NULL;
+        }
+        bd_dst->len = bd_src->len;
+        return TRUE;
+    case PROTOBUF_C_TYPE_MESSAGE:
+        msg_dst = member_dst;
+        msg_src = member_src;
+        if (*msg_src) {
+            *msg_dst = protobuf_c_message_clone(*msg_src, allocator);
+        }
+        else {
+            *msg_dst = NULL;
+        }
+        return TRUE;
+    }
+    PROTOBUF_C__ASSERT_NOT_REACHED();
+    return TRUE;
+}
+
+/**
  * Pack a oneof field and return the number of bytes written. Only packs the
  * field that is selected by the case enum.
  *
@@ -1168,6 +1264,43 @@ oneof_field_pack(const ProtobufCFieldDescriptor *field,
 			return 0;
 	}
 	return required_field_pack(field, member, out);
+}
+
+/**
+ * Clone a oneof field. Only clone the
+ * field that is selected by the case enum.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param oneof_case
+ *      Enum value that selects the field in the oneof.
+ * \param member_src
+ *      The field member to be cloned.
+ * \param member_dst
+ *      The field member to be cloned to.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation.
+ * \return
+ *      TRUE for success, FALSE for failure.
+ */
+static protobuf_c_boolean
+oneof_field_clone(const ProtobufCFieldDescriptor *field,
+                uint32_t oneof_case,
+                const void *member_src,
+                void *member_dst,
+                ProtobufCAllocator *allocator)
+{
+    if (oneof_case != field->id) {
+        return TRUE;
+    }
+
+    if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+                field->type == PROTOBUF_C_TYPE_STRING) {
+        const void *ptr = *(const void * const *)member_src;
+        if (ptr == NULL || ptr == field->default_value)
+            return TRUE;
+    }
+    return required_field_clone(field, member_src, member_dst, allocator);
 }
 
 /**
@@ -1203,6 +1336,41 @@ optional_field_pack(const ProtobufCFieldDescriptor *field,
 }
 
 /**
+ * Clone an optional field.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param has
+ *      Whether the field is set.
+ * \param member_src
+ *      The field member to be cloned.
+ * \param member_dst
+ *      The field member to be cloned to.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation.
+ * \return
+ *      TRUE for success, FALSE for failure.
+ */
+static protobuf_c_boolean
+optional_field_clone(const ProtobufCFieldDescriptor *field,
+                const protobuf_c_boolean has,
+                const void *member_src,
+                void *member_dst,
+                ProtobufCAllocator *allocator)
+{
+    if (field->type == PROTOBUF_C_TYPE_MESSAGE ||
+                field->type == PROTOBUF_C_TYPE_STRING) {
+        const void *ptr = *(const void * const *)member_src;
+        if (ptr == NULL || ptr == field->default_value)
+            return TRUE;
+    } else {
+        if (!has)
+            return TRUE;
+    }
+    return required_field_clone(field, member_src, member_dst, allocator);
+}
+
+/**
  * Pack an unlabeled field and return the number of bytes written.
  *
  * \param field
@@ -1221,6 +1389,31 @@ unlabeled_field_pack(const ProtobufCFieldDescriptor *field,
 	if (field_is_zeroish(field, member))
 		return 0;
 	return required_field_pack(field, member, out);
+}
+
+/**
+ * Clone an unlabeled field.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param member_src
+ *      The field member to be cloned.
+ * \param member_dst
+ *      The field member to be cloned to.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation.
+ * \return
+ *      TRUE for success, FALSE for failure.
+ */
+static protobuf_c_boolean
+unlabeled_field_clone(const ProtobufCFieldDescriptor *field,
+                const void *member_src,
+                void *member_dst,
+                ProtobufCAllocator *allocator)
+{
+	if (field_is_zeroish(field, member_src))
+		return TRUE;
+    return required_field_clone(field, member_src, member_dst, allocator);
 }
 
 /**
@@ -1457,6 +1650,41 @@ repeated_field_pack(const ProtobufCFieldDescriptor *field,
 	}
 }
 
+/**
+ * Clone the elements of a repeated field.
+ *
+ * \param field
+ *      Field descriptor.
+ * \param count
+ *      Number of elements in the repeated field array.
+ * \param member_src
+ *      The field member to be cloned.
+ * \param member_dst
+ *      The field member to be cloned to.
+ * \param allocator
+ *      `ProtobufCAllocator` to use for memory allocation.
+ * \return
+ *      TRUE for success, FALSE for failure.
+ */
+static protobuf_c_boolean
+repeated_field_clone(const ProtobufCFieldDescriptor *field,
+                    size_t count,
+                    const void *member_src,
+                    void *member_dst,
+                    ProtobufCAllocator *allocator)
+{
+    void *array_src = *(void * const *)member_src;
+    void *array_dst = *(void * const *)member_dst;
+    unsigned siz = sizeof_elt_in_repeated_array(field->type);
+    unsigned i;
+    for (i = 0; i < count; i++) {
+        required_field_clone(field, array_src, array_dst, allocator);
+        array_src = (char *)array_src + siz;
+        array_dst = (char *)array_dst + siz;
+    }
+    return TRUE;
+}
+
 static size_t
 unknown_field_pack(const ProtobufCMessageUnknownField *field, uint8_t *out)
 {
@@ -1464,6 +1692,21 @@ unknown_field_pack(const ProtobufCMessageUnknownField *field, uint8_t *out)
 	out[0] |= field->wire_type;
 	memcpy(out + rv, field->data, field->len);
 	return rv + field->len;
+}
+
+static protobuf_c_boolean
+unknown_field_clone(const ProtobufCMessageUnknownField *field_src,
+                    ProtobufCMessageUnknownField *field_dst,
+                    ProtobufCAllocator *allocator)
+{
+    field_dst->tag = field_src->tag;
+    field_dst->wire_type = field_src->wire_type;
+    field_dst->len = field_src->len;
+    field_dst->data = do_alloc(allocator, field_src->len);
+    if (!field_dst->data)
+        return FALSE;
+    memcpy(field_dst->data, field_src->data, field_src->len);
+    return TRUE;
 }
 
 /**@}*/
@@ -3320,6 +3563,123 @@ error_cleanup_during_scan:
 	if (required_fields_bitmap_alloced)
 		do_free(allocator, required_fields_bitmap);
 	return NULL;
+}
+
+ProtobufCMessage *
+protobuf_c_message_clone(const ProtobufCMessage *msg_src, ProtobufCAllocator *allocator)
+{
+    ProtobufCMessage *rv = NULL;
+    const ProtobufCMessageDescriptor *desc = msg_src->descriptor;
+    unsigned i = 0;
+    ASSERT_IS_MESSAGE(msg_src);
+
+    if (allocator == NULL) {
+        allocator = &protobuf_c__allocator;
+    }
+    rv = do_alloc(allocator, desc->sizeof_message);
+    if (!rv) {
+        return NULL;
+    }
+
+    if (desc->message_init != NULL) {
+        protobuf_c_message_init(desc, rv);
+    }
+    else {
+        message_init_generic(desc, rv);
+    }
+
+    if (msg_src->n_unknown_fields) {
+        rv->unknown_fields = do_alloc(allocator,
+                          msg_src->n_unknown_fields * sizeof(ProtobufCMessageUnknownField));
+        if (!rv->unknown_fields) {
+            goto error_cleanup;
+        }
+        rv->n_unknown_fields = msg_src->n_unknown_fields;
+    }
+
+    for (i = 0; i < desc->n_fields; i++) {
+        const ProtobufCFieldDescriptor *field = desc->fields + i;
+        const void *member_src = ((const char *)msg_src) + field->offset;
+        const void *qmember_src = ((const char *)msg_src) + field->quantifier_offset;
+        void *member_dst = ((char *)rv) + field->offset;
+        void *qmember_dst = ((char *)rv) + field->quantifier_offset;
+
+        if (field->label == PROTOBUF_C_LABEL_REQUIRED) {
+            if (!required_field_clone(field, member_src, member_dst, allocator)) {
+                PROTOBUF_C_UNPACK_ERROR("error clone member %s of %s",
+                            field ? field->name : "*unknown-field*",
+                            desc->name);
+                goto error_cleanup;
+            }
+        }
+        else if ((field->label == PROTOBUF_C_LABEL_OPTIONAL ||
+                    field->label == PROTOBUF_C_LABEL_NONE) &&
+                    (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF))) {
+            *(uint32_t *)qmember_dst = *(const uint32_t *)qmember_src;
+            if (!oneof_field_clone(field, *(const uint32_t *)qmember_src,
+                                member_src, member_dst, allocator)) {
+                PROTOBUF_C_UNPACK_ERROR("error clone member %s of %s",
+                            field ? field->name : "*unknown-field*",
+                            desc->name);
+                goto error_cleanup;
+            }
+        }
+        else if (field->label == PROTOBUF_C_LABEL_OPTIONAL) {
+            *(protobuf_c_boolean *)qmember_dst = *(const protobuf_c_boolean *)qmember_src;
+            if (!optional_field_clone(field, *(const protobuf_c_boolean *)qmember_src,
+                                member_src, member_dst, allocator)) {
+                PROTOBUF_C_UNPACK_ERROR("error clone member %s of %s",
+                            field ? field->name : "*unknown-field*",
+                            desc->name);
+                goto error_cleanup;
+            }
+        }
+        else if (field->label == PROTOBUF_C_LABEL_NONE) {
+            if (!unlabeled_field_clone(field, member_src, member_dst, allocator)) {
+                PROTOBUF_C_UNPACK_ERROR("error clone member %s of %s",
+                            field ? field->name : "*unknown-field*",
+                            desc->name);
+                goto error_cleanup;
+            }
+        }
+        else {
+            const size_t n = *(const size_t *)qmember_src;
+            *(size_t *)qmember_dst = n;
+            if (n) {
+                size_t siz = sizeof_elt_in_repeated_array(field->type);
+                void *a = do_alloc(allocator, siz * n);
+                if (!a) {
+                    goto error_cleanup;
+                }
+                *(void **)member_dst = a;
+                if (!repeated_field_clone(field, n,
+                                    member_src, member_dst, allocator)) {
+                    PROTOBUF_C_UNPACK_ERROR("error clone member %s of %s",
+                                field ? field->name : "*unknown-field*",
+                                desc->name);
+                    goto error_cleanup;
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < msg_src->n_unknown_fields; i++) {
+        if (!unknown_field_clone(&msg_src->unknown_fields[i],
+                            &rv->unknown_fields[i],
+                            allocator)) {
+            PROTOBUF_C_UNPACK_ERROR("error clone member %s of %s",
+                        "unknown-field",
+                        desc->name);
+            goto error_cleanup;
+        }
+	}
+
+    return rv;
+
+error_cleanup:
+    protobuf_c_message_free_unpacked(rv, allocator);
+    rv = NULL;
+    return rv;
 }
 
 void
