@@ -1,3 +1,25 @@
+# [1.5.1] - 2025-02-01
+
+## What's Changed
+* CMakeList.txt: Remove double hyphens by @AlessandroBono in https://github.com/protobuf-c/protobuf-c/pull/699
+* Makefile.am: Distribute missing Config.cmake.in by @AlessandroBono in https://github.com/protobuf-c/protobuf-c/pull/700
+* protobuf_c_message_unpack(): Fix memory corruption by initializing unknown_fields pointer by @smuellerDD in https://github.com/protobuf-c/protobuf-c/pull/703
+* Fix CI issues with CMake by @clementperon in https://github.com/protobuf-c/protobuf-c/pull/714
+* build.yml: Install libtool on OS X by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/717
+* build.yml: Set "fail-fast: false" so we can tell which jobs are failing by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/718
+* Update actions by @AndrewQuijano in https://github.com/protobuf-c/protobuf-c/pull/740
+* Miscellaneous CI updates by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/747
+* build.yml: Build on more pull request activity types by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/751
+* Chase compatibility issues with Google protobuf >= 26.0 by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/711
+* Clean CMake by @clementperon in https://github.com/protobuf-c/protobuf-c/pull/719
+* build.yml: Update Windows dependencies (abseil, protobuf) by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/753
+* build.yml: Ubuntu: Add 22.04, 24.04 by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/754
+* Order oneof union members from largest to smallest by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/755
+* More renaming of `protoc-c` to `protoc-gen-c` by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/756
+* cmake: Fix build when using ninja and protobuf-c already installed by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/757
+* protoc-gen-c: Log a deprecation warning when invoked as `protoc-c` by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/758
+* build.yml: Try running multiarch builds on Debian bookworm by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/759
+
 # [1.5.0] - 2023-11-25
 
 ## What's Changed
