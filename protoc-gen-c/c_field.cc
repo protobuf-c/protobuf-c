@@ -74,6 +74,7 @@
 #include "c_message_field.h"
 #include "c_primitive_field.h"
 #include "c_string_field.h"
+#include "compat.h"
 
 namespace protobuf_c {
 

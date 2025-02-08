@@ -73,6 +73,7 @@
 #include <google/protobuf/stubs/common.h>
 
 #include "c_helpers.h"
+#include "compat.h"
 
 namespace protobuf_c {
 
