@@ -37,12 +37,16 @@
 # define GOOGLE_LOG		ABSL_LOG
 #endif
 
+#if GOOGLE_PROTOBUF_VERSION >= 6030000
+# include <absl/strings/string_view.h>
+#endif
+
 namespace protobuf_c {
 
 namespace compat {
 
 #if GOOGLE_PROTOBUF_VERSION >= 6030000
-typedef google::protobuf::internal::DescriptorStringView StringView;
+typedef absl::string_view StringView;
 #else
 typedef const std::string& StringView;
 #endif
