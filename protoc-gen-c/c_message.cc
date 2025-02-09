@@ -581,7 +581,7 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
     if (!optimize_code_size) {
       std::vector<NameIndex> field_indices;
       for (unsigned i = 0; i < descriptor_->field_count(); i++) {
-        field_indices.push_back({ .index = i, .name = sorted_fields[i]->name() });
+        field_indices.push_back({ i, sorted_fields[i]->name() });
       }
       qsort(&field_indices[0],
             field_indices.size(),

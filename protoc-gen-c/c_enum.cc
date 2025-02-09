@@ -195,14 +195,9 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
   // Sort by name and value, dropping duplicate values if they appear later.
   // TODO: use a c++ paradigm for this!
   std::vector<ValueIndex> value_index;
-  for (unsigned j = 0; j < descriptor_->value_count(); j++) {
+  for (int j = 0; j < descriptor_->value_count(); j++) {
     const google::protobuf::EnumValueDescriptor *vd = descriptor_->value(j);
-    value_index.push_back({
-      .value = vd->number(),
-      .index = j,
-      .final_index = 0,
-      .name = vd->name(),
-    });
+    value_index.push_back({ vd->number(), (unsigned)j, 0, vd->name() });
   }
   qsort(&value_index[0],
         value_index.size(),
