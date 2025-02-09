@@ -96,6 +96,7 @@ std::string SimpleFtoa(float f) {
   buf[sizeof(buf)-1] = 0;		/* should NOT be necessary */
   return buf;
 }
+
 std::string SimpleDtoa(double d) {
   char buf[100];
   snprintf(buf,sizeof(buf),"%.*g", DBL_DIG, d);
@@ -103,7 +104,7 @@ std::string SimpleDtoa(double d) {
   return buf;
 }
 
-std::string CamelToUpper(const std::string &name) {
+std::string CamelToUpper(compat::StringView name) {
   bool was_upper = true;		// suppress initial _
   std::string rv = "";
   int len = name.length();
@@ -120,7 +121,8 @@ std::string CamelToUpper(const std::string &name) {
   }
   return rv;
 }
-std::string CamelToLower(const std::string &name) {
+
+std::string CamelToLower(compat::StringView name) {
   bool was_upper = true;		// suppress initial _
   std::string rv = "";
   int len = name.length();
@@ -138,8 +140,7 @@ std::string CamelToLower(const std::string &name) {
   return rv;
 }
 
-
-std::string ToUpper(const std::string &name) {
+std::string ToUpper(compat::StringView name) {
   std::string rv = "";
   int len = name.length();
   for (int i = 0; i < len; i++) {
@@ -147,7 +148,8 @@ std::string ToUpper(const std::string &name) {
   }
   return rv;
 }
-std::string ToLower(const std::string &name) {
+
+std::string ToLower(compat::StringView name) {
   std::string rv = "";
   int len = name.length();
   for (int i = 0; i < len; i++) {
@@ -155,7 +157,8 @@ std::string ToLower(const std::string &name) {
   }
   return rv;
 }
-std::string ToCamel(const std::string &name) {
+
+std::string ToCamel(compat::StringView name) {
   std::string rv = "";
   int len = name.length();
   bool next_is_upper = true;
@@ -172,7 +175,7 @@ std::string ToCamel(const std::string &name) {
   return rv;
 }
 
-std::string OverrideFullName(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
+std::string OverrideFullName(compat::StringView full_name, const google::protobuf::FileDescriptor* file) {
   const ProtobufCFileOptions opt = file->options().GetExtension(pb_c_file);
   if (!opt.has_c_package())
     return full_name;
@@ -184,7 +187,7 @@ std::string OverrideFullName(const std::string &full_name, const google::protobu
   return new_name + full_name.substr(file->package().length());
 }
 
-std::string FullNameToLower(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
+std::string FullNameToLower(compat::StringView full_name, const google::protobuf::FileDescriptor* file) {
   std::vector<std::string> pieces;
   SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
@@ -195,7 +198,8 @@ std::string FullNameToLower(const std::string &full_name, const google::protobuf
   }
   return rv;
 }
-std::string FullNameToUpper(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
+
+std::string FullNameToUpper(compat::StringView full_name, const google::protobuf::FileDescriptor* file) {
   std::vector<std::string> pieces;
   SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
@@ -206,7 +210,8 @@ std::string FullNameToUpper(const std::string &full_name, const google::protobuf
   }
   return rv;
 }
-std::string FullNameToC(const std::string &full_name, const google::protobuf::FileDescriptor* file) {
+
+std::string FullNameToC(compat::StringView full_name, const google::protobuf::FileDescriptor* file) {
   std::vector<std::string> pieces;
   SplitStringUsing(OverrideFullName(full_name, file), ".", &pieces);
   std::string rv = "";
@@ -248,7 +253,7 @@ void PrintComment(google::protobuf::io::Printer* printer, std::string comment)
    }
 }
 
-std::string ConvertToSpaces(const std::string &input) {
+std::string ConvertToSpaces(compat::StringView input) {
   return std::string(input.size(), ' ');
 }
 
@@ -259,8 +264,7 @@ int compare_name_indices_by_name(const void *a, const void *b)
   return strcmp (ni_a->name, ni_b->name);
 }
 
-
-std::string CEscape(const std::string& src);
+std::string CEscape(compat::StringView src);
 
 const char* const kKeywordList[] = {
   "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case",
@@ -300,7 +304,7 @@ std::string FieldDeprecated(const google::protobuf::FieldDescriptor* field) {
   return "";
 }
 
-std::string StripProto(const std::string& filename) {
+std::string StripProto(compat::StringView filename) {
   if (HasSuffixString(filename, ".protodevel")) {
     return StripSuffixString(filename, ".protodevel");
   } else {
@@ -309,7 +313,7 @@ std::string StripProto(const std::string& filename) {
 }
 
 // Convert a file name into a valid identifier.
-std::string FilenameIdentifier(const std::string& filename) {
+std::string FilenameIdentifier(compat::StringView filename) {
   std::string result;
   for (unsigned i = 0; i < filename.size(); i++) {
     if (isalnum(filename[i])) {
@@ -335,7 +339,7 @@ std::string GetLabelName(google::protobuf::FieldDescriptor::Label label) {
 }
 
 unsigned
-WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, const std::string &name)
+WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, compat::StringView name)
 {
   std::map<std::string, std::string> vars;
   vars["name"] = name;
@@ -389,7 +393,7 @@ WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *
 // ----------------------------------------------------------------------
 template <typename ITR>
 static inline
-void SplitStringToIteratorUsing(const std::string& full,
+void SplitStringToIteratorUsing(compat::StringView full,
                                 const char* delim,
                                 ITR& result) {
   // Optimize the common case where delim is a single character.
@@ -422,7 +426,7 @@ void SplitStringToIteratorUsing(const std::string& full,
   }
 }
 
-void SplitStringUsing(const std::string& full,
+void SplitStringUsing(compat::StringView full,
                       const char* delim,
                       std::vector<std::string>* result) {
   std::back_insert_iterator< std::vector<std::string> > it(*result);
@@ -434,7 +438,6 @@ char* FastHexToBuffer(int i, char* buffer)
   snprintf(buffer, 16, "%x", i);
   return buffer;
 }
-
 
 static int CEscapeInternal(const char* src, int src_len, char* dest,
                            int dest_len, bool use_hex) {
@@ -478,7 +481,8 @@ static int CEscapeInternal(const char* src, int src_len, char* dest,
   dest[used] = '\0';   // doesn't count towards return value though
   return used;
 }
-std::string CEscape(const std::string& src) {
+
+std::string CEscape(compat::StringView src) {
   const int dest_length = src.size() * 4 + 1; // Maximum possible expansion
   std::unique_ptr<char[]> dest(new char[dest_length]);
   const int len = CEscapeInternal(src.data(), src.size(),

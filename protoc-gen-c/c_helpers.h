@@ -73,6 +73,8 @@
 
 #include <protobuf-c/protobuf-c.pb.h>
 
+#include "compat.h"
+
 namespace protobuf_c {
 
 // --- Borrowed from stubs. ---
@@ -84,11 +86,10 @@ template <typename T> std::string SimpleItoa(T n) {
 
 std::string SimpleFtoa(float f);
 std::string SimpleDtoa(double f);
-void SplitStringUsing(const std::string &str, const char *delim, std::vector<std::string> *out);
-std::string CEscape(const std::string& src);
-std::string StringReplace(const std::string& s, const std::string& oldsub, const std::string& newsub, bool replace_all);
-inline bool HasSuffixString(const std::string& str, const std::string& suffix) { return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0; }
-inline std::string StripSuffixString(const std::string& str, const std::string& suffix) { if (HasSuffixString(str, suffix)) { return str.substr(0, str.size() - suffix.size()); } else { return str; } }
+void SplitStringUsing(compat::StringView str, const char *delim, std::vector<std::string> *out);
+std::string CEscape(compat::StringView src);
+inline bool HasSuffixString(compat::StringView str, compat::StringView suffix) { return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0; }
+inline std::string StripSuffixString(compat::StringView str, compat::StringView suffix) { if (HasSuffixString(str, suffix)) { return str.substr(0, str.size() - suffix.size()); } else { return str; } }
 char* FastHexToBuffer(int i, char* buffer);
 
 
@@ -110,31 +111,31 @@ inline const google::protobuf::Descriptor* FieldScope(const google::protobuf::Fi
 
 // convert a CamelCase class name into an all uppercase affair
 // with underscores separating words, e.g. MyClass becomes MY_CLASS.
-std::string CamelToUpper(const std::string &class_name);
-std::string CamelToLower(const std::string &class_name);
+std::string CamelToUpper(compat::StringView class_name);
+std::string CamelToLower(compat::StringView class_name);
 
 // lowercased, underscored name to camel case
-std::string ToCamel(const std::string &name);
+std::string ToCamel(compat::StringView name);
 
 // lowercase the string
-std::string ToLower(const std::string &class_name);
-std::string ToUpper(const std::string &class_name);
+std::string ToLower(compat::StringView class_name);
+std::string ToUpper(compat::StringView class_name);
 
 // full_name() to lowercase with underscores
-std::string FullNameToLower(const std::string &full_name, const google::protobuf::FileDescriptor *file);
-std::string FullNameToUpper(const std::string &full_name, const google::protobuf::FileDescriptor *file);
+std::string FullNameToLower(compat::StringView full_name, const google::protobuf::FileDescriptor *file);
+std::string FullNameToUpper(compat::StringView full_name, const google::protobuf::FileDescriptor *file);
 
 // full_name() to c-typename (with underscores for packages, otherwise camel case)
-std::string FullNameToC(const std::string &class_name, const google::protobuf::FileDescriptor *file);
+std::string FullNameToC(compat::StringView class_name, const google::protobuf::FileDescriptor *file);
 
 // Splits, indents, formats, and prints comment lines
 void PrintComment(google::protobuf::io::Printer* printer, std::string comment);
 
 // make a string of spaces as long as input
-std::string ConvertToSpaces(const std::string &input);
+std::string ConvertToSpaces(compat::StringView input);
 
 // Strips ".proto" or ".protodevel" from the end of a filename.
-std::string StripProto(const std::string& filename);
+std::string StripProto(compat::StringView filename);
 
 // Get the C++ type name for a primitive type (e.g. "double", "::google::protobuf::int32", etc.).
 // Note:  non-built-in type names will be qualified, meaning they will start
@@ -148,15 +149,14 @@ const char* PrimitiveTypeName(google::protobuf::FieldDescriptor::CppType type);
 const char* DeclaredTypeMethodName(google::protobuf::FieldDescriptor::Type type);
 
 // Convert a file name into a valid identifier.
-std::string FilenameIdentifier(const std::string& filename);
+std::string FilenameIdentifier(compat::StringView filename);
 
 // return 'required', 'optional', or 'repeated'
 std::string GetLabelName(google::protobuf::FieldDescriptor::Label label);
 
-
 // write IntRanges entries for a bunch of sorted values.
 // returns the number of ranges there are to bsearch.
-unsigned WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, const std::string &name);
+unsigned WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, compat::StringView name);
 
 struct NameIndex
 {
