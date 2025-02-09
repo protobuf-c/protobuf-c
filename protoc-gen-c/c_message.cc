@@ -461,199 +461,196 @@ GenerateHelperFunctionDefinitions(google::protobuf::io::Printer* printer,
 
 void MessageGenerator::
 GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init) {
-    std::map<std::string, std::string> vars;
-    vars["fullname"] = descriptor_->full_name();
-    vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
-    vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
-    vars["shortname"] = ToCamel(descriptor_->name());
-    vars["n_fields"] = SimpleItoa(descriptor_->field_count());
-    vars["packagename"] = descriptor_->file()->package();
+  std::map<std::string, std::string> vars;
+  vars["fullname"] = descriptor_->full_name();
+  vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
+  vars["shortname"] = ToCamel(descriptor_->name());
+  vars["n_fields"] = SimpleItoa(descriptor_->field_count());
+  vars["packagename"] = descriptor_->file()->package();
 
-    bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
-        descriptor_->file()->options().optimize_for() ==
-        google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
+  bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
+    descriptor_->file()->options().optimize_for() ==
+      google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
 
-    const ProtobufCMessageOptions opt =
-	    descriptor_->options().GetExtension(pb_c_msg);
-    // Override parent settings, if needed
-    if (opt.has_gen_init_helpers())
-      gen_init = opt.gen_init_helpers();
+  const ProtobufCMessageOptions opt = descriptor_->options().GetExtension(pb_c_msg);
+  // Override parent settings, if needed
+  if (opt.has_gen_init_helpers()) {
+    gen_init = opt.gen_init_helpers();
+  }
 
-    for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-      nested_generators_[i]->GenerateMessageDescriptor(printer, gen_init);
+  for (int i = 0; i < descriptor_->nested_type_count(); i++) {
+    nested_generators_[i]->GenerateMessageDescriptor(printer, gen_init);
+  }
+
+  for (int i = 0; i < descriptor_->enum_type_count(); i++) {
+    enum_generators_[i]->GenerateEnumDescriptor(printer);
+  }
+
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const google::protobuf::FieldDescriptor* fd = descriptor_->field(i);
+    if (fd->has_default_value()) {
+      field_generators_.get(fd).GenerateDefaultValueImplementations(printer);
     }
+  }
 
-    for (int i = 0; i < descriptor_->enum_type_count(); i++) {
-      enum_generators_[i]->GenerateEnumDescriptor(printer);
-    }
-
-    for (int i = 0; i < descriptor_->field_count(); i++) {
-      const google::protobuf::FieldDescriptor* fd = descriptor_->field(i);
-      if (fd->has_default_value()) {
-	field_generators_.get(fd).GenerateDefaultValueImplementations(printer);
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const google::protobuf::FieldDescriptor* fd = descriptor_->field(i);
+    const ProtobufCFieldOptions opt = fd->options().GetExtension(pb_c_field);
+    if (fd->has_default_value()) {
+      bool already_defined = false;
+      vars["name"] = fd->name();
+      vars["lcname"] = CamelToLower(fd->name());
+      vars["maybe_static"] = "static ";
+      vars["field_dv_ctype_suffix"] = "";
+      vars["default_value"] = field_generators_.get(fd).GetDefaultValue();
+      switch (fd->cpp_type()) {
+      case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+        vars["field_dv_ctype"] = "int32_t";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+        vars["field_dv_ctype"] = "int64_t";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+        vars["field_dv_ctype"] = "uint32_t";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+        vars["field_dv_ctype"] = "uint64_t";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+        vars["field_dv_ctype"] = "float";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+        vars["field_dv_ctype"] = "double";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+        vars["field_dv_ctype"] = "protobuf_c_boolean";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
+        // NOTE: not supported by protobuf
+        vars["maybe_static"] = "";
+        vars["field_dv_ctype"] = "{ ... }";
+        GOOGLE_LOG(FATAL) << "Messages can't have default values!";
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+        if (fd->type() == google::protobuf::FieldDescriptor::TYPE_BYTES || opt.string_as_bytes()) {
+          vars["field_dv_ctype"] = "ProtobufCBinaryData";
+        } else {
+          /* STRING type */
+          already_defined = true;
+          vars["maybe_static"] = "";
+          vars["field_dv_ctype"] = "char";
+          vars["field_dv_ctype_suffix"] = "[]";
+        }
+        break;
+      case google::protobuf::FieldDescriptor::CPPTYPE_ENUM: {
+        const google::protobuf::EnumValueDescriptor* vd = fd->default_value_enum();
+        vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name(), vd->type()->file());
+        break;
+      }
+      default:
+        GOOGLE_LOG(FATAL) << "Unknown CPPTYPE";
+        break;
+      }
+      if (!already_defined) {
+        printer->Print(vars, "$maybe_static$const $field_dv_ctype$ $lcclassname$__$lcname$__default_value$field_dv_ctype_suffix$ = $default_value$;\n");
       }
     }
+  }
 
+  if (descriptor_->field_count()) {
+    printer->Print(vars,
+      "static const ProtobufCFieldDescriptor $lcclassname$__field_descriptors[$n_fields$] =\n"
+      "{\n");
+    printer->Indent();
+
+    std::vector<const google::protobuf::FieldDescriptor*> sorted_fields;
     for (int i = 0; i < descriptor_->field_count(); i++) {
-      const google::protobuf::FieldDescriptor* fd = descriptor_->field(i);
-      const ProtobufCFieldOptions opt = fd->options().GetExtension(pb_c_field);
-      if (fd->has_default_value()) {
+      sorted_fields.push_back(descriptor_->field(i));
+    }
+    qsort(&sorted_fields[0],
+          sorted_fields.size(),
+          sizeof(const google::protobuf::FieldDescriptor*),
+          compare_pfields_by_number);
+    for (auto field : sorted_fields) {
+      field_generators_.get(field).GenerateDescriptorInitializer(printer);
+    }
+    printer->Outdent();
+    printer->Print(vars, "};\n");
 
-	bool already_defined = false;
-	vars["name"] = fd->name();
-	vars["lcname"] = CamelToLower(fd->name());
-	vars["maybe_static"] = "static ";
-	vars["field_dv_ctype_suffix"] = "";
-	vars["default_value"] = field_generators_.get(fd).GetDefaultValue();
-	switch (fd->cpp_type()) {
-	case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-	  vars["field_dv_ctype"] = "int32_t";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-	  vars["field_dv_ctype"] = "int64_t";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-	  vars["field_dv_ctype"] = "uint32_t";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-	  vars["field_dv_ctype"] = "uint64_t";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-	  vars["field_dv_ctype"] = "float";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-	  vars["field_dv_ctype"] = "double";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-	  vars["field_dv_ctype"] = "protobuf_c_boolean";
-	  break;
-	  
-	case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-	  // NOTE: not supported by protobuf
-	  vars["maybe_static"] = "";
-	  vars["field_dv_ctype"] = "{ ... }";
-	  GOOGLE_LOG(FATAL) << "Messages can't have default values!";
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-	  if (fd->type() == google::protobuf::FieldDescriptor::TYPE_BYTES || opt.string_as_bytes())
-	  {
-	    vars["field_dv_ctype"] = "ProtobufCBinaryData";
-	  }
-	  else   /* STRING type */
-	  {
-	    already_defined = true;
-	    vars["maybe_static"] = "";
-	    vars["field_dv_ctype"] = "char";
-	    vars["field_dv_ctype_suffix"] = "[]";
-	  }
-	  break;
-	case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-	  {
-	    const google::protobuf::EnumValueDescriptor* vd = fd->default_value_enum();
-	    vars["field_dv_ctype"] = FullNameToC(vd->type()->full_name(), vd->type()->file());
-	    break;
-	  }
-	default:
-	  GOOGLE_LOG(FATAL) << "Unknown CPPTYPE";
-	  break;
-	}
-	if (!already_defined)
-	  printer->Print(vars, "$maybe_static$const $field_dv_ctype$ $lcclassname$__$lcname$__default_value$field_dv_ctype_suffix$ = $default_value$;\n");
+    if (!optimize_code_size) {
+      std::vector<NameIndex> field_indices;
+      for (unsigned i = 0; i < descriptor_->field_count(); i++) {
+        field_indices.push_back({ .index = i, .name = sorted_fields[i]->name() });
       }
+      qsort(&field_indices[0],
+            field_indices.size(),
+            sizeof(NameIndex),
+            compare_name_indices_by_name);
+      printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
+      for (int i = 0; i < descriptor_->field_count(); i++) {
+        vars["index"] = SimpleItoa(field_indices[i].index);
+        vars["name"] = field_indices[i].name;
+        printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
+      }
+      printer->Print("};\n");
     }
 
-    if ( descriptor_->field_count() ) {
-  printer->Print(vars,
-	"static const ProtobufCFieldDescriptor $lcclassname$__field_descriptors[$n_fields$] =\n"
-	"{\n");
-  printer->Indent();
-
-  std::vector<const google::protobuf::FieldDescriptor*> sorted_fields;
-  for (int i = 0; i < descriptor_->field_count(); i++) {
-    sorted_fields.push_back(descriptor_->field(i));
-  }
-  qsort(&sorted_fields[0], sorted_fields.size(),
-       sizeof(const google::protobuf::FieldDescriptor*), 
-       compare_pfields_by_number);
-  for (auto field : sorted_fields) {
-    field_generators_.get(field).GenerateDescriptorInitializer(printer);
-  }
-  printer->Outdent();
-  printer->Print(vars, "};\n");
-
-  if (!optimize_code_size) {
-    std::vector<NameIndex> field_indices;
-    for (unsigned i = 0; i < descriptor_->field_count(); i++) {
-      field_indices.push_back({ .index = i, .name = sorted_fields[i]->name() });
-    }
-    qsort(&field_indices[0], field_indices.size(), sizeof(NameIndex),
-        compare_name_indices_by_name);
-    printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
+    // create range initializers
+    std::vector<int> values;
     for (int i = 0; i < descriptor_->field_count(); i++) {
-      vars["index"] = SimpleItoa(field_indices[i].index);
-      vars["name"] = field_indices[i].name;
-      printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
+      values.push_back(sorted_fields[i]->number());
     }
-    printer->Print("};\n");
+    int n_ranges = WriteIntRanges(printer,
+                                  descriptor_->field_count(),
+                                  &values[0],
+                                  vars["lcclassname"] + "__number_ranges");
+
+    vars["n_ranges"] = SimpleItoa(n_ranges);
+  } else {
+    /* MS compiler can't handle arrays with zero size and empty
+     * initialization list. Furthermore it is an extension of GCC only but
+     * not a standard. */
+    vars["n_ranges"] = "0";
+    printer->Print(vars,
+      "#define $lcclassname$__field_descriptors NULL\n"
+      "#define $lcclassname$__field_indices_by_name NULL\n"
+      "#define $lcclassname$__number_ranges NULL\n");
   }
 
-  // create range initializers
-  std::vector<int> values;
-  for (int i = 0; i < descriptor_->field_count(); i++) {
-    values.push_back(sorted_fields[i]->number());
-  }
-  int n_ranges = WriteIntRanges(printer,
-				descriptor_->field_count(), &values[0],
-				vars["lcclassname"] + "__number_ranges");
-
-  vars["n_ranges"] = SimpleItoa(n_ranges);
-    } else {
-      /* MS compiler can't handle arrays with zero size and empty
-       * initialization list. Furthermore it is an extension of GCC only but
-       * not a standard. */
-      vars["n_ranges"] = "0";
   printer->Print(vars,
-        "#define $lcclassname$__field_descriptors NULL\n"
-        "#define $lcclassname$__field_indices_by_name NULL\n"
-        "#define $lcclassname$__number_ranges NULL\n");
-    }
-
-  printer->Print(vars,
-      "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
-      "{\n"
-      "  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,\n");
+    "const ProtobufCMessageDescriptor $lcclassname$__descriptor =\n"
+    "{\n"
+    "  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,\n");
   if (optimize_code_size) {
     printer->Print("  NULL,NULL,NULL,NULL, /* CODE_SIZE */\n");
   } else {
     printer->Print(vars,
-        "  \"$fullname$\",\n"
-        "  \"$shortname$\",\n"
-        "  \"$classname$\",\n"
-        "  \"$packagename$\",\n");
+      "  \"$fullname$\",\n"
+      "  \"$shortname$\",\n"
+      "  \"$classname$\",\n"
+      "  \"$packagename$\",\n");
   }
   printer->Print(vars,
-      "  sizeof($classname$),\n"
-      "  $n_fields$,\n"
-      "  $lcclassname$__field_descriptors,\n");
+    "  sizeof($classname$),\n"
+    "  $n_fields$,\n"
+    "  $lcclassname$__field_descriptors,\n");
   if (optimize_code_size) {
     printer->Print("  NULL, /* CODE_SIZE */\n");
   } else {
-    printer->Print(vars,
-        "  $lcclassname$__field_indices_by_name,\n");
+    printer->Print(vars, "  $lcclassname$__field_indices_by_name,\n");
   }
   printer->Print(vars,
-      "  $n_ranges$,"
-      "  $lcclassname$__number_ranges,\n");
+    "  $n_ranges$,"
+    "  $lcclassname$__number_ranges,\n");
   if (gen_init) {
-    printer->Print(vars,
-      "  (ProtobufCMessageInit) $lcclassname$__init,\n");
+    printer->Print(vars, "  (ProtobufCMessageInit) $lcclassname$__init,\n");
   } else {
-    printer->Print(vars,
-      "  NULL, /* gen_init_helpers = false */\n");
+    printer->Print(vars, "  NULL, /* gen_init_helpers = false */\n");
   }
   printer->Print(vars,
-      "  NULL,NULL,NULL    /* reserved[123] */\n"
-      "};\n");
+    "  NULL,NULL,NULL    /* reserved[123] */\n"
+    "};\n");
 }
 
 int MessageGenerator::GetOneofUnionOrder(const google::protobuf::FieldDescriptor* fd)
