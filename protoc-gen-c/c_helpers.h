@@ -89,9 +89,8 @@ std::string SimpleDtoa(double f);
 void SplitStringUsing(compat::StringView str, const char *delim, std::vector<std::string> *out);
 std::string CEscape(compat::StringView src);
 inline bool HasSuffixString(compat::StringView str, compat::StringView suffix) { return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0; }
-inline std::string StripSuffixString(compat::StringView str, compat::StringView suffix) { if (HasSuffixString(str, suffix)) { return str.substr(0, str.size() - suffix.size()); } else { return str; } }
+inline std::string StripSuffixString(compat::StringView str, compat::StringView suffix) { if (HasSuffixString(str, suffix)) { return std::string(str.substr(0, str.size() - suffix.size())); } else { return std::string(str); } }
 char* FastHexToBuffer(int i, char* buffer);
-
 
 // Get the (unqualified) name that should be used for this field in C code.
 // The name is coerced to lower-case to emulate proto1 behavior.  People

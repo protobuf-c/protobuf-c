@@ -152,7 +152,7 @@ void EnumGenerator::GenerateValueInitializer(google::protobuf::io::Printer *prin
     descriptor_->file()->options().optimize_for() ==
     google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
   vars["enum_value_name"] = vd->name();
-  vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file()) + "__" + vd->name();
+  vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file()) + "__" + std::string(vd->name());
   vars["value"] = SimpleItoa(vd->number());
   if (optimize_code_size)
     printer->Print(vars, "  { NULL, NULL, $value$ }, /* CODE_SIZE */\n");
