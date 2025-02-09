@@ -150,9 +150,6 @@ const char* DeclaredTypeMethodName(google::protobuf::FieldDescriptor::Type type)
 // Convert a file name into a valid identifier.
 std::string FilenameIdentifier(const std::string& filename);
 
-// Return the name of the BuildDescriptors() function for a given file.
-std::string GlobalBuildDescriptorsName(const std::string& filename);
-
 // return 'required', 'optional', or 'repeated'
 std::string GetLabelName(google::protobuf::FieldDescriptor::Label label);
 

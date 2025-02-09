@@ -90,14 +90,6 @@ namespace protobuf_c {
 #pragma warning(disable:4996)
 #endif
 
-std::string DotsToUnderscores(const std::string& name) {
-  return StringReplace(name, ".", "_", true);
-}
-
-std::string DotsToColons(const std::string& name) {
-  return StringReplace(name, ".", "::", true);
-}
-
 std::string SimpleFtoa(float f) {
   char buf[100];
   snprintf(buf,sizeof(buf),"%.*g", FLT_DIG, f);
@@ -333,11 +325,6 @@ std::string FilenameIdentifier(const std::string& filename) {
   return result;
 }
 
-// Return the name of the BuildDescriptors() function for a given file.
-std::string GlobalBuildDescriptorsName(const std::string& filename) {
-  return "proto_BuildDescriptors_" + FilenameIdentifier(filename);
-}
-
 std::string GetLabelName(google::protobuf::FieldDescriptor::Label label) {
   switch (label) {
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL: return "optional";
@@ -392,57 +379,6 @@ WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *
   }
 }
     
-
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
-// XXXXXXXXX  this stuff is copied from strutils.cc !!!!   XXXXXXXXXXXXXXXXXXXXXXXXXXXXx
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
-// ----------------------------------------------------------------------
-// StringReplace()
-//    Replace the "old" pattern with the "new" pattern in a string,
-//    and append the result to "res".  If replace_all is false,
-//    it only replaces the first instance of "old."
-// ----------------------------------------------------------------------
-
-void StringReplace(const std::string& s, const std::string& oldsub,
-                   const std::string& newsub, bool replace_all,
-                   std::string* res) {
-  if (oldsub.empty()) {
-    res->append(s);  // if empty, append the given string.
-    return;
-  }
-
-  std::string::size_type start_pos = 0;
-  std::string::size_type pos;
-  do {
-    pos = s.find(oldsub, start_pos);
-    if (pos == std::string::npos) {
-      break;
-    }
-    res->append(s, start_pos, pos - start_pos);
-    res->append(newsub);
-    start_pos = pos + oldsub.size();  // start searching again after the "old"
-  } while (replace_all);
-  res->append(s, start_pos, s.length() - start_pos);
-}
-
-
-// ----------------------------------------------------------------------
-// StringReplace()
-//    Give me a string and two patterns "old" and "new", and I replace
-//    the first instance of "old" in the string with "new", if it
-//    exists.  If "global" is true; call this repeatedly until it
-//    fails.  RETURN a new string, regardless of whether the replacement
-//    happened or not.
-// ----------------------------------------------------------------------
-
-std::string StringReplace(const std::string& s, const std::string& oldsub,
-                          const std::string& newsub, bool replace_all) {
-  std::string ret;
-  StringReplace(s, oldsub, newsub, replace_all, &ret);
-  return ret;
-}
-
 // ----------------------------------------------------------------------
 // SplitStringUsing()
 //    Split a string using a character delimiter. Append the components
