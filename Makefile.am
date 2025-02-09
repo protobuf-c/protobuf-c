@@ -102,6 +102,7 @@ protoc_gen_c_protoc_gen_c_SOURCES = \
 	protoc-gen-c/c_service.h \
 	protoc-gen-c/c_string_field.cc \
 	protoc-gen-c/c_string_field.h \
+	protoc-gen-c/compat.h \
 	protobuf-c/protobuf-c.pb.cc \
 	protobuf-c/protobuf-c.pb.h \
 	protoc-gen-c/main.cc
