@@ -28,6 +28,8 @@
 #ifndef PROTOBUF_C_PROTOC_GEN_C_COMPAT_H__
 #define PROTOBUF_C_PROTOC_GEN_C_COMPAT_H__
 
+#include <string>
+
 #if GOOGLE_PROTOBUF_VERSION >= 4022000
 # define GOOGLE_ARRAYSIZE	ABSL_ARRAYSIZE
 # define GOOGLE_CHECK_EQ	ABSL_CHECK_EQ
@@ -38,6 +40,12 @@
 namespace protobuf_c {
 
 namespace compat {
+
+#if GOOGLE_PROTOBUF_VERSION >= 6030000
+typedef google::protobuf::internal::DescriptorStringView StringView;
+#else
+typedef const std::string& StringView;
+#endif
 
 }  // namespace compat
 
