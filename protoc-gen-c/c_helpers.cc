@@ -261,7 +261,7 @@ int compare_name_indices_by_name(const void *a, const void *b)
 {
   const NameIndex *ni_a = (const NameIndex *) a;
   const NameIndex *ni_b = (const NameIndex *) b;
-  return strcmp (ni_a->name, ni_b->name);
+  return ni_a->name.compare(ni_b->name);
 }
 
 std::string CEscape(compat::StringView src);

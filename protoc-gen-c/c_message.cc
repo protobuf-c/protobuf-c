@@ -567,27 +567,26 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
 	"static const ProtobufCFieldDescriptor $lcclassname$__field_descriptors[$n_fields$] =\n"
 	"{\n");
   printer->Indent();
-  const google::protobuf::FieldDescriptor **sorted_fields = new const google::protobuf::FieldDescriptor *[descriptor_->field_count()];
+
+  std::vector<const google::protobuf::FieldDescriptor*> sorted_fields;
   for (int i = 0; i < descriptor_->field_count(); i++) {
-    sorted_fields[i] = descriptor_->field(i);
+    sorted_fields.push_back(descriptor_->field(i));
   }
-  qsort (sorted_fields, descriptor_->field_count(),
+  qsort(&sorted_fields[0], sorted_fields.size(),
        sizeof(const google::protobuf::FieldDescriptor*), 
        compare_pfields_by_number);
-  for (int i = 0; i < descriptor_->field_count(); i++) {
-    const google::protobuf::FieldDescriptor* field = sorted_fields[i];
+  for (auto field : sorted_fields) {
     field_generators_.get(field).GenerateDescriptorInitializer(printer);
   }
   printer->Outdent();
   printer->Print(vars, "};\n");
 
   if (!optimize_code_size) {
-    NameIndex *field_indices = new NameIndex [descriptor_->field_count()];
-    for (int i = 0; i < descriptor_->field_count(); i++) {
-      field_indices[i].name = sorted_fields[i]->name().c_str();
-      field_indices[i].index = i;
+    std::vector<NameIndex> field_indices;
+    for (unsigned i = 0; i < descriptor_->field_count(); i++) {
+      field_indices.push_back({ .index = i, .name = sorted_fields[i]->name() });
     }
-    qsort (field_indices, descriptor_->field_count(), sizeof (NameIndex),
+    qsort(&field_indices[0], field_indices.size(), sizeof(NameIndex),
         compare_name_indices_by_name);
     printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
     for (int i = 0; i < descriptor_->field_count(); i++) {
@@ -596,19 +595,16 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
       printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
     }
     printer->Print("};\n");
-    delete[] field_indices;
   }
 
   // create range initializers
-  int *values = new int[descriptor_->field_count()];
+  std::vector<int> values;
   for (int i = 0; i < descriptor_->field_count(); i++) {
-    values[i] = sorted_fields[i]->number();
+    values.push_back(sorted_fields[i]->number());
   }
   int n_ranges = WriteIntRanges(printer,
-				descriptor_->field_count(), values,
+				descriptor_->field_count(), &values[0],
 				vars["lcclassname"] + "__number_ranges");
-  delete [] values;
-  delete [] sorted_fields;
 
   vars["n_ranges"] = SimpleItoa(n_ranges);
     } else {

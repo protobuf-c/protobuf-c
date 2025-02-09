@@ -184,19 +184,19 @@ void ServiceGenerator::GenerateInit(google::protobuf::io::Printer* printer)
 		 "}\n");
 }
 
-struct MethodIndexAndName { unsigned i; const char *name; };
+struct MethodIndexAndName { unsigned i; compat::StringView name; };
 static int
 compare_method_index_and_name_by_name (const void *a, const void *b)
 {
   const MethodIndexAndName *ma = (const MethodIndexAndName *) a;
   const MethodIndexAndName *mb = (const MethodIndexAndName *) b;
-  return strcmp (ma->name, mb->name);
+  return ma->name.compare(mb->name);
 }
 
 void ServiceGenerator::GenerateServiceDescriptor(google::protobuf::io::Printer* printer)
 {
   int n_methods = descriptor_->method_count();
-  MethodIndexAndName *mi_array = new MethodIndexAndName[n_methods];
+  std::vector<MethodIndexAndName> mi_array;
 
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
@@ -205,7 +205,7 @@ void ServiceGenerator::GenerateServiceDescriptor(google::protobuf::io::Printer* 
   vars_["n_methods"] = SimpleItoa(n_methods);
   printer->Print(vars_, "static const ProtobufCMethodDescriptor $lcfullname$__method_descriptors[$n_methods$] =\n"
                        "{\n");
-  for (int i = 0; i < n_methods; i++) {
+  for (unsigned i = 0; i < n_methods; i++) {
     const google::protobuf::MethodDescriptor* method = descriptor_->method(i);
     vars_["method"] = method->name();
     vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name(), method->input_type()->file()) + "__descriptor";
@@ -217,14 +217,15 @@ void ServiceGenerator::GenerateServiceDescriptor(google::protobuf::io::Printer* 
       printer->Print(vars_,
           "  { \"$method$\", $input_descriptor$, $output_descriptor$ },\n");
     }
-    mi_array[i].i = i;
-    mi_array[i].name = method->name().c_str();
+    mi_array.push_back({i, method->name()});
   }
   printer->Print(vars_, "};\n");
 
   if (!optimize_code_size) {
-    qsort ((void*)mi_array, n_methods, sizeof (MethodIndexAndName),
-        compare_method_index_and_name_by_name);
+    qsort(&mi_array[0],
+          mi_array.size(),
+          sizeof(MethodIndexAndName),
+          compare_method_index_and_name_by_name);
     printer->Print(vars_, "const unsigned $lcfullname$__method_indices_by_name[] = {\n");
     for (int i = 0; i < n_methods; i++) {
       vars_["i"] = SimpleItoa(mi_array[i].i);
@@ -258,8 +259,6 @@ void ServiceGenerator::GenerateServiceDescriptor(google::protobuf::io::Printer* 
         "  $lcfullname$__method_indices_by_name\n"
         "};\n");
   }
-
-  delete[] mi_array;
 }
 
 void ServiceGenerator::GenerateCallersImplementations(google::protobuf::io::Printer* printer)

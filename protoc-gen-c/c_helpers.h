@@ -160,7 +160,7 @@ unsigned WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, co
 struct NameIndex
 {
   unsigned index;
-  const char *name;
+  compat::StringView name;
 };
 int compare_name_indices_by_name(const void*, const void*);
 
