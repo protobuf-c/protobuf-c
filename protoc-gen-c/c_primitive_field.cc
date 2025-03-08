@@ -67,6 +67,7 @@
 
 #include "c_helpers.h"
 #include "c_primitive_field.h"
+#include "compat.h"
 
 namespace protobuf_c {
 

@@ -78,7 +78,7 @@ void SetEnumVariables(const google::protobuf::FieldDescriptor* descriptor,
   (*variables)["type"] = FullNameToC(descriptor->enum_type()->full_name(), descriptor->enum_type()->file());
   const google::protobuf::EnumValueDescriptor* default_value = descriptor->default_value_enum();
   (*variables)["default"] = FullNameToUpper(default_value->type()->full_name(), default_value->type()->file())
-                          + "__" + default_value->name();
+                          + "__" + std::string(default_value->name());
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
 }
 

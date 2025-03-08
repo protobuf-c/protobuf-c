@@ -25,29 +25,34 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <string>
+#ifndef PROTOBUF_C_PROTOC_GEN_C_COMPAT_H__
+#define PROTOBUF_C_PROTOC_GEN_C_COMPAT_H__
 
-#include <google/protobuf/compiler/command_line_interface.h>
-#include <google/protobuf/compiler/plugin.h>
+#if GOOGLE_PROTOBUF_VERSION >= 4022000
+# define GOOGLE_ARRAYSIZE	ABSL_ARRAYSIZE
+# define GOOGLE_CHECK_EQ	ABSL_CHECK_EQ
+# define GOOGLE_DCHECK_GE	ABSL_DCHECK_GE
+# define GOOGLE_LOG		ABSL_LOG
+#endif
 
-#include "c_generator.h"
-#include "c_helpers.h"
-#include "compat.h"
+#if GOOGLE_PROTOBUF_VERSION >= 6030000
+# include <absl/strings/string_view.h>
+#else
+# include <string>
+#endif
 
-int main(int argc, char* argv[]) {
-  protobuf_c::CGenerator c_generator;
+namespace protobuf_c {
 
-  std::string invocation_name = argv[0];
-  std::string invocation_basename = invocation_name.substr(invocation_name.find_last_of("/") + 1);
-  const std::string standalone_name = "protoc-c";
+namespace compat {
 
-  if (invocation_basename == standalone_name) {
-    GOOGLE_LOG(WARNING) << "`protoc-c` is deprecated. Please use `protoc` instead!";
-    google::protobuf::compiler::CommandLineInterface cli;
-    cli.RegisterGenerator("--c_out", &c_generator, "Generate C/H files.");
-    cli.SetVersionInfo(PACKAGE_STRING);
-    return cli.Run(argc, argv);
-  }
+#if GOOGLE_PROTOBUF_VERSION >= 6030000
+typedef absl::string_view StringView;
+#else
+typedef const std::string& StringView;
+#endif
 
-  return google::protobuf::compiler::PluginMain(argc, argv, &c_generator);
-}
+}  // namespace compat
+
+}  // namespace protobuf_c
+
+#endif  // PROTOBUF_C_PROTOC_GEN_C_COMPAT_H__
