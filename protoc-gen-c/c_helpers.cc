@@ -342,7 +342,7 @@ unsigned
 WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, compat::StringView name)
 {
   std::map<std::string, std::string> vars;
-  vars["name"] = name;
+  vars["name"] = std::string(name);
   if (n_values > 0) {
     int n_ranges = 1;
     for (int i = 1; i < n_values; i++) {
