@@ -215,11 +215,11 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
     printer->Print("union {\n");
     printer->Indent();
 
-    std::vector<std::tuple<int, std::string_view, const google::protobuf::FieldDescriptor*>> sorted_fds;
+    std::vector<std::tuple<int, std::string, const google::protobuf::FieldDescriptor*>> sorted_fds;
 
     for (int j = 0; j < oneof->field_count(); j++) {
       const google::protobuf::FieldDescriptor* field = oneof->field(j);
-      std::string_view name = field->name();
+      auto name = std::string(field->name());
       int order = MessageGenerator::GetOneofUnionOrder(field);
       sorted_fds.push_back({order, name, field});
     }
@@ -462,12 +462,12 @@ GenerateHelperFunctionDefinitions(google::protobuf::io::Printer* printer,
 void MessageGenerator::
 GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init) {
   std::map<std::string, std::string> vars;
-  vars["fullname"] = descriptor_->full_name();
+  vars["fullname"] = std::string(descriptor_->full_name());
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["shortname"] = ToCamel(descriptor_->name());
   vars["n_fields"] = SimpleItoa(descriptor_->field_count());
-  vars["packagename"] = descriptor_->file()->package();
+  vars["packagename"] = std::string(descriptor_->file()->package());
 
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
@@ -499,7 +499,7 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
     const ProtobufCFieldOptions opt = fd->options().GetExtension(pb_c_field);
     if (fd->has_default_value()) {
       bool already_defined = false;
-      vars["name"] = fd->name();
+      vars["name"] = std::string(fd->name());
       vars["lcname"] = CamelToLower(fd->name());
       vars["maybe_static"] = "static ";
       vars["field_dv_ctype_suffix"] = "";
@@ -590,7 +590,7 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
       printer->Print(vars, "static const unsigned $lcclassname$__field_indices_by_name[] = {\n");
       for (int i = 0; i < descriptor_->field_count(); i++) {
         vars["index"] = SimpleItoa(field_indices[i].index);
-        vars["name"] = field_indices[i].name;
+        vars["name"] = std::string(field_indices[i].name);
         printer->Print(vars, "  $index$,   /* field[$index$] = $name$ */\n");
       }
       printer->Print("};\n");

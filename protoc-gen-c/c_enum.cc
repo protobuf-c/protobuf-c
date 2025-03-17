@@ -81,7 +81,7 @@ EnumGenerator::~EnumGenerator() {}
 void EnumGenerator::GenerateDefinition(google::protobuf::io::Printer* printer) {
   std::map<std::string, std::string> vars;
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
-  vars["shortname"] = descriptor_->name();
+  vars["shortname"] = std::string(descriptor_->name());
   vars["uc_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
 
   google::protobuf::SourceLocation sourceLoc;
@@ -98,7 +98,7 @@ void EnumGenerator::GenerateDefinition(google::protobuf::io::Printer* printer) {
   vars["opt_comma"] = ",";
   vars["prefix"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file()) + "__";
   for (int i = 0; i < descriptor_->value_count(); i++) {
-    vars["name"] = descriptor_->value(i)->name();
+    vars["name"] = std::string(descriptor_->value(i)->name());
     vars["number"] = SimpleItoa(descriptor_->value(i)->number());
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
@@ -151,7 +151,7 @@ void EnumGenerator::GenerateValueInitializer(google::protobuf::io::Printer *prin
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
     google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
-  vars["enum_value_name"] = vd->name();
+  vars["enum_value_name"] = std::string(vd->name());
   vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file()) + "__" + std::string(vd->name());
   vars["value"] = SimpleItoa(vd->number());
   if (optimize_code_size)
@@ -181,11 +181,11 @@ static int compare_value_indices_by_name(const void *a, const void *b)
 
 void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printer) {
   std::map<std::string, std::string> vars;
-  vars["fullname"] = descriptor_->full_name();
+  vars["fullname"] = std::string(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["cname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
-  vars["shortname"] = descriptor_->name();
-  vars["packagename"] = descriptor_->file()->package();
+  vars["shortname"] = std::string(descriptor_->name());
+  vars["packagename"] = std::string(descriptor_->file()->package());
   vars["value_count"] = SimpleItoa(descriptor_->value_count());
 
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
@@ -281,7 +281,7 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
         "{\n");
     for (int j = 0; j < descriptor_->value_count(); j++) {
       vars["index"] = SimpleItoa(value_index[j].final_index);
-      vars["name"] = value_index[j].name;
+      vars["name"] = std::string(value_index[j].name);
       printer->Print (vars, "  { \"$name$\", $index$ },\n");
     }
     printer->Print(vars, "};\n");
