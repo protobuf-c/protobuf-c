@@ -1,3 +1,9 @@
+# [1.5.2] - 2025-04-06
+
+## What's Changed
+* Chase compatibility issues with Google protobuf 30.0-rc1 by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/762
+* protoc-gen-c: Explicitly construct strings where needed for protobuf 30.x by @edmonds in https://github.com/protobuf-c/protobuf-c/pull/768
+
 # [1.5.1] - 2025-02-01
 
 ## What's Changed
