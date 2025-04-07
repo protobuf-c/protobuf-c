@@ -1,6 +1,6 @@
 set(PACKAGE protobuf-c)
 set(PACKAGE_NAME protobuf-c)
-set(PACKAGE_VERSION 1.5.1)
+set(PACKAGE_VERSION 1.5.2)
 set(PACKAGE_URL https://github.com/protobuf-c/protobuf-c)
 set(PACKAGE_DESCRIPTION "Protocol Buffers implementation in C")
 
