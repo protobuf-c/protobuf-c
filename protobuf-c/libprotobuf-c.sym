@@ -12,6 +12,7 @@ global:
         protobuf_c_message_pack;
         protobuf_c_message_pack_to_buffer;
         protobuf_c_message_unpack;
+        protobuf_c_message_clone;
         protobuf_c_service_descriptor_get_method_by_name;
         protobuf_c_service_destroy;
         protobuf_c_service_generated_init;
