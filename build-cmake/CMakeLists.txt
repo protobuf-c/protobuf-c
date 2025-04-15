@@ -35,7 +35,6 @@ if(BUILD_PROTOC)
   endif()
 endif()
 
-
 find_package(absl CONFIG)
 
 # for static protobuf libraries include the dependencies
