@@ -11,18 +11,28 @@ cmake_policy(SET CMP0112 NEW)
 
 project(protobuf-c C CXX)
 
+# options
+option(BUILD_PROTOC "Build protoc-gen-c" ON)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+  option(BUILD_TESTS "Build tests" ON)
+else()
+  option(BUILD_TESTS "Build tests" OFF)
+endif()
+
 if(MSVC AND NOT BUILD_SHARED_LIBS)
   set(Protobuf_USE_STATIC_LIBS ON)
 endif()
 
-find_package(Protobuf CONFIG)
-if(Protobuf_FOUND)
-  # Keep compatibility with FindProtobuf CMake module
-  set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
-  get_target_property(PROTOBUF_INCLUDE_DIR protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
-else()
-  message(STATUS "Protobuf CMake config not found fallback to Cmake Module")
-  find_package(Protobuf REQUIRED)
+if(BUILD_PROTOC)
+  find_package(Protobuf CONFIG)
+  if(Protobuf_FOUND)
+    # Keep compatibility with FindProtobuf CMake module
+    set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+    get_target_property(PROTOBUF_INCLUDE_DIR protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
+  else()
+    message(STATUS "Protobuf CMake config not found fallback to Cmake Module")
+    find_package(Protobuf REQUIRED)
+  endif()
 endif()
 
 find_package(absl CONFIG)
@@ -42,14 +52,6 @@ if(Protobuf_USE_STATIC_LIBS)
       $<TARGET_NAME_IF_EXISTS:utf8_range::utf8_range>)
 elseif(WIN32)
   set(protobuf_ABSL_USED_TARGETS $<TARGET_NAME_IF_EXISTS:absl::abseil_dll>)
-endif()
-
-# options
-option(BUILD_PROTOC "Build protoc-gen-c" ON)
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-  option(BUILD_TESTS "Build tests" ON)
-else()
-  option(BUILD_TESTS "Build tests" OFF)
 endif()
 
 include(TestBigEndian)
