@@ -37,7 +37,6 @@ endif()
 
 
 find_package(absl CONFIG)
-find_package(GTest CONFIG)
 
 # for static protobuf libraries include the dependencies
 if(Protobuf_USE_STATIC_LIBS)
