@@ -79,6 +79,9 @@ extend google.protobuf.MessageOptions {
 message ProtobufCFieldOptions {
     // Treat string as bytes in generated code
     optional bool string_as_bytes = 1 [default = false];
+    
+    // Custom name in JSON serialization
+    optional string json_name = 2;
 }
 
 extend google.protobuf.FieldOptions {

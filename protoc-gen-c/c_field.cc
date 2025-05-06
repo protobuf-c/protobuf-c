@@ -200,6 +200,14 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
   printer->Print(variables, "  $descriptor_addr$,\n");
   printer->Print(variables, "  $default_value$,\n");
   printer->Print(variables, "  $flags$,             /* flags */\n");
+  
+  if (descriptor_->has_json_name()) {
+    std::string json_name = descriptor_->json_name();
+    printer->Print("  \"$json_name$\",  /* json_name */\n", "json_name", json_name);
+  } else {
+    printer->Print("  NULL,  /* json_name */\n");
+  }
+  
   printer->Print(variables, "  0,NULL,NULL    /* reserved1,reserved2, etc */\n");
   printer->Print("},\n");
 }
