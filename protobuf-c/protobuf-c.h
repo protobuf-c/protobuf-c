@@ -610,13 +610,12 @@ struct ProtobufCFieldDescriptor {
 	 */
 	uint32_t		flags;
 
-	/** The JSON name for this field, if specified by json_name option. May be NULL. */
-	const char		*json_name;
-
 	/** Reserved for future use. */
 	unsigned		reserved_flags;
-	/** Reserved for future use. */
-	void			*reserved2;
+
+	/** The JSON name for this field, if specified by json_name option. May be NULL. */
+	const char		*json_name;
+	
 	/** Reserved for future use. */
 	void			*reserved3;
 };
