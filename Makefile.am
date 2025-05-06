@@ -358,7 +358,7 @@ t_json_name_json_name_SOURCES = \
 t_json_name_json_name_LDADD = \
 	protobuf-c/libprotobuf-c.la
 t/json_name/json_name.pb-c.c t/json_name/json_name.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/json_name/json_name.proto
-	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/json_name/json_name.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=json_name=true:$(top_builddir) $(top_srcdir)/t/json_name/json_name.proto
 BUILT_SOURCES += \
 	t/json_name/json_name.pb-c.c t/json_name/json_name.pb-c.h
 EXTRA_DIST += \

@@ -83,10 +83,12 @@
 namespace protobuf_c {
 
 MessageGenerator::MessageGenerator(const google::protobuf::Descriptor* descriptor,
-                                   const std::string& dllexport_decl)
+                                   const std::string& dllexport_decl,
+                                   bool json_name)
   : descriptor_(descriptor),
     dllexport_decl_(dllexport_decl),
-    field_generators_(descriptor),
+    json_name_(json_name),
+    field_generators_(descriptor, json_name),
     nested_generators_(new std::unique_ptr<MessageGenerator>[
       descriptor->nested_type_count()]),
     enum_generators_(new std::unique_ptr<EnumGenerator>[
@@ -96,7 +98,7 @@ MessageGenerator::MessageGenerator(const google::protobuf::Descriptor* descripto
 
   for (int i = 0; i < descriptor->nested_type_count(); i++) {
     nested_generators_[i].reset(
-      new MessageGenerator(descriptor->nested_type(i), dllexport_decl));
+      new MessageGenerator(descriptor->nested_type(i), dllexport_decl, json_name));
   }
 
   for (int i = 0; i < descriptor->enum_type_count(); i++) {

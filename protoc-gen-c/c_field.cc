@@ -201,7 +201,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
   printer->Print(variables, "  $default_value$,\n");
   printer->Print(variables, "  $flags$,             /* flags */\n");
   
-  if (descriptor_->has_json_name()) {
+  if (json_name_ && descriptor_->has_json_name()) {
     std::string json_name = descriptor_->json_name();
     printer->Print("  \"$json_name$\",  /* json_name */\n", "json_name", json_name);
   } else {
@@ -212,8 +212,9 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
   printer->Print("},\n");
 }
 
-FieldGeneratorMap::FieldGeneratorMap(const google::protobuf::Descriptor* descriptor)
+FieldGeneratorMap::FieldGeneratorMap(const google::protobuf::Descriptor* descriptor, bool json_name)
   : descriptor_(descriptor),
+    json_name_(json_name),
     field_generators_(
       new std::unique_ptr<FieldGenerator>[descriptor->field_count()]) {
   // Construct all the FieldGenerators.
@@ -224,23 +225,37 @@ FieldGeneratorMap::FieldGeneratorMap(const google::protobuf::Descriptor* descrip
 
 FieldGenerator* FieldGeneratorMap::MakeGenerator(const google::protobuf::FieldDescriptor* field) {
   const ProtobufCFieldOptions opt = field->options().GetExtension(pb_c_field);
+  FieldGenerator* generator = nullptr;
+  
   switch (field->type()) {
     case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
-      return new MessageFieldGenerator(field);
+      generator = new MessageFieldGenerator(field);
+      break;
     case google::protobuf::FieldDescriptor::TYPE_STRING:
       if (opt.string_as_bytes())
-        return new BytesFieldGenerator(field);
+        generator = new BytesFieldGenerator(field);
       else
-        return new StringFieldGenerator(field);
+        generator = new StringFieldGenerator(field);
+      break;
     case google::protobuf::FieldDescriptor::TYPE_BYTES:
-      return new BytesFieldGenerator(field);
+      generator = new BytesFieldGenerator(field);
+      break;
     case google::protobuf::FieldDescriptor::TYPE_ENUM:
-      return new EnumFieldGenerator(field);
+      generator = new EnumFieldGenerator(field);
+      break;
     case google::protobuf::FieldDescriptor::TYPE_GROUP:
       return 0;			// XXX
     default:
-      return new PrimitiveFieldGenerator(field);
+      generator = new PrimitiveFieldGenerator(field);
+      break;
   }
+  
+  // Set the json_name flag directly in the base class
+  if (generator) {
+    generator->json_name_ = json_name_;
+  }
+  
+  return generator;
 }
 
 FieldGeneratorMap::~FieldGeneratorMap() {}

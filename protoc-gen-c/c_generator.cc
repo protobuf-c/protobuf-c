@@ -131,10 +131,13 @@ bool CGenerator::Generate(const google::protobuf::FileDescriptor* file,
   // FOO_EXPORT is a macro which should expand to __declspec(dllexport) or
   // __declspec(dllimport) depending on what is being compiled.
   std::string dllexport_decl;
+  bool json_name = false; // Default to false for backward compatibility
 
   for (unsigned i = 0; i < options.size(); i++) {
     if (options[i].first == "dllexport_decl") {
       dllexport_decl = options[i].second;
+    } else if (options[i].first == "json_name") {
+      json_name = options[i].second == "true" || options[i].second == "1";
     } else {
       *error = "Unknown generator option: " + options[i].first;
       return false;
@@ -147,7 +150,7 @@ bool CGenerator::Generate(const google::protobuf::FileDescriptor* file,
   std::string basename = StripProto(file->name());
   basename.append(".pb-c");
 
-  FileGenerator file_generator(file, dllexport_decl);
+  FileGenerator file_generator(file, dllexport_decl, json_name);
 
   // Generate header.
   {
