@@ -79,7 +79,8 @@ namespace protobuf_c {
 // ===================================================================
 
 FileGenerator::FileGenerator(const google::protobuf::FileDescriptor* file,
-                             const std::string& dllexport_decl)
+                             const std::string& dllexport_decl,
+                             bool json_name)
   : file_(file),
     message_generators_(
       new std::unique_ptr<MessageGenerator>[file->message_type_count()]),
@@ -92,7 +93,7 @@ FileGenerator::FileGenerator(const google::protobuf::FileDescriptor* file,
 
   for (int i = 0; i < file->message_type_count(); i++) {
     message_generators_[i].reset(
-      new MessageGenerator(file->message_type(i), dllexport_decl));
+      new MessageGenerator(file->message_type(i), dllexport_decl, json_name));
   }
 
   for (int i = 0; i < file->enum_type_count(); i++) {

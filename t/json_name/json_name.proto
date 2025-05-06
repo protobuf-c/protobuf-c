@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+message JsonNames {
+	string regular_field_a = 1 [json_name = "customNameA"];
+	int32 regular_field_b = 2 [json_name = "customNameB"];
+
+	string no_json_name = 3;
+
+	oneof test_oneof {
+		bool oneof_field_a = 10 [json_name = "oneofCustomA"];
+		string oneof_field_b = 11 [json_name = "oneofCustomB"];
+		int64 oneof_field_c = 12 [json_name = "oneofCustomC"];
+	}
+
+	map<string, string> map_field = 20 [json_name = "customMap"];
+	repeated double numbers = 21 [json_name = "numberArray"];
+
+	string default_string = 30;
+	bytes bytes_field = 31 [json_name = "bytesCustom"];
+
+	message Nested {
+		string nested_field = 1 [json_name = "nestedCustom"];
+	}
+	Nested nested_message = 40 [json_name = "nestedMsg"];
+}

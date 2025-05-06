@@ -74,7 +74,8 @@ namespace protobuf_c {
 
 class FieldGenerator {
  public:
-  explicit FieldGenerator(const google::protobuf::FieldDescriptor *descriptor) : descriptor_(descriptor) {}
+  explicit FieldGenerator(const google::protobuf::FieldDescriptor *descriptor, bool json_name = false) 
+    : descriptor_(descriptor), json_name_(json_name) {}
   virtual ~FieldGenerator();
 
   // Generate definitions to be included in the structure.
@@ -97,21 +98,26 @@ class FieldGenerator {
                                             const std::string &type_macro,
                                             const std::string &descriptor_addr) const;
   const google::protobuf::FieldDescriptor *descriptor_;
+  bool json_name_;
+  
+  // Allow FieldGeneratorMap to access json_name_
+  friend class FieldGeneratorMap;
 };
 
 // Convenience class which constructs FieldGenerators for a Descriptor.
 class FieldGeneratorMap {
  public:
-  explicit FieldGeneratorMap(const google::protobuf::Descriptor* descriptor);
+  explicit FieldGeneratorMap(const google::protobuf::Descriptor* descriptor, bool json_name = false);
   ~FieldGeneratorMap();
 
   const FieldGenerator& get(const google::protobuf::FieldDescriptor* field) const;
 
  private:
   const google::protobuf::Descriptor* descriptor_;
+  bool json_name_;
   std::unique_ptr<std::unique_ptr<FieldGenerator>[]> field_generators_;
 
-  static FieldGenerator* MakeGenerator(const google::protobuf::FieldDescriptor* field);
+  FieldGenerator* MakeGenerator(const google::protobuf::FieldDescriptor* field);
 };
 
 }  // namespace protobuf_c
