@@ -1,0 +1,5 @@
+test_case_id,section_id,title,requirement_id,priority,type,estimate,preconditions,steps,expected_results,labels
+AC-FULL-001,AS-FULL-001,Test SubSubMess Defaults,FR-FULL-001,High,Unit,1m,Protobuf message initialized,Initialize SubSubMess,Default values match,unit,protobuf
+AC-FULL-002,AS-FULL-001,Test SubMess Roundtrip,FR-FULL-002,High,Unit,1m,Protobuf message initialized,Fill SubMess|Serialize|Deserialize,Messages equal,unit,protobuf
+AC-FULL-003,AS-FULL-001,Test SubSubMess Unicode,FR-FULL-003,High,Unit,1m,Protobuf message initialized,Fill with unicode|Serialize|Deserialize,Messages equal,unit,protobuf
+AC-FULL-004,AS-FULL-001,Test SubMess Required,FR-FULL-004,High,Unit,1m,Protobuf message initialized,Check IsInitialized before/after setting test,Correct initialization,unit,protobuf
