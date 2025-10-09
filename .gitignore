@@ -41,3 +41,6 @@ t/version/version
 *.pb-c.h
 *.pb.cc
 *.pb.h
+t/python/.pytest_cache
+t/python/.venv
+.idea

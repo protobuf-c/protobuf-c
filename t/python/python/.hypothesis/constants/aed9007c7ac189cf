@@ -1,0 +1,4 @@
+# file: /Users/calatesting/Documents/GitHub/embESP32/libraries/protobuf-c/t/python/proto3/foo_pb2.py
+# hypothesis_version: 6.140.2
+
+[119, 237, 263, 265, 308, 310, 353, 355, 375, 377, 428, '_DIRLOOKUP', '_LOOKUPRESULT', '_NAME', '_PERSON', '_PERSON_PHONENUMBER', '_PERSON_PHONETYPE', 'test-proto3.proto', 'test_proto3_pb2']

@@ -1,0 +1,2 @@
+suite_id,title,description,module,test_case_ids,labels
+AS-OPT-001,Optimized Proto Tests,Tests for test-optimized.proto,Optimized,"AC-OPT-001,AC-OPT-002","optimized,protobuf"

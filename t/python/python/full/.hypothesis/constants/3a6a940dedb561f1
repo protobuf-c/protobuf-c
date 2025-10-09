@@ -1,0 +1,4 @@
+# file: /Users/calatesting/Documents/GitHub/embESP32/libraries/protobuf-c/t/python/common/protobuf_c_pb2.py
+# hypothesis_version: 6.140.2
+
+[b'\xda?\x02\x08\x01', 255, 257, 378, 380, 435, 'DESCRIPTOR', 'protobuf-c.proto', 'protobuf_c_pb2']

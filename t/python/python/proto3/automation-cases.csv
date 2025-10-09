@@ -1,0 +1,3 @@
+test_case_id,section_id,title,requirement_id,priority,type,estimate,preconditions,steps,expected_results,labels
+AC-PROTO3-001,AS-PROTO3-001,Test Person Defaults,FR-PROTO3-001,High,Unit,1m,Protobuf message initialized,Initialize Person,Default values match,"unit,protobuf"
+AC-PROTO3-002,AS-PROTO3-001,Test Person Roundtrip,FR-PROTO3-002,High,Unit,1m,Protobuf message initialized,Fill Person|Serialize|Deserialize,Messages equal,"unit,protobuf"

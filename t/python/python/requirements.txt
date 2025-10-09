@@ -1,0 +1,5 @@
+pytest>=7.4
+protobuf==6.32.1
+pytest-cov>=4.1
+hypothesis>=6.82
+pytest-xdist>=3.8.0
