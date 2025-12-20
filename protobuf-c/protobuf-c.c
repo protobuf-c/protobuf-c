@@ -1888,6 +1888,7 @@ pack_buffer_packed_payload(const ProtobufCFieldDescriptor *field,
 		for (i = 0; i < count; i++) {
 			unsigned len = boolean_pack(((protobuf_c_boolean *) array)[i], scratch);
 			buffer->append(buffer, len, scratch);
+			rv += len;
 		}
 		return count;
 	default:
