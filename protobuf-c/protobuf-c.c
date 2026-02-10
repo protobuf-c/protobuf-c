@@ -1021,7 +1021,8 @@ binary_data_pack(const ProtobufCBinaryData *bd, uint8_t *out)
 {
 	size_t len = bd->len;
 	size_t rv = uint32_pack(len, out);
-	memcpy(out + rv, bd->data, len);
+	if (len > 0)
+		memcpy(out + rv, bd->data, len);
 	return rv + len;
 }
 
