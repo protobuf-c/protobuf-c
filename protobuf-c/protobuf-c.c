@@ -1021,7 +1021,8 @@ binary_data_pack(const ProtobufCBinaryData *bd, uint8_t *out)
 {
 	size_t len = bd->len;
 	size_t rv = uint32_pack(len, out);
-	memcpy(out + rv, bd->data, len);
+	if (len > 0)
+		memcpy(out + rv, bd->data, len);
 	return rv + len;
 }
 
@@ -2082,10 +2083,10 @@ parse_tag_and_wiretype(size_t len,
 	}
 	for (rv = 1; rv < max_rv; rv++) {
 		if (data[rv] & 0x80) {
-			tag |= (data[rv] & 0x7f) << shift;
+			tag |= (uint32_t)(data[rv] & 0x7f) << shift;
 			shift += 7;
 		} else {
-			tag |= data[rv] << shift;
+			tag |= (uint32_t)data[rv] << shift;
 			*tag_out = tag;
 			return rv + 1;
 		}
