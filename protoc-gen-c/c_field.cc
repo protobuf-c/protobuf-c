@@ -125,11 +125,11 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
     variables["oneofname"] = CamelToLower(oneof->name());
 
   if (FieldSyntax(descriptor_) == 3 &&
-    descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_OPTIONAL) {
+    FieldLabel(descriptor_) == google::protobuf::FieldDescriptor::LABEL_OPTIONAL) {
     variables["LABEL"] = "NONE";
     optional_uses_has = false;
   } else {
-    variables["LABEL"] = CamelToUpper(GetLabelName(descriptor_->label()));
+    variables["LABEL"] = CamelToUpper(GetLabelName(FieldLabel(descriptor_)));
   }
 
   if (descriptor_->has_default_value()) {
@@ -145,11 +145,11 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
 
   variables["flags"] = "0";
 
-  if (descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_REPEATED
+  if (FieldLabel(descriptor_) == google::protobuf::FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
    && descriptor_->options().packed()) {
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
-  } else if (descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_REPEATED
+  } else if (FieldLabel(descriptor_) == google::protobuf::FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
    && FieldSyntax(descriptor_) == 3
    && !descriptor_->options().has_packed()) {
@@ -179,7 +179,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
     "  $value$,\n"
     "  PROTOBUF_C_LABEL_$LABEL$,\n"
     "  PROTOBUF_C_TYPE_$TYPE$,\n");
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables, "  0,   /* quantifier_offset */\n");
       break;

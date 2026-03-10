@@ -109,7 +109,7 @@ void PrimitiveFieldGenerator::GenerateStructMembers(google::protobuf::io::Printe
   vars["name"] = FieldName(descriptor_);
   vars["deprecated"] = FieldDeprecated(descriptor_);
 
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
       break;
@@ -156,7 +156,7 @@ void PrimitiveFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* 
   } else {
     vars["default_value"] = "0";
   }
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(vars, "$default_value$");
       break;

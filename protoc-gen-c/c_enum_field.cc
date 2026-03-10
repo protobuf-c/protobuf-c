@@ -95,7 +95,7 @@ EnumFieldGenerator::~EnumFieldGenerator() {}
 
 void EnumFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
 {
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$type$ $name$$deprecated$;\n");
       break;
@@ -117,7 +117,7 @@ std::string EnumFieldGenerator::GetDefaultValue(void) const
 }
 void EnumFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$default$");
       break;

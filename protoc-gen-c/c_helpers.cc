@@ -338,6 +338,17 @@ std::string GetLabelName(google::protobuf::FieldDescriptor::Label label) {
   return "bad-label";
 }
 
+google::protobuf::FieldDescriptor::Label FieldLabel(
+    const google::protobuf::FieldDescriptor* field) {
+  if (field->is_repeated()) {
+    return google::protobuf::FieldDescriptor::LABEL_REPEATED;
+  }
+  if (field->is_required()) {
+    return google::protobuf::FieldDescriptor::LABEL_REQUIRED;
+  }
+  return google::protobuf::FieldDescriptor::LABEL_OPTIONAL;
+}
+
 unsigned
 WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, compat::StringView name)
 {
