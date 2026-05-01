@@ -3241,7 +3241,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			    STRUCT_MEMBER_PTR(size_t, rv,
 					      field->quantifier_offset);
 			if (*n_ptr != 0) {
-				unsigned n = *n_ptr;
+				size_t n = *n_ptr;
 				void *a;
 				*n_ptr = 0;
 				assert(rv->descriptor != NULL);
@@ -3252,6 +3252,28 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
                   if (field->label == PROTOBUF_C_LABEL_REPEATED)              \
                     STRUCT_MEMBER (size_t, rv, field->quantifier_offset) = 0; \
                 }
+				/*
+				 * Boundary check: ensure siz * n does not
+				 * overflow size_t before allocation. Without
+				 * this guard, a large repeated-field count
+				 * (caller- or attacker-supplied via a streamed
+				 * message) could silently produce an undersized
+				 * allocation, followed by out-of-bounds writes
+				 * during the real-parse phase below.
+				 *
+				 * Also note: `n` is now `size_t` (was `unsigned`)
+				 * to faithfully carry the value of `*n_ptr`,
+				 * which is `size_t`. The previous narrowing to
+				 * `unsigned` could itself have hidden a similar
+				 * issue on 64-bit platforms.
+				 */
+				if (siz != 0 && n > SIZE_MAX / siz) {
+					CLEAR_REMAINING_N_PTRS();
+					PROTOBUF_C_UNPACK_ERROR(
+					    "message '%s': repeated field '%s' count overflow",
+					    desc->name, field->name);
+					goto error_cleanup;
+				}
 				a = do_alloc(allocator, siz * n);
 				if (!a) {
 					CLEAR_REMAINING_N_PTRS();
