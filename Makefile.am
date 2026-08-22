@@ -347,6 +347,23 @@ BUILT_SOURCES += \
 EXTRA_DIST += \
 	t/issue745/issue745.proto
 
+# Issue #804
+check_PROGRAMS += \
+	t/issue804/issue804
+TESTS += \
+	t/issue804/issue804
+t_issue804_issue804_SOURCES = \
+	t/issue804/issue804.c \
+	t/issue804/issue804.pb-c.c
+t_issue804_issue804_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/issue804/issue804.pb-c.c t/issue804/issue804.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue804/issue804.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue804/issue804.proto
+BUILT_SOURCES += \
+	t/issue804/issue804.pb-c.c t/issue804/issue804.pb-c.h
+EXTRA_DIST += \
+	t/issue804/issue804.proto
+
 endif # CROSS_COMPILING
 
 endif # BUILD_COMPILER
