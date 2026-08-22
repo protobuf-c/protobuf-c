@@ -1,0 +1,10 @@
+syntax = "proto3";
+import "protobuf-c/protobuf-c.proto";
+
+message M {
+  option (pb_c_msg).gen_init_helpers = false;
+  oneof o {
+    int32 a = 1;
+    string b = 2;
+  }
+}
