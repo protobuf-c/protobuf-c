@@ -65,24 +65,52 @@ test_compare_pack_methods (ProtobufCMessage *message,
                            size_t *packed_len_out,
                            uint8_t **packed_out)
 {
-  unsigned char scratch[16];
-  ProtobufCBufferSimple bs = PROTOBUF_C_BUFFER_SIMPLE_INIT (scratch);
-  size_t siz1 = protobuf_c_message_get_packed_size (message);
-  size_t siz2;
-  size_t siz3 = protobuf_c_message_pack_to_buffer (message, &bs.base);
-  void *packed1 = malloc (siz1);
-  void *rv;
-  assert (packed1 != NULL);
-  assert (siz1 == siz3);
-  siz2 = protobuf_c_message_pack (message, packed1);
-  assert (siz1 == siz2);
-  assert (bs.len == siz1);
-  assert (memcmp (bs.data, packed1, siz1) == 0);
-  rv = protobuf_c_message_unpack (message->descriptor, NULL, siz1, packed1);
+  unsigned char scratch_ori[16];
+  unsigned char scratch_clone[16];
+  ProtobufCBufferSimple bs_for_ori = PROTOBUF_C_BUFFER_SIMPLE_INIT(scratch_ori);
+  ProtobufCBufferSimple bs_for_clone = PROTOBUF_C_BUFFER_SIMPLE_INIT(scratch_clone);
+  ProtobufCMessage *msg_clone = protobuf_c_message_clone(message, NULL);
+  assert(msg_clone != NULL);
+
+  size_t siz_ori_packed = protobuf_c_message_get_packed_size(message);
+  assert(siz_ori_packed == protobuf_c_message_get_packed_size(msg_clone));
+
+  size_t siz_ori_buf = protobuf_c_message_pack_to_buffer(message, &bs_for_ori.base);
+  assert(siz_ori_buf == siz_ori_packed);
+  assert(siz_ori_buf == protobuf_c_message_pack_to_buffer(msg_clone, &bs_for_clone.base));
+  assert(bs_for_ori.len == siz_ori_packed);
+  assert(bs_for_clone.len == siz_ori_packed);
+
+  void *packed1 = malloc(siz_ori_packed);
+  assert(packed1 != NULL);
+  void *packed2 = malloc(siz_ori_packed);
+  assert(packed2 != NULL);
+
+  size_t siz_pkt1 = protobuf_c_message_pack(message, packed1);
+  size_t siz_pkt2 = protobuf_c_message_pack(msg_clone, packed2);
+  assert(siz_ori_packed == siz_pkt1);
+  assert(siz_ori_packed == siz_pkt2);
+
+  assert(memcmp(bs_for_ori.data, packed1, siz_ori_packed) == 0);
+  assert(memcmp(bs_for_ori.data, packed2, siz_ori_packed) == 0);
+  assert(memcmp(bs_for_ori.data, bs_for_clone.data, siz_ori_packed) == 0);
+
+  void *rv = protobuf_c_message_unpack(message->descriptor, NULL, siz_ori_packed, packed1);
   assert (rv != NULL);
-  PROTOBUF_C_BUFFER_SIMPLE_CLEAR (&bs);
-  *packed_len_out = siz1;
-  *packed_out = packed1;
+
+  PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&bs_for_ori);
+  PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&bs_for_clone);
+  protobuf_c_message_free_unpacked(msg_clone, NULL);
+  free(packed2);
+  if (packed_out) {
+    *packed_out = packed1;
+    if (packed_len_out) {
+      *packed_len_out = siz_ori_packed;
+    }
+  }
+  else {
+    free(packed1);
+  }
   return rv;
 }
 
