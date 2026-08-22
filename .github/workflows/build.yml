@@ -86,6 +86,28 @@ jobs:
             ./configure
             make -j3 distcheck VERBOSE=1
 
+  sanitizers:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout protobuf-c
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y \
+            libprotobuf-dev \
+            libprotoc-dev \
+            protobuf-compiler \
+          ;
+
+      - name: Run distcheck with sanitizers
+        run: |
+          ./autogen.sh
+          ./configure CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all"
+          make -j${nproc} distcheck VERBOSE=1
+
   valgrind:
     runs-on: ubuntu-24.04
 
