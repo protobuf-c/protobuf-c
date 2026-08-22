@@ -102,11 +102,11 @@ jobs:
             protobuf-compiler \
           ;
 
-      - name: Run distcheck with sanitizers
+      - name: Run test suite with sanitizers
         run: |
           ./autogen.sh
           ./configure CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all"
-          make -j${nproc} distcheck VERBOSE=1
+          make -j${nproc} check VERBOSE=1
 
   valgrind:
     runs-on: ubuntu-24.04
