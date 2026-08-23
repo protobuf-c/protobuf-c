@@ -94,7 +94,7 @@ BytesFieldGenerator::~BytesFieldGenerator() {}
 
 void BytesFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* printer) const
 {
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "ProtobufCBinaryData $name$$deprecated$;\n");
       break;
@@ -135,7 +135,7 @@ std::string BytesFieldGenerator::GetDefaultValue(void) const
 }
 void BytesFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
       printer->Print(variables_, "$default_value$");
       break;

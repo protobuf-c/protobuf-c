@@ -94,7 +94,7 @@ void StringFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* 
 {
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
 
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       if (opt.const_strings())
@@ -138,7 +138,7 @@ void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* pri
   } else {
     vars["default"] = "(char *)protobuf_c_empty_string";
   }
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       printer->Print(vars, "$default$");

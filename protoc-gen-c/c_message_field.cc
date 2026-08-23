@@ -83,7 +83,7 @@ void MessageFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer*
   vars["name"] = FieldName(descriptor_);
   vars["type"] = FullNameToC(descriptor_->message_type()->full_name(), descriptor_->message_type()->file());
   vars["deprecated"] = FieldDeprecated(descriptor_);
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       printer->Print(vars, "$type$ *$name$$deprecated$;\n");
@@ -103,7 +103,7 @@ std::string MessageFieldGenerator::GetDefaultValue(void) const
 }
 void MessageFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
-  switch (descriptor_->label()) {
+  switch (FieldLabel(descriptor_)) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
       printer->Print("NULL");

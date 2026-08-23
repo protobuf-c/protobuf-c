@@ -153,6 +153,11 @@ std::string FilenameIdentifier(compat::StringView filename);
 // return 'required', 'optional', or 'repeated'
 std::string GetLabelName(google::protobuf::FieldDescriptor::Label label);
 
+// Returns the field label in a way that is compatible with protobuf versions
+// where FieldDescriptor::label() is unavailable.
+google::protobuf::FieldDescriptor::Label FieldLabel(
+  const google::protobuf::FieldDescriptor* field);
+
 // write IntRanges entries for a bunch of sorted values.
 // returns the number of ranges there are to bsearch.
 unsigned WriteIntRanges(google::protobuf::io::Printer* printer, int n_values, const int *values, compat::StringView name);
