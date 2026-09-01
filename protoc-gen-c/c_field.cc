@@ -110,7 +110,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
 							  const std::string &descriptor_addr) const
 {
   std::map<std::string, std::string> variables;
-  const google::protobuf::OneofDescriptor *oneof = descriptor_->containing_oneof();
+  const google::protobuf::OneofDescriptor *oneof = descriptor_->real_containing_oneof();
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
   variables["TYPE"] = type_macro;
   variables["classname"] = FullNameToC(FieldScope(descriptor_)->full_name(), FieldScope(descriptor_)->file());
@@ -125,7 +125,8 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
     variables["oneofname"] = CamelToLower(oneof->name());
 
   if (FieldSyntax(descriptor_) == 3 &&
-    descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_OPTIONAL) {
+    descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_OPTIONAL &&
+    !descriptor_->has_presence()) {
     variables["LABEL"] = "NONE";
     optional_uses_has = false;
   } else {

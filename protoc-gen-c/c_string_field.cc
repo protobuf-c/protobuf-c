@@ -97,6 +97,10 @@ void StringFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* 
   switch (descriptor_->label()) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
+      if (descriptor_->real_containing_oneof() == NULL &&
+          descriptor_->has_presence()) {
+        printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
+      }
       if (opt.const_strings())
         printer->Print(variables_, "const ");
       printer->Print(variables_, "char *$name$$deprecated$;\n");
@@ -141,6 +145,8 @@ void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* pri
   switch (descriptor_->label()) {
     case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
+      if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence())
+        printer->Print(variables_, "0, ");
       printer->Print(vars, "$default$");
       break;
     case google::protobuf::FieldDescriptor::LABEL_REPEATED:
@@ -150,7 +156,7 @@ void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* pri
 }
 void StringFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
 {
-  GenerateDescriptorInitializerGeneric(printer, false, "STRING", "NULL");
+  GenerateDescriptorInitializerGeneric(printer, true, "STRING", "NULL");
 }
 
 }  // namespace protobuf_c

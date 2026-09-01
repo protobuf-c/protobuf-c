@@ -114,7 +114,7 @@ void PrimitiveFieldGenerator::GenerateStructMembers(google::protobuf::io::Printe
       printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
       break;
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->containing_oneof() == NULL && FieldSyntax(descriptor_) == 2)
+      if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence())
         printer->Print(vars, "protobuf_c_boolean has_$name$$deprecated$;\n");
       printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
       break;
@@ -161,7 +161,7 @@ void PrimitiveFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* 
       printer->Print(vars, "$default_value$");
       break;
     case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-      if (FieldSyntax(descriptor_) == 2)
+      if (descriptor_->has_presence())
         printer->Print(vars, "0, ");
       printer->Print(vars, "$default_value$");
       break;

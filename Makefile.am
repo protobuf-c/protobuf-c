@@ -330,6 +330,23 @@ BUILT_SOURCES += \
 EXTRA_DIST += \
 	t/issue440/issue440.proto
 
+# Issue #476
+check_PROGRAMS += \
+	t/issue476/issue476
+TESTS += \
+	t/issue476/issue476
+t_issue476_issue476_SOURCES = \
+	t/issue476/issue476.c \
+	t/issue476/issue476.pb-c.c
+t_issue476_issue476_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/issue476/issue476.pb-c.c t/issue476/issue476.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/issue476/issue476.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/issue476/issue476.proto
+BUILT_SOURCES += \
+	t/issue476/issue476.pb-c.c t/issue476/issue476.pb-c.h
+EXTRA_DIST += \
+	t/issue476/issue476.proto
+
 # Issue #745
 check_PROGRAMS += \
 	t/issue745/issue745

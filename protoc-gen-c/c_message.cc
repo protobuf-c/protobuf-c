@@ -152,7 +152,7 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
   }
 
   // Generate the case enums for unions
-  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+  for (int i = 0; i < descriptor_->real_oneof_decl_count(); i++) {
     const google::protobuf::OneofDescriptor* oneof = descriptor_->oneof_decl(i);
     vars["opt_comma"] = ",";
 
@@ -194,7 +194,7 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
   printer->Indent();
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const google::protobuf::FieldDescriptor* field = descriptor_->field(i);
-    if (field->containing_oneof() == NULL) {
+    if (field->real_containing_oneof() == NULL) {
       google::protobuf::SourceLocation fieldSourceLoc;
       field->GetSourceLocation(&fieldSourceLoc);
 
@@ -205,7 +205,7 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
   }
 
   // Generate unions from oneofs.
-  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+  for (int i = 0; i < descriptor_->real_oneof_decl_count(); i++) {
     const google::protobuf::OneofDescriptor* oneof = descriptor_->oneof_decl(i);
     vars["oneofname"] = CamelToLower(oneof->name());
     vars["foneofname"] = FullNameToC(oneof->full_name(), oneof->file());
@@ -255,13 +255,13 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
 
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const google::protobuf::FieldDescriptor* field = descriptor_->field(i);
-    if (field->containing_oneof() == NULL) {
+    if (field->real_containing_oneof() == NULL) {
       printer->Print(", ");
       field_generators_.get(field).GenerateStaticInit(printer);
     }
   }
 
-  for (int i = 0; i < descriptor_->oneof_decl_count(); i++) {
+  for (int i = 0; i < descriptor_->real_oneof_decl_count(); i++) {
     const google::protobuf::OneofDescriptor* oneof = descriptor_->oneof_decl(i);
     vars["foneofname"] = FullNameToUpper(oneof->full_name(), oneof->file());
 

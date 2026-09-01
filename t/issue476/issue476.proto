@@ -1,0 +1,44 @@
+// File: optional_test.proto
+syntax = "proto3";
+
+// Nested message to cover nested case
+message Nested {
+  optional int32 nid = 1;
+}
+
+// Enum to cover enum optional
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  RED = 1;
+  GREEN = 2;
+  BLUE = 3;
+}
+
+// A message exercising proto3 `optional` on many scalar types plus nested, enum, oneof and repeated.
+message TestOptional {
+  // Scalar optional fields
+  optional int32 opt_int32 = 1;
+  optional int64 opt_int64 = 2;
+  optional uint32 opt_uint32 = 3;
+  optional uint64 opt_uint64 = 4;
+  optional sint32 opt_sint32 = 5;
+  optional sint64 opt_sint64 = 6;
+  optional bool opt_bool = 7;
+  optional float opt_float = 8;
+  optional double opt_double = 9;
+  optional string opt_string = 10;
+  optional bytes opt_bytes = 11;
+
+  // Optional nested message and enum
+  optional Nested opt_nested = 12;
+  optional Color opt_color = 13;
+
+  // oneof (presence tracked via generated union + case enum)
+  oneof opt_oneof {
+    int32 o_int = 14;
+    string o_str = 15;
+  }
+
+  // repeated field (not optional, but included to test arrays)
+  repeated int32 rep_int32 = 16;
+}
