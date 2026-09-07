@@ -2748,7 +2748,12 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 	const ProtobufCFieldDescriptor *field = scanned_member->field;
 	size_t *p_n = STRUCT_MEMBER_PTR(size_t, message, field->quantifier_offset);
 	size_t siz = sizeof_elt_in_repeated_array(field->type);
-	void *array = *(char **) member + siz * (*p_n);
+	char *base = *(char **) member;
+	/* Adding a zero byte offset to a null pointer is undefined behavior
+	 * even though the result is never dereferenced when *p_n is 0 (an
+	 * empty packed field never allocates its array). Only advance the
+	 * pointer when there's a nonzero offset to add. */
+	void *array = (*p_n == 0) ? base : base + siz * (*p_n);
 	const uint8_t *at = scanned_member->data + scanned_member->length_prefix_len;
 	size_t rem = scanned_member->len - scanned_member->length_prefix_len;
 	size_t count = 0;
