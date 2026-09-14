@@ -181,10 +181,15 @@ if(BUILD_PROTOC)
 
   if(MSVC AND BUILD_SHARED_LIBS)
     target_compile_definitions(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
-    get_filename_component(PROTOBUF_DLL_DIR ${PROTOBUF_PROTOC_EXECUTABLE}
-                           DIRECTORY)
-    file(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
-    file(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    # Copy DLLs from the directory with the protoc executable, but only if
+    # the path does not contain generator expressions
+    string(GENEX_STRIP "${PROTOBUF_PROTOC_EXECUTABLE}" PROTOC_EXECUTABLE_NO_GENEX)
+    if(PROTOBUF_PROTOC_EXECUTABLE STREQUAL PROTOC_EXECUTABLE_NO_GENEX)
+        get_filename_component(PROTOBUF_DLL_DIR ${PROTOBUF_PROTOC_EXECUTABLE}
+                               DIRECTORY)
+        file(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
+        file(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
   endif()
 
   function(GENERATE_TEST_SOURCES PROTO_FILE SRC HDR)
