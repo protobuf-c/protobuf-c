@@ -40,7 +40,7 @@ VERS_2 {
         global: sym;
 } VERS_1;
 EOF
-      AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[int sym;]], [])],
                      [have_ld_version_script=yes], [have_ld_version_script=no])
     else
       have_ld_version_script=no
