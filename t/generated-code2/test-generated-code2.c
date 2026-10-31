@@ -2241,6 +2241,26 @@ typedef struct {
   TestFunc func;
 } Test;
 
+static void test_invalid_zero_tag(void)
+{
+    const uint8_t inputs[][3] = {
+        { 0x80, 0x00, 0x7a },
+        { 0x80, 0x00, 0x01 }
+    };
+    size_t i;
+
+    for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+        ProtobufCMessage *msg = protobuf_c_message_unpack(
+            &foo__test_mess__descriptor,
+            NULL,
+            sizeof(inputs[i]),
+            inputs[i]
+        );
+
+        assert(msg == NULL);
+    }
+}
+
 static Test tests[] =
 {
   { "small enums", test_enum_small },
@@ -2370,6 +2390,7 @@ static Test tests[] =
   { "test message_check()", test_message_check },
 
   { "test freeing NULL", test_message_free_null },
+  { "test invalid zero tag", test_invalid_zero_tag },
 };
 #define n_tests (sizeof(tests)/sizeof(Test))
 

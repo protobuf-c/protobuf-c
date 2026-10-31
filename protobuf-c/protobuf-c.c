@@ -2086,6 +2086,10 @@ parse_tag_and_wiretype(size_t len,
 			shift += 7;
 		} else {
 			tag |= data[rv] << shift;
+
+			if (tag == 0)
+				return 0;
+
 			*tag_out = tag;
 			return rv + 1;
 		}
