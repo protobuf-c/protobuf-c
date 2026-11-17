@@ -2492,11 +2492,20 @@ parse_boolean(unsigned len, const uint8_t *data)
 	return FALSE;
 }
 
+#define PROTOBUF_C_MAX_RECURSION_DEPTH 100
+
+static ProtobufCMessage *
+protobuf_c_message_unpack_internal(const ProtobufCMessageDescriptor *desc,
+				   ProtobufCAllocator *allocator,
+				   size_t len, const uint8_t *data,
+				   unsigned recursion_depth);
+
 static protobuf_c_boolean
 parse_required_member(ScannedMember *scanned_member,
 		      void *member,
 		      ProtobufCAllocator *allocator,
-		      protobuf_c_boolean maybe_clear)
+		      protobuf_c_boolean maybe_clear,
+		      unsigned recursion_depth)
 {
 	unsigned len = scanned_member->len;
 	const uint8_t *data = scanned_member->data;
@@ -2604,10 +2613,12 @@ parse_required_member(ScannedMember *scanned_member,
 
 		def_mess = scanned_member->field->default_value;
 		if (len >= pref_len)
-			subm = protobuf_c_message_unpack(scanned_member->field->descriptor,
+			subm = protobuf_c_message_unpack_internal(
+							 scanned_member->field->descriptor,
 							 allocator,
 							 len - pref_len,
-							 data + pref_len);
+							 data + pref_len,
+							 recursion_depth + 1);
 		else
 			subm = NULL;
 
@@ -2633,7 +2644,8 @@ static protobuf_c_boolean
 parse_oneof_member (ScannedMember *scanned_member,
 		    void *member,
 		    ProtobufCMessage *message,
-		    ProtobufCAllocator *allocator)
+		    ProtobufCAllocator *allocator,
+		    unsigned recursion_depth)
 {
 	uint32_t *oneof_case = STRUCT_MEMBER_PTR(uint32_t, message,
 					       scanned_member->field->quantifier_offset);
@@ -2683,7 +2695,7 @@ parse_oneof_member (ScannedMember *scanned_member,
 
 		memset (member, 0, el_size);
 	}
-	if (!parse_required_member (scanned_member, member, allocator, TRUE))
+	if (!parse_required_member (scanned_member, member, allocator, TRUE, recursion_depth))
 		return FALSE;
 
 	*oneof_case = scanned_member->tag;
@@ -2695,9 +2707,10 @@ static protobuf_c_boolean
 parse_optional_member(ScannedMember *scanned_member,
 		      void *member,
 		      ProtobufCMessage *message,
-		      ProtobufCAllocator *allocator)
+		      ProtobufCAllocator *allocator,
+		      unsigned recursion_depth)
 {
-	if (!parse_required_member(scanned_member, member, allocator, TRUE))
+	if (!parse_required_member(scanned_member, member, allocator, TRUE, recursion_depth))
 		return FALSE;
 	if (scanned_member->field->quantifier_offset != 0)
 		STRUCT_MEMBER(protobuf_c_boolean,
@@ -2710,7 +2723,8 @@ static protobuf_c_boolean
 parse_repeated_member(ScannedMember *scanned_member,
 		      void *member,
 		      ProtobufCMessage *message,
-		      ProtobufCAllocator *allocator)
+		      ProtobufCAllocator *allocator,
+		      unsigned recursion_depth)
 {
 	const ProtobufCFieldDescriptor *field = scanned_member->field;
 	size_t *p_n = STRUCT_MEMBER_PTR(size_t, message, field->quantifier_offset);
@@ -2718,7 +2732,7 @@ parse_repeated_member(ScannedMember *scanned_member,
 	char *array = *(char **) member;
 
 	if (!parse_required_member(scanned_member, array + siz * (*p_n),
-				   allocator, FALSE))
+				   allocator, FALSE, recursion_depth))
 	{
 		return FALSE;
 	}
@@ -2884,7 +2898,8 @@ is_packable_type(ProtobufCType type)
 static protobuf_c_boolean
 parse_member(ScannedMember *scanned_member,
 	     ProtobufCMessage *message,
-	     ProtobufCAllocator *allocator)
+	     ProtobufCAllocator *allocator,
+	     unsigned recursion_depth)
 {
 	const ProtobufCFieldDescriptor *field = scanned_member->field;
 	void *member;
@@ -2906,15 +2921,15 @@ parse_member(ScannedMember *scanned_member,
 	switch (field->label) {
 	case PROTOBUF_C_LABEL_REQUIRED:
 		return parse_required_member(scanned_member, member,
-					     allocator, TRUE);
+					     allocator, TRUE, recursion_depth);
 	case PROTOBUF_C_LABEL_OPTIONAL:
 	case PROTOBUF_C_LABEL_NONE:
 		if (0 != (field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF)) {
 			return parse_oneof_member(scanned_member, member,
-						  message, allocator);
+						  message, allocator, recursion_depth);
 		} else {
 			return parse_optional_member(scanned_member, member,
-						     message, allocator);
+						     message, allocator, recursion_depth);
 		}
 	case PROTOBUF_C_LABEL_REPEATED:
 		if (scanned_member->wire_type ==
@@ -2927,7 +2942,7 @@ parse_member(ScannedMember *scanned_member,
 		} else {
 			return parse_repeated_member(scanned_member,
 						     member, message,
-						     allocator);
+						     allocator, recursion_depth);
 		}
 	}
 	PROTOBUF_C__ASSERT_NOT_REACHED();
@@ -3024,11 +3039,14 @@ message_init_generic(const ProtobufCMessageDescriptor *desc,
 #define REQUIRED_FIELD_BITMAP_IS_SET(index)	\
 	(required_fields_bitmap[(index)/8] & (1UL<<((index)%8)))
 
-ProtobufCMessage *
-protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
-			  ProtobufCAllocator *allocator,
-			  size_t len, const uint8_t *data)
+static ProtobufCMessage *
+protobuf_c_message_unpack_internal(const ProtobufCMessageDescriptor *desc,
+				   ProtobufCAllocator *allocator,
+				   size_t len, const uint8_t *data,
+				   unsigned recursion_depth)
 {
+	if (recursion_depth > PROTOBUF_C_MAX_RECURSION_DEPTH)
+		return NULL;
 	ProtobufCMessage *rv;
 	size_t rem = len;
 	const uint8_t *at = data;
@@ -3289,7 +3307,7 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 		ScannedMember *slab = scanned_member_slabs[i_slab];
 
 		for (j = 0; j < max; j++) {
-			if (!parse_member(slab + j, rv, allocator)) {
+			if (!parse_member(slab + j, rv, allocator, recursion_depth)) {
 				PROTOBUF_C_UNPACK_ERROR("error parsing member %s of %s",
 							slab->field ? slab->field->name : "*unknown-field*",
 					desc->name);
@@ -3320,6 +3338,14 @@ error_cleanup_during_scan:
 	if (required_fields_bitmap_alloced)
 		do_free(allocator, required_fields_bitmap);
 	return NULL;
+}
+
+ProtobufCMessage *
+protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
+			  ProtobufCAllocator *allocator,
+			  size_t len, const uint8_t *data)
+{
+	return protobuf_c_message_unpack_internal(desc, allocator, len, data, 0);
 }
 
 void
