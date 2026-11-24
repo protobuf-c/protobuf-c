@@ -375,6 +375,8 @@ typedef struct ProtobufCMessageUnknownField ProtobufCMessageUnknownField;
 typedef struct ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
 typedef struct ProtobufCService ProtobufCService;
 typedef struct ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
+typedef struct ProtobufCInputStream ProtobufCInputStream;
+typedef struct ProtobufCInputStreamVTable ProtobufCInputStreamVTable;
 
 /** Boolean type. */
 typedef int protobuf_c_boolean;
@@ -729,6 +731,59 @@ struct ProtobufCMethodDescriptor {
 	const ProtobufCMessageDescriptor	*input;
 	/** Output message descriptor. */
 	const ProtobufCMessageDescriptor	*output;
+	/**
+	 * Bitwise OR of `PROTOBUF_C_METHOD_*_STREAMING` flags. Zero for a plain
+	 * (unary) method.
+	 */
+	unsigned				flags;
+};
+
+/**
+ * Flag for OR-ing into the method index passed to `ProtobufCService::invoke`:
+ * the client sends a stream of requests.
+ */
+#define PROTOBUF_C_INPUT_STREAMING	(1u << 30)
+/**
+ * Flag for OR-ing into the method index passed to `ProtobufCService::invoke`:
+ * the server sends a stream of responses. The closure is then invoked once per
+ * response, followed by a final invocation with a NULL message to mark the end
+ * of the stream.
+ */
+#define PROTOBUF_C_OUTPUT_STREAMING	(1u << 31)
+/**
+ * Flags for `ProtobufCMethodDescriptor::flags`. These have the same values as
+ * the corresponding `invoke` flags above.
+ */
+#define PROTOBUF_C_METHOD_INPUT_STREAMING	PROTOBUF_C_INPUT_STREAMING
+#define PROTOBUF_C_METHOD_OUTPUT_STREAMING	PROTOBUF_C_OUTPUT_STREAMING
+/** Mask of all streaming flags. */
+#define PROTOBUF_C_STREAMING_MASK \
+	(PROTOBUF_C_INPUT_STREAMING | PROTOBUF_C_OUTPUT_STREAMING)
+
+/**
+ * Virtual methods of a `ProtobufCInputStream`.
+ */
+struct ProtobufCInputStreamVTable {
+	/**
+	 * Send the next request of the stream. The message is serialized (or
+	 * copied) before this returns. Passing NULL ends the stream (no more
+	 * requests will be sent). Returns false on failure.
+	 */
+	protobuf_c_boolean (*send_input)(ProtobufCInputStream *stream,
+					 const ProtobufCMessage *message);
+	/**
+	 * Release the stream object. If the stream was not ended, the call is
+	 * cancelled.
+	 */
+	void (*destroy)(ProtobufCInputStream *stream);
+};
+
+/**
+ * The request side of a client-streaming call. Implementations (such as
+ * grpc2) embed this as the first member of a larger structure.
+ */
+struct ProtobufCInputStream {
+	const ProtobufCInputStreamVTable *vtable;
 };
 
 /**
@@ -737,12 +792,23 @@ struct ProtobufCMethodDescriptor {
 struct ProtobufCService {
 	/** Service descriptor. */
 	const ProtobufCServiceDescriptor *descriptor;
-	/** Function to invoke the service. */
-	void (*invoke)(ProtobufCService *service,
-		       unsigned method_index,
-		       const ProtobufCMessage *input,
-		       ProtobufCClosure closure,
-		       void *closure_data);
+	/**
+	 * Function to invoke the service. `method_index` may be OR'd with
+	 * `PROTOBUF_C_INPUT_STREAMING` and/or `PROTOBUF_C_OUTPUT_STREAMING`
+	 * (which must match the method's descriptor flags).
+	 *
+	 * If INPUT_STREAMING is given, returns the stream on which further
+	 * requests are sent; `input` may be NULL, otherwise it is the first
+	 * message of the stream. Otherwise returns NULL.
+	 *
+	 * If OUTPUT_STREAMING is given, the closure may be invoked many times
+	 * and is invoked with a NULL message at the end of the stream.
+	 */
+	ProtobufCInputStream *(*invoke)(ProtobufCService *service,
+					unsigned method_index,
+					const ProtobufCMessage *input,
+					ProtobufCClosure closure,
+					void *closure_data);
 	/** Function to destroy the service. */
 	void (*destroy)(ProtobufCService *service);
 };
@@ -1096,7 +1162,7 @@ protobuf_c_service_generated_init(
 	ProtobufCServiceDestroy destroy);
 
 PROTOBUF_C__API
-void
+ProtobufCInputStream *
 protobuf_c_service_invoke_internal(
 	ProtobufCService *service,
 	unsigned method_index,

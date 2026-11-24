@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package streaming;
+
+message Req { int32 n = 1; }
+message Rsp { int32 n = 1; }
+
+service Counter {
+  rpc Unary(Req) returns (Rsp);
+  rpc Down(Req) returns (stream Rsp);
+  rpc Up(stream Req) returns (Rsp);
+  rpc Both(stream Req) returns (stream Rsp);
+}
