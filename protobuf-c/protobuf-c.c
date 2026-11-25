@@ -88,6 +88,65 @@
 const char protobuf_c_empty_string[] = "";
 #endif
 
+/* ---- UTF-8 validation of string fields ---- */
+
+protobuf_c_boolean
+protobuf_c_validate_utf8_strict(size_t len, const char *data)
+{
+	const uint8_t *s = (const uint8_t *) data;
+	const uint8_t *end = s + len;
+
+	while (s < end) {
+		uint8_t c = *s;
+
+		if (c < 0x80) {
+			s++;
+			continue;
+		}
+		if (c >= 0xc2 && c <= 0xdf) {		/* 2 bytes */
+			if (end - s < 2 || (s[1] & 0xc0) != 0x80)
+				return FALSE;
+			s += 2;
+		} else if (c >= 0xe0 && c <= 0xef) {	/* 3 bytes */
+			if (end - s < 3 || (s[1] & 0xc0) != 0x80 ||
+			    (s[2] & 0xc0) != 0x80)
+				return FALSE;
+			if (c == 0xe0 && s[1] < 0xa0)	/* overlong */
+				return FALSE;
+			if (c == 0xed && s[1] >= 0xa0)	/* surrogate */
+				return FALSE;
+			s += 3;
+		} else if (c >= 0xf0 && c <= 0xf4) {	/* 4 bytes */
+			if (end - s < 4 || (s[1] & 0xc0) != 0x80 ||
+			    (s[2] & 0xc0) != 0x80 || (s[3] & 0xc0) != 0x80)
+				return FALSE;
+			if (c == 0xf0 && s[1] < 0x90)	/* overlong */
+				return FALSE;
+			if (c == 0xf4 && s[1] >= 0x90)	/* > U+10FFFF */
+				return FALSE;
+			s += 4;
+		} else {
+			return FALSE;	/* continuation byte, C0, C1, F5..FF */
+		}
+	}
+	return TRUE;
+}
+
+protobuf_c_boolean (*protobuf_c_validate_utf8)(size_t len, const char *data) =
+	protobuf_c_validate_utf8_strict;
+
+/* Does unpacking `field` have to check that its contents are valid UTF-8? */
+static protobuf_c_boolean
+field_requires_utf8(const ProtobufCFieldDescriptor *field)
+{
+	const ProtobufCFeatures *f = field->features;
+
+	/* NULL: code generated before features were recorded. */
+	return f != NULL &&
+	       f->struct_size > offsetof(ProtobufCFeatures, utf8_validation) &&
+	       f->utf8_validation == PROTOBUF_C_UTF8_VALIDATION_VERIFY;
+}
+
 /**
  * Internal `ProtobufCMessage` manipulation macro.
  *
@@ -2553,6 +2612,15 @@ parse_required_member(ScannedMember *scanned_member,
 
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
 			return FALSE;
+
+		/* Checked before anything is changed. */
+		if (field_requires_utf8(scanned_member->field) &&
+		    !protobuf_c_validate_utf8(len - pref_len,
+					      (const char *) data + pref_len)) {
+			PROTOBUF_C_UNPACK_ERROR("string field '%s' is not valid UTF-8",
+						scanned_member->field->name);
+			return FALSE;
+		}
 
 		if (maybe_clear && *pstr != NULL) {
 			const char *def = scanned_member->field->default_value;

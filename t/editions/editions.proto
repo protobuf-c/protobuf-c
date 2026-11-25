@@ -28,4 +28,7 @@ message Msg {
     int32 choice_int = 13;
     string choice_str = 14;
   }
+
+  // Edition 2023 verifies UTF-8 by default; a field can opt out.
+  string lax_str = 15 [features.utf8_validation = NONE];
 }

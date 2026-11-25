@@ -10,6 +10,8 @@
 
 #include "t/editions/editions.pb-c.h"
 #include "t/editions/editions-implicit.pb-c.h"
+#include "t/editions/utf8-proto2.pb-c.h"
+#include "t/editions/utf8-proto3.pb-c.h"
 
 static void
 check_bytes(const char *what, const uint8_t *got, size_t got_len,
@@ -200,6 +202,130 @@ test_features(void)
 	assert(field(id, "f")->features->field_presence == PROTOBUF_C_FIELD_PRESENCE_EXPLICIT);
 }
 
+/* ---- UTF-8 validation of string fields on unpack ---- */
+
+static int warn_calls;
+static protobuf_c_boolean
+warn_validator(size_t len, const char *data)
+{
+	if (!protobuf_c_validate_utf8_strict(len, data))
+		warn_calls++;	/* the example would print a warning */
+	return 1;
+}
+
+static int custom_calls;
+static protobuf_c_boolean
+custom_validator(size_t len, const char *data)
+{
+	(void) len; (void) data;
+	custom_calls++;
+	return 0;	/* rejects everything */
+}
+
+static void
+test_utf8_validator(void)
+{
+	/* well-formed */
+	assert(protobuf_c_validate_utf8_strict(0, ""));
+	assert(protobuf_c_validate_utf8_strict(5, "plain"));
+	assert(protobuf_c_validate_utf8_strict(2, "\xc3\xa9"));		/* U+00E9 */
+	assert(protobuf_c_validate_utf8_strict(3, "\xe2\x82\xac"));	/* U+20AC */
+	assert(protobuf_c_validate_utf8_strict(4, "\xf0\x9f\x98\x80"));	/* U+1F600 */
+	assert(protobuf_c_validate_utf8_strict(3, "a\0b"));		/* NUL is fine */
+	assert(protobuf_c_validate_utf8_strict(3, "\xed\x9f\xbf"));	/* U+D7FF */
+	assert(protobuf_c_validate_utf8_strict(4, "\xf4\x8f\xbf\xbf"));	/* U+10FFFF */
+	/* malformed */
+	assert(!protobuf_c_validate_utf8_strict(1, "\xff"));
+	assert(!protobuf_c_validate_utf8_strict(1, "\x80"));		/* stray continuation */
+	assert(!protobuf_c_validate_utf8_strict(1, "\xc3"));		/* truncated */
+	assert(!protobuf_c_validate_utf8_strict(2, "\xc0\x80"));	/* overlong NUL */
+	assert(!protobuf_c_validate_utf8_strict(3, "\xe0\x80\x80"));	/* overlong */
+	assert(!protobuf_c_validate_utf8_strict(3, "\xed\xa0\x80"));	/* surrogate */
+	assert(!protobuf_c_validate_utf8_strict(4, "\xf4\x90\x80\x80"));	/* > U+10FFFF */
+	assert(!protobuf_c_validate_utf8_strict(4, "\xf0\x80\x80\x80"));	/* overlong */
+	assert(!protobuf_c_validate_utf8_strict(2, "a\xc3"));
+}
+
+/* Unpack `wire` as `desc`; returns the message or NULL. */
+static ProtobufCMessage *
+unpack(const ProtobufCMessageDescriptor *desc, const char *wire, size_t len)
+{
+	return protobuf_c_message_unpack(desc, NULL, len, (const uint8_t *) wire);
+}
+
+static void
+test_utf8(void)
+{
+	/* field 1 (len 2): ff fe, which is not UTF-8 */
+	static const char bad1[] = "\x0a\x02\xff\xfe";
+	static const char good1[] = "\x0a\x02\xc3\xa9";
+	/* field 2 (repeated string) with a bad second element */
+	static const char bad_rep[] = "\x12\x01" "a" "\x12\x01\xff";
+	/* field 3 (oneof string) */
+	static const char bad_oneof[] = "\x1a\x01\xff";
+	/* field 5 (map<string,string>): entry { key: 0xff } */
+	static const char bad_map[] = "\x2a\x03\x0a\x01\xff";
+	/* field 6 (bytes) may hold anything */
+	static const char raw[] = "\x32\x02\xff\xfe";
+	ProtobufCMessage *m;
+
+	assert(protobuf_c_validate_utf8 == protobuf_c_validate_utf8_strict);
+
+	/* proto3: verified */
+	m = unpack(&editions__utf8_proto3__descriptor, good1, 4);
+	assert(m != NULL);
+	protobuf_c_message_free_unpacked(m, NULL);
+	assert(unpack(&editions__utf8_proto3__descriptor, bad1, 4) == NULL);
+	assert(unpack(&editions__utf8_proto3__descriptor, bad_rep, 6) == NULL);
+	assert(unpack(&editions__utf8_proto3__descriptor, bad_oneof, 3) == NULL);
+	assert(unpack(&editions__utf8_proto3__descriptor, bad_map, 5) == NULL);
+	m = unpack(&editions__utf8_proto3__descriptor, raw, 4);	/* bytes */
+	assert(m != NULL);
+	protobuf_c_message_free_unpacked(m, NULL);
+
+	/* proto2: not verified */
+	m = unpack(&editions__utf8_proto2__descriptor, bad1, 4);
+	assert(m != NULL);
+	protobuf_c_message_free_unpacked(m, NULL);
+
+	/* edition 2023: verified by default, unless the field opts out */
+	{
+		/* Msg has a required field 11, so every wire string has it */
+		static const char ok_explicit[] = "\x58\x01\x12\x01" "a";
+		static const char bad_explicit[] = "\x58\x01\x12\x01\xff";	/* field 2 */
+		static const char bad_lax[] = "\x58\x01\x7a\x01\xff";	/* field 15 */
+
+		m = unpack(&editions__msg__descriptor, ok_explicit, 5);
+		assert(m != NULL);
+		protobuf_c_message_free_unpacked(m, NULL);
+		assert(unpack(&editions__msg__descriptor, bad_explicit, 5) == NULL);
+		m = unpack(&editions__msg__descriptor, bad_lax, 5);
+		assert(m != NULL);
+		protobuf_c_message_free_unpacked(m, NULL);
+	}
+
+	/* the escape hatch: a validator that warns and accepts (the example in
+	 * protobuf-c.h) */
+	protobuf_c_validate_utf8 = warn_validator;
+	m = unpack(&editions__utf8_proto3__descriptor, bad1, 4);
+	assert(m != NULL && warn_calls == 1);
+	protobuf_c_message_free_unpacked(m, NULL);
+	m = unpack(&editions__utf8_proto3__descriptor, good1, 4);
+	assert(m != NULL && warn_calls == 1);	/* silent when it is valid */
+	protobuf_c_message_free_unpacked(m, NULL);
+
+	/* ... or one that rejects everything */
+	protobuf_c_validate_utf8 = custom_validator;
+	assert(unpack(&editions__utf8_proto3__descriptor, good1, 4) == NULL);
+	assert(custom_calls == 1);
+	m = unpack(&editions__utf8_proto2__descriptor, good1, 4);	/* not asked */
+	assert(m != NULL && custom_calls == 1);
+	protobuf_c_message_free_unpacked(m, NULL);
+
+	protobuf_c_validate_utf8 = protobuf_c_validate_utf8_strict;
+	puts("utf8 validation ok");
+}
+
 int
 main(void)
 {
@@ -209,6 +335,8 @@ main(void)
 	test_repeated_encoding();
 	test_file_level_features();
 	test_roundtrip();
+	test_utf8_validator();
+	test_utf8();
 	puts("editions: ok");
 	return 0;
 }

@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package editions;
+
+// proto2 strings resolve to features.utf8_validation = NONE.
+message Utf8Proto2 {
+  optional string s = 1;
+}
