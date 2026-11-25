@@ -784,6 +784,13 @@ struct ProtobufCInputStreamVTable {
  */
 struct ProtobufCInputStream {
 	const ProtobufCInputStreamVTable *vtable;
+
+	/**
+	 * Descriptor of the request message type this stream accepts. Set by
+	 * the implementation; used to check messages passed to
+	 * protobuf_c_input_stream_send().
+	 */
+	const ProtobufCMessageDescriptor *input_descriptor;
 };
 
 /**
@@ -1160,6 +1167,31 @@ protobuf_c_service_generated_init(
 	ProtobufCService *service,
 	const ProtobufCServiceDescriptor *descriptor,
 	ProtobufCServiceDestroy destroy);
+
+/**
+ * Send the next request on an input stream. Returns false on failure,
+ * including when `message` is not of the stream's `input_descriptor` type.
+ * Passing NULL ends the stream (see protobuf_c_input_stream_end()).
+ *
+ * The generated `<service>__<method>__send()` functions are typed wrappers.
+ */
+PROTOBUF_C__API
+protobuf_c_boolean
+protobuf_c_input_stream_send(ProtobufCInputStream *stream,
+			     const ProtobufCMessage *message);
+
+/** Signal that no more requests will be sent on the stream. */
+PROTOBUF_C__API
+protobuf_c_boolean
+protobuf_c_input_stream_end(ProtobufCInputStream *stream);
+
+/**
+ * Release the stream. If it was not ended, the call is cancelled. The stream
+ * must not be used afterwards.
+ */
+PROTOBUF_C__API
+void
+protobuf_c_input_stream_destroy(ProtobufCInputStream *stream);
 
 PROTOBUF_C__API
 ProtobufCInputStream *

@@ -75,6 +75,7 @@ my_up(Streaming__Counter_Service *s, const Streaming__Req *in,
 	(void) s;
 	memset(&the_stream, 0, sizeof the_stream);
 	the_stream.base.vtable = &sum_vtable;
+	the_stream.base.input_descriptor = &streaming__req__descriptor;
 	the_stream.closure = (ProtobufCClosure) cl;
 	the_stream.closure_data = d;
 	if (in != NULL)
@@ -138,13 +139,21 @@ main(void)
 	in = streaming__counter__up(&svc.base, NULL, collect, NULL);
 	assert(in != NULL && in->vtable == &sum_vtable);
 	req.n = 5;
-	assert(in->vtable->send_input(in, &req.base));
+	assert(streaming__counter__up__send(in, &req));	/* typed */
 	req.n = 7;
-	assert(in->vtable->send_input(in, &req.base));
+	assert(protobuf_c_input_stream_send(in, &req.base));
 	assert(got_count == 0);
-	assert(in->vtable->send_input(in, NULL));	/* end of stream */
+
+	/* A message of the wrong type is rejected. */
+	{
+		Streaming__Rsp wrong = STREAMING__RSP__INIT;
+		assert(!protobuf_c_input_stream_send(in, &wrong.base));
+		assert(got_count == 0);
+	}
+
+	assert(protobuf_c_input_stream_end(in));	/* end of stream */
 	assert(got_count == 1 && got_n[0] == 12);
-	in->vtable->destroy(in);
+	protobuf_c_input_stream_destroy(in);
 	assert(the_stream.destroyed);
 
 	/* client streaming, first message supplied to invoke */

@@ -26,3 +26,10 @@ LIBPROTOBUF_C_1.3.0 {
 global:
         protobuf_c_empty_string;
 } LIBPROTOBUF_C_1.0.0;
+
+LIBPROTOBUF_C_2.0.0 {
+global:
+        protobuf_c_input_stream_destroy;
+        protobuf_c_input_stream_end;
+        protobuf_c_input_stream_send;
+} LIBPROTOBUF_C_1.3.0;

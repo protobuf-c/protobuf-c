@@ -3510,6 +3510,27 @@ typedef void (*GenericHandler) (void *service,
 				const ProtobufCMessage *input,
 				ProtobufCClosure closure,
 				void *closure_data);
+protobuf_c_boolean
+protobuf_c_input_stream_send(ProtobufCInputStream *stream,
+			     const ProtobufCMessage *message)
+{
+	if (message != NULL && message->descriptor != stream->input_descriptor)
+		return 0;
+	return stream->vtable->send_input(stream, message);
+}
+
+protobuf_c_boolean
+protobuf_c_input_stream_end(ProtobufCInputStream *stream)
+{
+	return stream->vtable->send_input(stream, NULL);
+}
+
+void
+protobuf_c_input_stream_destroy(ProtobufCInputStream *stream)
+{
+	stream->vtable->destroy(stream);
+}
+
 typedef ProtobufCInputStream *(*GenericStreamHandler) (void *service,
 				const ProtobufCMessage *input,
 				ProtobufCClosure closure,
@@ -3549,9 +3570,17 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
 	 */
 	handler = handlers[method_index];
 	if (flags & PROTOBUF_C_INPUT_STREAMING) {
+		ProtobufCInputStream *stream;
+
 		/* Generated handlers of input-streaming methods return a stream. */
-		return ((GenericStreamHandler) handler)(service, input, closure,
-							closure_data);
+		stream = ((GenericStreamHandler) handler)(service, input,
+							  closure,
+							  closure_data);
+		/* The stream must accept this method's request type. */
+		assert(stream == NULL ||
+		       stream->input_descriptor ==
+		       service->descriptor->methods[method_index].input);
+		return stream;
 	}
 	(*handler)(service, input, closure, closure_data);
 	return NULL;

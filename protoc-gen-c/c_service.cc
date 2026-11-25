@@ -185,6 +185,11 @@ void ServiceGenerator::GenerateCallersDeclarations(google::protobuf::io::Printer
                    "     $retpad$ $padddddddddddddddddd$ const $input_typename$ *input,\n"
                    "     $retpad$ $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
                    "     $retpad$ $padddddddddddddddddd$ void *closure_data);\n");
+    if (method->client_streaming()) {
+      printer->Print(vars_,
+                   "protobuf_c_boolean $lcfullname$__$method$__send(ProtobufCInputStream *stream,\n"
+                   "     $padddddddddddddddddd$      const $input_typename$ *input);\n");
+    }
   }
 }
 
@@ -306,6 +311,7 @@ void ServiceGenerator::GenerateCallersImplementations(google::protobuf::io::Prin
     vars_["rettype"] = ReturnType(method);
     vars_["retpad"] = ConvertToSpaces(ReturnType(method));
     vars_["ret"] = method->client_streaming() ? "return " : "";
+    vars_["input_descriptor_name"] = FullNameToLower(method->input_type()->full_name(), method->input_type()->file());
     vars_["flags_or"] = InvokeFlags(method) == "0" ? "" : " | " + InvokeFlags(method);
 
     printer->Print(vars_,
@@ -317,6 +323,15 @@ void ServiceGenerator::GenerateCallersImplementations(google::protobuf::io::Prin
 		   "  assert(service->descriptor == &$lcfullname$__descriptor);\n"
 		   "  $ret$service->invoke(service, $index$$flags_or$, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);\n"
 		   "}\n");
+    if (method->client_streaming()) {
+      printer->Print(vars_,
+                   "protobuf_c_boolean $lcfullname$__$method$__send(ProtobufCInputStream *stream,\n"
+                   "     $padddddddddddddddddd$      const $input_typename$ *input)\n"
+                   "{\n"
+                   "  assert(stream->input_descriptor == &$input_descriptor_name$__descriptor);\n"
+                   "  return protobuf_c_input_stream_send(stream, (const ProtobufCMessage *) input);\n"
+                   "}\n");
+    }
   }
 }
 
