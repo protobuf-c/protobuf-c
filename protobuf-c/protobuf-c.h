@@ -1232,6 +1232,28 @@ PROTOBUF_C__API
 extern protobuf_c_boolean (*protobuf_c_validate_utf8)(size_t len,
 						      const char *data);
 
+/**
+ * Check that every `string` in `message` (and in the messages below it) whose
+ * `utf8_validation` feature is `VERIFY` passes protobuf_c_validate_utf8, so
+ * that data that did not come from protobuf_c_message_unpack() can be checked
+ * before it is packed: protobuf_c_message_pack() and friends cannot fail, and
+ * do not look at the contents of strings. Returns true if all are valid.
+ *
+ * Fields that are not set, members of a oneof other than the selected one,
+ * `bytes` fields, and strings of fields without the feature (proto2 files,
+ * code from older versions of protoc-gen-c) are not looked at. It costs one
+ * pass over the message, so you may want to call it only at the boundaries
+ * where untrusted strings enter your program.
+ *
+ * If `bad_field` is not NULL, it is set to the innermost field that failed
+ * (and to NULL when the message is valid). Which message that field belongs
+ * to is not reported.
+ */
+PROTOBUF_C__API
+protobuf_c_boolean
+protobuf_c_message_validate_utf8(const ProtobufCMessage *message,
+				 const ProtobufCFieldDescriptor **bad_field);
+
 /** @} */
 
 PROTOBUF_C__END_DECLS

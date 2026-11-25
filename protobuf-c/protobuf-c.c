@@ -3395,6 +3395,90 @@ error_cleanup_during_scan:
 	return NULL;
 }
 
+/* Does every string below `message` that has to be valid UTF-8 pass
+ * protobuf_c_validate_utf8? On failure `*bad_field` (if given) is the
+ * innermost field that failed. */
+static protobuf_c_boolean
+message_validate_utf8(const ProtobufCMessage *message,
+		      const ProtobufCFieldDescriptor **bad_field)
+{
+	const ProtobufCMessageDescriptor *desc = message->descriptor;
+	unsigned f;
+
+	ASSERT_IS_MESSAGE(message);
+	for (f = 0; f < desc->n_fields; f++) {
+		const ProtobufCFieldDescriptor *field = &desc->fields[f];
+		protobuf_c_boolean check_str;
+
+		if (field->type != PROTOBUF_C_TYPE_STRING &&
+		    field->type != PROTOBUF_C_TYPE_MESSAGE)
+			continue;
+		if ((field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF) &&
+		    field->id != STRUCT_MEMBER(uint32_t, message,
+					       field->quantifier_offset))
+			continue;	/* not the selected member of its oneof */
+		check_str = field->type == PROTOBUF_C_TYPE_STRING &&
+			    field_requires_utf8(field);
+		if (field->type == PROTOBUF_C_TYPE_STRING && !check_str)
+			continue;
+
+		if (field->label == PROTOBUF_C_LABEL_REPEATED) {
+			size_t n = STRUCT_MEMBER(size_t, message,
+						 field->quantifier_offset);
+			void *arr = STRUCT_MEMBER(void *, message, field->offset);
+			size_t i;
+
+			if (arr == NULL)
+				continue;
+			for (i = 0; i < n; i++) {
+				if (check_str) {
+					const char *s = ((char **) arr)[i];
+
+					if (s != NULL &&
+					    !protobuf_c_validate_utf8(strlen(s), s))
+						goto fail;
+				} else {
+					const ProtobufCMessage *sub =
+						((ProtobufCMessage **) arr)[i];
+
+					if (sub != NULL &&
+					    !message_validate_utf8(sub, bad_field))
+						return FALSE;
+				}
+			}
+		} else if (check_str) {
+			const char *s = STRUCT_MEMBER(char *, message, field->offset);
+
+			if (s != NULL && s != field->default_value &&
+			    !protobuf_c_validate_utf8(strlen(s), s))
+				goto fail;
+		} else {
+			const ProtobufCMessage *sub =
+				STRUCT_MEMBER(ProtobufCMessage *, message,
+					      field->offset);
+
+			if (sub != NULL && sub != field->default_value &&
+			    !message_validate_utf8(sub, bad_field))
+				return FALSE;
+		}
+		continue;
+	fail:
+		if (bad_field != NULL)
+			*bad_field = field;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+protobuf_c_boolean
+protobuf_c_message_validate_utf8(const ProtobufCMessage *message,
+				 const ProtobufCFieldDescriptor **bad_field)
+{
+	if (bad_field != NULL)
+		*bad_field = NULL;
+	return message_validate_utf8(message, bad_field);
+}
+
 void
 protobuf_c_message_free_unpacked(ProtobufCMessage *message,
 				 ProtobufCAllocator *allocator)

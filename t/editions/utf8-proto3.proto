@@ -12,4 +12,6 @@ message Utf8Proto3 {
   }
   map<string, string> m = 5;
   bytes raw = 6;
+  Utf8Proto3 child = 7;
+  repeated Utf8Proto3 children = 8;
 }

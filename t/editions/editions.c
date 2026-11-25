@@ -326,6 +326,115 @@ test_utf8(void)
 	puts("utf8 validation ok");
 }
 
+/* ---- protobuf_c_message_validate_utf8() ---- */
+
+static const ProtobufCFieldDescriptor *
+named_field(const ProtobufCMessageDescriptor *d, const char *name)
+{
+	unsigned i;
+	for (i = 0; i < d->n_fields; i++)
+		if (strcmp(d->fields[i].name, name) == 0)
+			return &d->fields[i];
+	assert(0);
+	return NULL;
+}
+
+static void
+test_validate_message(void)
+{
+	const ProtobufCMessageDescriptor *d = &editions__utf8_proto3__descriptor;
+	const ProtobufCFieldDescriptor *bad = (void *) 1;
+	Editions__Utf8Proto3 m = EDITIONS__UTF8_PROTO3__INIT;
+	Editions__Utf8Proto3 child = EDITIONS__UTF8_PROTO3__INIT;
+	Editions__Utf8Proto3 *children[1];
+	char *strs[2];
+	Editions__Utf8Proto3__MEntry entry = EDITIONS__UTF8_PROTO3__MENTRY__INIT;
+	Editions__Utf8Proto3__MEntry *entries[1];
+	Editions__Msg msg = EDITIONS__MSG__INIT;
+	Editions__Utf8Proto2 p2 = EDITIONS__UTF8_PROTO2__INIT;
+
+	/* valid, and empty */
+	assert(protobuf_c_message_validate_utf8(&m.base, &bad) && bad == NULL);
+	m.s = "caf\xc3\xa9";
+	assert(protobuf_c_message_validate_utf8(&m.base, NULL));
+
+	/* singular */
+	m.s = "\xff";
+	assert(!protobuf_c_message_validate_utf8(&m.base, &bad));
+	assert(bad == named_field(d, "s"));
+	assert(!protobuf_c_message_validate_utf8(&m.base, NULL));
+	m.s = NULL;
+
+	/* repeated */
+	strs[0] = "ok";
+	strs[1] = "\xc3";
+	m.n_rs = 2;
+	m.rs = strs;
+	assert(!protobuf_c_message_validate_utf8(&m.base, &bad));
+	assert(bad == named_field(d, "rs"));
+	m.n_rs = 1;				/* only the valid one counts */
+	assert(protobuf_c_message_validate_utf8(&m.base, &bad) && bad == NULL);
+	m.n_rs = 0;
+	m.rs = NULL;
+
+	/* oneof: only the selected member is looked at */
+	m.os = "\xff";
+	m.choice_case = EDITIONS__UTF8_PROTO3__CHOICE_OI;
+	assert(protobuf_c_message_validate_utf8(&m.base, NULL));
+	m.choice_case = EDITIONS__UTF8_PROTO3__CHOICE_OS;
+	assert(!protobuf_c_message_validate_utf8(&m.base, &bad));
+	assert(bad == named_field(d, "os"));
+	m.choice_case = EDITIONS__UTF8_PROTO3__CHOICE__NOT_SET;
+	m.os = NULL;
+
+	/* map entries are repeated messages */
+	entry.key = "\xfe";
+	entry.value = "v";
+	entries[0] = &entry;
+	m.n_m = 1;
+	m.m = entries;
+	assert(!protobuf_c_message_validate_utf8(&m.base, &bad));
+	assert(bad == named_field(&editions__utf8_proto3__mentry__descriptor, "key"));
+	m.n_m = 0;
+	m.m = NULL;
+
+	/* bytes are never checked */
+	m.raw.data = (uint8_t *) "\xff\xfe";
+	m.raw.len = 2;
+	assert(protobuf_c_message_validate_utf8(&m.base, NULL));
+
+	/* sub-messages, singular and repeated */
+	child.s = "\xff";
+	m.child = &child;
+	assert(!protobuf_c_message_validate_utf8(&m.base, &bad));
+	assert(bad == named_field(d, "s"));	/* the innermost field */
+	m.child = NULL;
+	children[0] = &child;
+	m.n_children = 1;
+	m.children = children;
+	assert(!protobuf_c_message_validate_utf8(&m.base, NULL));
+	child.s = "fine";
+	assert(protobuf_c_message_validate_utf8(&m.base, NULL));
+
+	/* proto2: not checked; edition 2023: checked, with a per-field opt-out */
+	p2.s = "\xff";
+	assert(protobuf_c_message_validate_utf8(&p2.base, NULL));
+	msg.required_int = 1;
+	msg.explicit_str = "\xff";
+	assert(!protobuf_c_message_validate_utf8(&msg.base, &bad));
+	assert(bad == named_field(&editions__msg__descriptor, "explicit_str"));
+	msg.explicit_str = NULL;
+	msg.lax_str = "\xff";
+	assert(protobuf_c_message_validate_utf8(&msg.base, NULL));
+
+	/* it uses protobuf_c_validate_utf8, so the replacement policy applies */
+	m.s = "\xff";
+	protobuf_c_validate_utf8 = warn_validator;
+	assert(protobuf_c_message_validate_utf8(&m.base, NULL));
+	protobuf_c_validate_utf8 = protobuf_c_validate_utf8_strict;
+	puts("validate_utf8 ok");
+}
+
 int
 main(void)
 {
@@ -337,6 +446,7 @@ main(void)
 	test_roundtrip();
 	test_utf8_validator();
 	test_utf8();
+	test_validate_message();
 	puts("editions: ok");
 	return 0;
 }
