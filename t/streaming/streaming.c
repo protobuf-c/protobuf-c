@@ -112,7 +112,7 @@ main(void)
 	Streaming__Counter_Service svc =
 		STREAMING__COUNTER__INIT(my_);
 	Streaming__Req req = STREAMING__REQ__INIT;
-	ProtobufCInputStream *in;
+	Streaming__Req__InputStream *in;
 
 	assert(d->n_methods == 4);
 	assert(d->methods[0].flags == 0);
@@ -137,23 +137,24 @@ main(void)
 	/* client streaming, no first message */
 	got_count = 0; got_end = 0;
 	in = streaming__counter__up(&svc.base, NULL, collect, NULL);
-	assert(in != NULL && in->vtable == &sum_vtable);
+	assert(in != NULL && in->base.vtable == &sum_vtable);
 	req.n = 5;
-	assert(streaming__counter__up__send(in, &req));	/* typed */
+	assert(streaming__req__input_stream__send(in, &req));	/* typed */
 	req.n = 7;
-	assert(protobuf_c_input_stream_send(in, &req.base));
+	assert(protobuf_c_input_stream_send(&in->base, &req.base));	/* generic */
 	assert(got_count == 0);
 
-	/* A message of the wrong type is rejected. */
+	/* The generic send rejects a message of the wrong type (the typed
+	 * one cannot be given one). */
 	{
 		Streaming__Rsp wrong = STREAMING__RSP__INIT;
-		assert(!protobuf_c_input_stream_send(in, &wrong.base));
+		assert(!protobuf_c_input_stream_send(&in->base, &wrong.base));
 		assert(got_count == 0);
 	}
 
-	assert(protobuf_c_input_stream_end(in));	/* end of stream */
+	assert(streaming__req__input_stream__end(in));	/* end of stream */
 	assert(got_count == 1 && got_n[0] == 12);
-	protobuf_c_input_stream_destroy(in);
+	streaming__req__input_stream__destroy(in);
 	assert(the_stream.destroyed);
 
 	/* client streaming, first message supplied to invoke */
@@ -161,16 +162,16 @@ main(void)
 	req.n = 100;
 	in = streaming__counter__up(&svc.base, &req, collect, NULL);
 	req.n = 1;
-	in->vtable->send_input(in, &req.base);
-	in->vtable->send_input(in, NULL);
+	streaming__req__input_stream__send(in, &req);
+	streaming__req__input_stream__end(in);
 	assert(got_count == 1 && got_n[0] == 101);
-	in->vtable->destroy(in);
+	streaming__req__input_stream__destroy(in);
 
 	/* bidi uses the same return convention */
 	got_count = 0;
 	in = streaming__counter__both(&svc.base, NULL, collect, NULL);
 	assert(in != NULL);
-	in->vtable->destroy(in);
+	streaming__req__input_stream__destroy(in);
 
 	puts("streaming: ok");
 	return 0;
