@@ -315,17 +315,14 @@ GenerateHelperFunctionDeclarations(google::protobuf::io::Printer* printer,
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   // A typed view of a ProtobufCInputStream that accepts this message type.
   // It is only a cast of the stream: see protobuf_c_input_stream_send().
+  // A NULL message ends (and releases) the stream.
   printer->Print(vars,
 		 "typedef struct {\n"
 		 "  ProtobufCInputStream base;\n"
 		 "} $classname$__InputStream;\n"
 		 "protobuf_c_boolean $lcclassname$__input_stream__send\n"
 		 "                     ($classname$__InputStream *stream,\n"
-		 "                      const $classname$ *message);\n"
-		 "protobuf_c_boolean $lcclassname$__input_stream__end\n"
-		 "                     ($classname$__InputStream *stream);\n"
-		 "void   $lcclassname$__input_stream__destroy\n"
-		 "                     ($classname$__InputStream *stream);\n");
+		 "                      const $classname$ *message);\n");
   if (gen_init) {
     printer->Print(vars,
 		 "/* $classname$ methods */\n"
@@ -424,20 +421,8 @@ GenerateHelperFunctionDefinitions(google::protobuf::io::Printer* printer,
 		 "                      const $classname$ *message)\n"
 		 "{\n"
 		 "  assert(stream->base.input_descriptor == &$lcclassname$__descriptor);\n"
-		 "  return stream->base.vtable->send_input(&stream->base,\n"
-		 "                                         (const ProtobufCMessage *) message);\n"
-		 "}\n"
-		 "protobuf_c_boolean $lcclassname$__input_stream__end\n"
-		 "                     ($classname$__InputStream *stream)\n"
-		 "{\n"
-		 "  assert(stream->base.input_descriptor == &$lcclassname$__descriptor);\n"
-		 "  return stream->base.vtable->send_input(&stream->base, NULL);\n"
-		 "}\n"
-		 "void   $lcclassname$__input_stream__destroy\n"
-		 "                     ($classname$__InputStream *stream)\n"
-		 "{\n"
-		 "  assert(stream->base.input_descriptor == &$lcclassname$__descriptor);\n"
-		 "  stream->base.vtable->destroy(&stream->base);\n"
+		 "  return stream->base.send(&stream->base,\n"
+		 "                           (const ProtobufCMessage *) message);\n"
 		 "}\n");
   if (gen_init) {
     printer->Print(vars,

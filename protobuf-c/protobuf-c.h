@@ -376,7 +376,6 @@ typedef struct ProtobufCMethodDescriptor ProtobufCMethodDescriptor;
 typedef struct ProtobufCService ProtobufCService;
 typedef struct ProtobufCServiceDescriptor ProtobufCServiceDescriptor;
 typedef struct ProtobufCInputStream ProtobufCInputStream;
-typedef struct ProtobufCInputStreamVTable ProtobufCInputStreamVTable;
 
 /** Boolean type. */
 typedef int protobuf_c_boolean;
@@ -761,29 +760,25 @@ struct ProtobufCMethodDescriptor {
 	(PROTOBUF_C_INPUT_STREAMING | PROTOBUF_C_OUTPUT_STREAMING)
 
 /**
- * Virtual methods of a `ProtobufCInputStream`.
- */
-struct ProtobufCInputStreamVTable {
-	/**
-	 * Send the next request of the stream. The message is serialized (or
-	 * copied) before this returns. Passing NULL ends the stream (no more
-	 * requests will be sent). Returns false on failure.
-	 */
-	protobuf_c_boolean (*send_input)(ProtobufCInputStream *stream,
-					 const ProtobufCMessage *message);
-	/**
-	 * Release the stream object. If the stream was not ended, the call is
-	 * cancelled.
-	 */
-	void (*destroy)(ProtobufCInputStream *stream);
-};
-
-/**
- * The request side of a client-streaming call. Implementations (such as
- * grpc2) embed this as the first member of a larger structure.
+ * The request side of a client-streaming call: a sink for request messages.
+ * Implementations (such as grpc2) embed this as the first member of a larger
+ * structure. Like the closure of an output stream, it has a single entry
+ * point: `send` is called once per request, and a final time with a NULL
+ * message to say that the stream is done.
  */
 struct ProtobufCInputStream {
-	const ProtobufCInputStreamVTable *vtable;
+	/**
+	 * Send the next request. The message is serialized (or copied) before
+	 * this returns. Returns false on failure.
+	 *
+	 * A NULL message ends the stream: no more requests will be sent, and
+	 * the stream object is released, so it must not be used afterwards.
+	 * Every stream must therefore be ended exactly once. (A stream that
+	 * is ended while its call is still running half-closes the call; one
+	 * whose connection has gone away just frees itself.)
+	 */
+	protobuf_c_boolean (*send)(ProtobufCInputStream *stream,
+				   const ProtobufCMessage *message);
 
 	/**
 	 * Descriptor of the request message type this stream accepts. Set by
@@ -1171,27 +1166,14 @@ protobuf_c_service_generated_init(
 /**
  * Send the next request on an input stream. Returns false on failure,
  * including when `message` is not of the stream's `input_descriptor` type.
- * Passing NULL ends the stream (see protobuf_c_input_stream_end()).
+ * Passing NULL ends the stream and releases it (see ProtobufCInputStream).
  *
- * The generated `<service>__<method>__send()` functions are typed wrappers.
+ * The generated `<message>__input_stream__send()` functions are typed wrappers.
  */
 PROTOBUF_C__API
 protobuf_c_boolean
 protobuf_c_input_stream_send(ProtobufCInputStream *stream,
 			     const ProtobufCMessage *message);
-
-/** Signal that no more requests will be sent on the stream. */
-PROTOBUF_C__API
-protobuf_c_boolean
-protobuf_c_input_stream_end(ProtobufCInputStream *stream);
-
-/**
- * Release the stream. If it was not ended, the call is cancelled. The stream
- * must not be used afterwards.
- */
-PROTOBUF_C__API
-void
-protobuf_c_input_stream_destroy(ProtobufCInputStream *stream);
 
 PROTOBUF_C__API
 ProtobufCInputStream *

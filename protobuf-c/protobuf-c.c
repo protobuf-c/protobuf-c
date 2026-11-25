@@ -3516,19 +3516,7 @@ protobuf_c_input_stream_send(ProtobufCInputStream *stream,
 {
 	if (message != NULL && message->descriptor != stream->input_descriptor)
 		return 0;
-	return stream->vtable->send_input(stream, message);
-}
-
-protobuf_c_boolean
-protobuf_c_input_stream_end(ProtobufCInputStream *stream)
-{
-	return stream->vtable->send_input(stream, NULL);
-}
-
-void
-protobuf_c_input_stream_destroy(ProtobufCInputStream *stream)
-{
-	stream->vtable->destroy(stream);
+	return stream->send(stream, message);
 }
 
 typedef ProtobufCInputStream *(*GenericStreamHandler) (void *service,

@@ -17,8 +17,9 @@ typedef struct {
 
 static SumStream the_stream;
 
+/* NULL ends the stream: reply, and release the stream (here: record it). */
 static protobuf_c_boolean
-sum_send_input(ProtobufCInputStream *s, const ProtobufCMessage *m)
+sum_send(ProtobufCInputStream *s, const ProtobufCMessage *m)
 {
 	SumStream *ss = (SumStream *) s;
 	if (m == NULL) {
@@ -26,21 +27,12 @@ sum_send_input(ProtobufCInputStream *s, const ProtobufCMessage *m)
 		ss->ended = 1;
 		rsp.n = ss->sum;
 		ss->closure(&rsp.base, ss->closure_data);
+		ss->destroyed = 1;
 		return 1;
 	}
 	ss->sum += ((const Streaming__Req *) m)->n;
 	return 1;
 }
-
-static void
-sum_destroy(ProtobufCInputStream *s)
-{
-	((SumStream *) s)->destroyed = 1;
-}
-
-static const ProtobufCInputStreamVTable sum_vtable = {
-	sum_send_input, sum_destroy
-};
 
 static void
 my_unary(Streaming__Counter_Service *s, const Streaming__Req *in,
@@ -74,7 +66,7 @@ my_up(Streaming__Counter_Service *s, const Streaming__Req *in,
 {
 	(void) s;
 	memset(&the_stream, 0, sizeof the_stream);
-	the_stream.base.vtable = &sum_vtable;
+	the_stream.base.send = sum_send;
 	the_stream.base.input_descriptor = &streaming__req__descriptor;
 	the_stream.closure = (ProtobufCClosure) cl;
 	the_stream.closure_data = d;
@@ -137,7 +129,7 @@ main(void)
 	/* client streaming, no first message */
 	got_count = 0; got_end = 0;
 	in = streaming__counter__up(&svc.base, NULL, collect, NULL);
-	assert(in != NULL && in->base.vtable == &sum_vtable);
+	assert(in != NULL && in->base.send == sum_send);
 	req.n = 5;
 	assert(streaming__req__input_stream__send(in, &req));	/* typed */
 	req.n = 7;
@@ -152,10 +144,10 @@ main(void)
 		assert(got_count == 0);
 	}
 
-	assert(streaming__req__input_stream__end(in));	/* end of stream */
+	assert(!the_stream.ended);
+	assert(streaming__req__input_stream__send(in, NULL));	/* end of stream */
 	assert(got_count == 1 && got_n[0] == 12);
-	streaming__req__input_stream__destroy(in);
-	assert(the_stream.destroyed);
+	assert(the_stream.ended && the_stream.destroyed);
 
 	/* client streaming, first message supplied to invoke */
 	got_count = 0;
@@ -163,15 +155,14 @@ main(void)
 	in = streaming__counter__up(&svc.base, &req, collect, NULL);
 	req.n = 1;
 	streaming__req__input_stream__send(in, &req);
-	streaming__req__input_stream__end(in);
+	streaming__req__input_stream__send(in, NULL);
 	assert(got_count == 1 && got_n[0] == 101);
-	streaming__req__input_stream__destroy(in);
 
 	/* bidi uses the same return convention */
 	got_count = 0;
 	in = streaming__counter__both(&svc.base, NULL, collect, NULL);
 	assert(in != NULL);
-	streaming__req__input_stream__destroy(in);
+	streaming__req__input_stream__send(in, NULL);
 
 	puts("streaming: ok");
 	return 0;
