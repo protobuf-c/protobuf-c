@@ -62,7 +62,9 @@
 // Modified to implement C code by Dave Benson.
 
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <sstream>
 #include <set>
 #include <vector>
 
@@ -70,6 +72,7 @@
 #include <stdio.h>		// for snprintf
 
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/stubs/common.h>
 
 #include "c_helpers.h"
@@ -490,5 +493,132 @@ std::string CEscape(compat::StringView src) {
   GOOGLE_DCHECK_GE(len, 0);
   return std::string(dest.get(), len);
 }
+
+#if GOOGLE_PROTOBUF_VERSION >= 5026000
+// Edition features are only available from protobuf 26 on.  Older
+// descriptors have no ProtobufCFeatures emitted.
+#define PROTOBUF_C_HAVE_FEATURES 1
+
+namespace {
+
+using google::protobuf::FeatureSet;
+
+template <typename DescriptorT>
+FeatureValues GetFeatureValues(const DescriptorT* desc) {
+  // The resolved features are only exposed to code generators through this
+  // helper.
+  const FeatureSet& f =
+      google::protobuf::internal::InternalFeatureHelper::GetFeatures(*desc);
+  FeatureValues v;
+  v.field_presence = f.field_presence();
+  v.enum_type = f.enum_type();
+  v.repeated_field_encoding = f.repeated_field_encoding();
+  v.utf8_validation = f.utf8_validation();
+  v.message_encoding = f.message_encoding();
+  v.json_format = f.json_format();
+  return v;
+}
+
+std::string FeaturesName(const google::protobuf::FileDescriptor* file,
+                         const FeatureValues& v) {
+  std::ostringstream s;
+  s << FilenameIdentifier(file->name()) << "__features_"
+    << v.field_presence << '_' << v.enum_type << '_'
+    << v.repeated_field_encoding << '_' << v.utf8_validation << '_'
+    << v.message_encoding << '_' << v.json_format;
+  return s.str();
+}
+
+template <typename DescriptorT>
+std::string FeaturesRef(const DescriptorT* desc) {
+  return "&" + FeaturesName(desc->file(), GetFeatureValues(desc));
+}
+
+typedef std::set<std::string> NameSet;
+
+void CollectEnum(const google::protobuf::EnumDescriptor* e,
+                 std::map<std::string, FeatureValues>* out) {
+  FeatureValues v = GetFeatureValues(e);
+  (*out)[FeaturesName(e->file(), v)] = v;
+}
+
+void CollectField(const google::protobuf::FieldDescriptor* f,
+                  std::map<std::string, FeatureValues>* out) {
+  FeatureValues v = GetFeatureValues(f);
+  (*out)[FeaturesName(f->file(), v)] = v;
+}
+
+void CollectMessage(const google::protobuf::Descriptor* m,
+                    std::map<std::string, FeatureValues>* out) {
+  FeatureValues v = GetFeatureValues(m);
+  (*out)[FeaturesName(m->file(), v)] = v;
+  for (int i = 0; i < m->field_count(); i++)
+    CollectField(m->field(i), out);
+  for (int i = 0; i < m->extension_count(); i++)
+    CollectField(m->extension(i), out);
+  for (int i = 0; i < m->enum_type_count(); i++)
+    CollectEnum(m->enum_type(i), out);
+  for (int i = 0; i < m->nested_type_count(); i++)
+    CollectMessage(m->nested_type(i), out);
+}
+
+}  // namespace
+
+std::string FeaturesReference(const google::protobuf::Descriptor* desc) {
+  return FeaturesRef(desc);
+}
+std::string FeaturesReference(const google::protobuf::FieldDescriptor* desc) {
+  return FeaturesRef(desc);
+}
+std::string FeaturesReference(const google::protobuf::EnumDescriptor* desc) {
+  return FeaturesRef(desc);
+}
+
+void PrintFeaturesDefinitions(const google::protobuf::FileDescriptor* file,
+                              google::protobuf::io::Printer* printer) {
+  std::map<std::string, FeatureValues> all;
+  for (int i = 0; i < file->message_type_count(); i++)
+    CollectMessage(file->message_type(i), &all);
+  for (int i = 0; i < file->enum_type_count(); i++)
+    CollectEnum(file->enum_type(i), &all);
+  for (int i = 0; i < file->extension_count(); i++)
+    CollectField(file->extension(i), &all);
+  if (all.empty())
+    return;
+
+  printer->Print("/* Resolved edition features, shared by the descriptors below. */\n");
+  for (const auto& kv : all) {
+    std::map<std::string, std::string> vars;
+    vars["name"] = kv.first;
+    vars["field_presence"] = SimpleItoa(kv.second.field_presence);
+    vars["enum_type"] = SimpleItoa(kv.second.enum_type);
+    vars["repeated_field_encoding"] = SimpleItoa(kv.second.repeated_field_encoding);
+    vars["utf8_validation"] = SimpleItoa(kv.second.utf8_validation);
+    vars["message_encoding"] = SimpleItoa(kv.second.message_encoding);
+    vars["json_format"] = SimpleItoa(kv.second.json_format);
+    printer->Print(vars,
+      "static const ProtobufCFeatures $name$ =\n"
+      "{\n"
+      "  sizeof(ProtobufCFeatures),\n"
+      "  $field_presence$, /* field_presence */\n"
+      "  $enum_type$, /* enum_type */\n"
+      "  $repeated_field_encoding$, /* repeated_field_encoding */\n"
+      "  $utf8_validation$, /* utf8_validation */\n"
+      "  $message_encoding$, /* message_encoding */\n"
+      "  $json_format$ /* json_format */\n"
+      "};\n");
+  }
+  printer->Print("\n");
+}
+
+#else  // GOOGLE_PROTOBUF_VERSION < 5026000
+
+std::string FeaturesReference(const google::protobuf::Descriptor*) { return "NULL"; }
+std::string FeaturesReference(const google::protobuf::FieldDescriptor*) { return "NULL"; }
+std::string FeaturesReference(const google::protobuf::EnumDescriptor*) { return "NULL"; }
+void PrintFeaturesDefinitions(const google::protobuf::FileDescriptor*,
+                              google::protobuf::io::Printer*) {}
+
+#endif
 
 }  // namespace protobuf_c

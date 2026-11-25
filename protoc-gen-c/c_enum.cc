@@ -184,6 +184,7 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
   vars["fullname"] = std::string(descriptor_->full_name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["cname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
+  vars["features"] = FeaturesReference(descriptor_);
   vars["shortname"] = std::string(descriptor_->name());
   vars["packagename"] = std::string(descriptor_->file()->package());
   vars["value_count"] = SimpleItoa(descriptor_->value_count());
@@ -298,7 +299,8 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
         "  0, NULL, /* CODE_SIZE */\n"
         "  $n_ranges$,\n"
         "  $lcclassname$__value_ranges,\n"
-        "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
+        "  $features$,\n"
+        "  NULL,NULL,NULL   /* reserved[234] */\n"
         "};\n");
   } else {
     printer->Print(vars,
@@ -315,7 +317,8 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
         "  $lcclassname$__enum_values_by_name,\n"
         "  $n_ranges$,\n"
         "  $lcclassname$__value_ranges,\n"
-        "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
+        "  $features$,\n"
+        "  NULL,NULL,NULL   /* reserved[234] */\n"
         "};\n");
   }
 }

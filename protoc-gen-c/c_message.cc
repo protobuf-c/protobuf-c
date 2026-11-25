@@ -466,6 +466,7 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
   vars["classname"] = FullNameToC(descriptor_->full_name(), descriptor_->file());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name(), descriptor_->file());
   vars["shortname"] = ToCamel(descriptor_->name());
+  vars["features"] = FeaturesReference(descriptor_);
   vars["n_fields"] = SimpleItoa(descriptor_->field_count());
   vars["packagename"] = std::string(descriptor_->file()->package());
 
@@ -649,7 +650,8 @@ GenerateMessageDescriptor(google::protobuf::io::Printer* printer, bool gen_init)
     printer->Print(vars, "  NULL, /* gen_init_helpers = false */\n");
   }
   printer->Print(vars,
-    "  NULL,NULL,NULL    /* reserved[123] */\n"
+    "  $features$,\n"
+    "  NULL,NULL    /* reserved[23] */\n"
     "};\n");
 }
 

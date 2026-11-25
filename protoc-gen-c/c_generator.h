@@ -94,9 +94,9 @@ class PROTOBUF_C_EXPORT CGenerator : public google::protobuf::compiler::CodeGene
                 std::string* error) const;
 
 #if GOOGLE_PROTOBUF_VERSION >= 5026000
-  uint64_t GetSupportedFeatures() const { return 0; }
+  uint64_t GetSupportedFeatures() const { return FEATURE_SUPPORTS_EDITIONS; }
   google::protobuf::Edition GetMinimumEdition() const { return google::protobuf::Edition::EDITION_PROTO2; }
-  google::protobuf::Edition GetMaximumEdition() const { return google::protobuf::Edition::EDITION_PROTO3; }
+  google::protobuf::Edition GetMaximumEdition() const { return google::protobuf::Edition::EDITION_2023; }
 #endif
 };
 

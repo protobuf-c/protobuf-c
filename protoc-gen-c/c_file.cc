@@ -242,6 +242,8 @@ void FileGenerator::GenerateSource(google::protobuf::io::Printer* printer) {
 
   const ProtobufCFileOptions opt = file_->options().GetExtension(pb_c_file);
 
+  PrintFeaturesDefinitions(file_, printer);
+
   for (int i = 0; i < file_->message_type_count(); i++) {
     message_generators_[i]->GenerateHelperFunctionDefinitions(
 						printer,

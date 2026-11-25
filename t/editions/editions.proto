@@ -1,0 +1,31 @@
+edition = "2023";
+
+package editions;
+
+enum Color {
+  RED = 0;
+  GREEN = 1;
+}
+
+message Msg {
+  // Edition 2023 defaults: explicit presence, packed repeated, open enums.
+  int32 explicit_int = 1;
+  string explicit_str = 2;
+  bytes explicit_bytes = 3;
+  Color explicit_enum = 4;
+  repeated int32 packed_ints = 5;
+  repeated int32 expanded_ints = 6 [features.repeated_field_encoding = EXPANDED];
+
+  // proto3-style implicit presence.
+  int32 implicit_int = 7 [features.field_presence = IMPLICIT];
+  string implicit_str = 8 [features.field_presence = IMPLICIT];
+  bytes implicit_bytes = 9 [features.field_presence = IMPLICIT];
+  Color implicit_enum = 10 [features.field_presence = IMPLICIT];
+
+  int32 required_int = 11 [features.field_presence = LEGACY_REQUIRED];
+  int32 with_default = 12 [default = 42];
+  oneof choice {
+    int32 choice_int = 13;
+    string choice_str = 14;
+  }
+}

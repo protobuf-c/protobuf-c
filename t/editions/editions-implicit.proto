@@ -1,0 +1,17 @@
+edition = "2023";
+
+package editions;
+
+// File-level features: this file behaves like proto3 (implicit presence).
+option features.field_presence = IMPLICIT;
+option features.enum_type = OPEN;
+
+message Implicit {
+  int32 a = 1;
+  string b = 2;
+  bytes c = 3;
+  repeated int64 d = 4;
+  repeated int64 e = 5 [features.repeated_field_encoding = EXPANDED];
+  // Individual fields can opt back in to explicit presence.
+  int32 f = 6 [features.field_presence = EXPLICIT];
+}

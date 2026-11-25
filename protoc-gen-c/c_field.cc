@@ -124,7 +124,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
   if (oneof != NULL)
     variables["oneofname"] = CamelToLower(oneof->name());
 
-  if (FieldSyntax(descriptor_) == 3 &&
+  if (FieldHasImplicitPresence(descriptor_) &&
     descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_OPTIONAL) {
     variables["LABEL"] = "NONE";
     optional_uses_has = false;
@@ -136,7 +136,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
     variables["default_value"] = std::string("&")
                                + FullNameToLower(descriptor_->full_name(), descriptor_->file())
 			       + "__default_value";
-  } else if (FieldSyntax(descriptor_) == 3 &&
+  } else if (FieldHasImplicitPresence(descriptor_) &&
     descriptor_->type() == google::protobuf::FieldDescriptor::TYPE_STRING) {
     variables["default_value"] = "&protobuf_c_empty_string";
   } else {
@@ -144,15 +144,13 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
   }
 
   variables["flags"] = "0";
+  variables["features"] = FeaturesReference(descriptor_);
 
+  // is_packed() accounts for the proto3 default and for the edition
+  // feature repeated_field_encoding.
   if (descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_REPEATED
    && is_packable_type (descriptor_->type())
-   && descriptor_->options().packed()) {
-    variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
-  } else if (descriptor_->label() == google::protobuf::FieldDescriptor::LABEL_REPEATED
-   && is_packable_type (descriptor_->type())
-   && FieldSyntax(descriptor_) == 3
-   && !descriptor_->options().has_packed()) {
+   && descriptor_->is_packed()) {
     variables["flags"] += " | PROTOBUF_C_FIELD_FLAG_PACKED";
   }
 
@@ -200,7 +198,7 @@ void FieldGenerator::GenerateDescriptorInitializerGeneric(google::protobuf::io::
   printer->Print(variables, "  $descriptor_addr$,\n");
   printer->Print(variables, "  $default_value$,\n");
   printer->Print(variables, "  $flags$,             /* flags */\n");
-  printer->Print(variables, "  0,NULL,NULL    /* reserved1,reserved2, etc */\n");
+  printer->Print(variables, "  0,$features$,NULL    /* reserved_flags,features,reserved3 */\n");
   printer->Print("},\n");
 }
 
