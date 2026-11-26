@@ -3510,13 +3510,28 @@ typedef void (*GenericHandler) (void *service,
 				const ProtobufCMessage *input,
 				ProtobufCClosure closure,
 				void *closure_data);
-void
+protobuf_c_boolean
+protobuf_c_input_stream_send(ProtobufCInputStream *stream,
+			     const ProtobufCMessage *message)
+{
+	if (message != NULL && message->descriptor != stream->input_descriptor)
+		return 0;
+	return stream->send(stream, message);
+}
+
+typedef ProtobufCInputStream *(*GenericStreamHandler) (void *service,
+				const ProtobufCMessage *input,
+				ProtobufCClosure closure,
+				void *closure_data);
+ProtobufCInputStream *
 protobuf_c_service_invoke_internal(ProtobufCService *service,
-				   unsigned method_index,
+				   unsigned method_index_and_flags,
 				   const ProtobufCMessage *input,
 				   ProtobufCClosure closure,
 				   void *closure_data)
 {
+	unsigned method_index = method_index_and_flags & ~PROTOBUF_C_STREAMING_MASK;
+	unsigned flags = method_index_and_flags & PROTOBUF_C_STREAMING_MASK;
 	GenericHandler *handlers;
 	GenericHandler handler;
 
@@ -3526,6 +3541,10 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
 	 * other memory corruption bugs can cause this assertion too.)
 	 */
 	assert(method_index < service->descriptor->n_methods);
+
+	/* The caller's streaming flags must agree with the descriptor. */
+	assert(flags == (service->descriptor->methods[method_index].flags &
+			 PROTOBUF_C_STREAMING_MASK));
 
 	/*
 	 * Get the array of virtual methods (which are enumerated by the
@@ -3538,7 +3557,21 @@ protobuf_c_service_invoke_internal(ProtobufCService *service,
 	 * \todo Seems like handler == NULL is a situation that needs handling.
 	 */
 	handler = handlers[method_index];
+	if (flags & PROTOBUF_C_INPUT_STREAMING) {
+		ProtobufCInputStream *stream;
+
+		/* Generated handlers of input-streaming methods return a stream. */
+		stream = ((GenericStreamHandler) handler)(service, input,
+							  closure,
+							  closure_data);
+		/* The stream must accept this method's request type. */
+		assert(stream == NULL ||
+		       stream->input_descriptor ==
+		       service->descriptor->methods[method_index].input);
+		return stream;
+	}
 	(*handler)(service, input, closure, closure_data);
+	return NULL;
 }
 
 void

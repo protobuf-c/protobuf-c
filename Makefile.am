@@ -377,6 +377,23 @@ EXTRA_DIST += \
 
 #
 #
+
+# Streaming service descriptors and dispatch
+check_PROGRAMS += \
+	t/streaming/streaming
+TESTS += \
+	t/streaming/streaming
+t_streaming_streaming_SOURCES = \
+	t/streaming/streaming.c \
+	t/streaming/streaming.pb-c.c
+t_streaming_streaming_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/streaming/streaming.pb-c.c t/streaming/streaming.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/streaming/streaming.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/streaming/streaming.proto
+BUILT_SOURCES += \
+	t/streaming/streaming.pb-c.c t/streaming/streaming.pb-c.h
+EXTRA_DIST += \
+	t/streaming/streaming.proto
 #
 
 CLEANFILES += $(BUILT_SOURCES)

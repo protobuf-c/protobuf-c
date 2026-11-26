@@ -143,6 +143,19 @@ bool CGenerator::Generate(const google::protobuf::FileDescriptor* file,
 
   // -----------------------------------------------------------------
 
+  // ProtobufCService::invoke() carries the streaming flags in the top two
+  // bits of the method index (PROTOBUF_C_INPUT_STREAMING is 1 << 30 and
+  // PROTOBUF_C_OUTPUT_STREAMING is 1 << 31), so a service must have fewer
+  // than 1 << 30 methods for its indices not to collide with them.
+  for (int i = 0; i < file->service_count(); i++) {
+    const google::protobuf::ServiceDescriptor* service = file->service(i);
+    if (static_cast<unsigned>(service->method_count()) >= (1u << 30)) {
+      *error = "service " + std::string(service->full_name()) +
+               " has too many methods: protobuf-c needs fewer than 2^30 "
+               "so that the streaming flags fit in a method index";
+      return false;
+    }
+  }
 
   std::string basename = StripProto(file->name());
   basename.append(".pb-c");

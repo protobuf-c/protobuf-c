@@ -261,6 +261,16 @@ if(BUILD_PROTOC)
                     t/issue251/issue251.pb-c.h)
     target_link_libraries(test-issue251 protobuf-c)
 
+    generate_test_sources(${TEST_DIR}/streaming/streaming.proto
+                          t/streaming/streaming.pb-c.c
+                          t/streaming/streaming.pb-c.h)
+    add_executable(
+      test-streaming ${TEST_DIR}/streaming/streaming.c
+                     t/streaming/streaming.pb-c.c t/streaming/streaming.pb-c.h)
+    target_include_directories(test-streaming PRIVATE ${MAIN_DIR}
+                               ${CMAKE_CURRENT_BINARY_DIR})
+    target_link_libraries(test-streaming protobuf-c)
+
     add_executable(test-version ${TEST_DIR}/version/version.c)
     target_link_libraries(test-version protobuf-c)
 
@@ -344,12 +354,13 @@ if(BUILD_TESTS)
   add_test(test-generated-code3 test-generated-code3)
   add_test(test-issue220 test-issue220)
   add_test(test-issue251 test-issue251)
+  add_test(test-streaming test-streaming)
   add_test(test-version test-version)
 
   if(WIN32)
     set_tests_properties(
       test-generated-code test-generated-code2 test-generated-code3
-      test-issue220 test-issue251 test-version
+      test-issue220 test-issue251 test-streaming test-version
       PROPERTIES
         ENVIRONMENT
         "PATH=${WINDOWS_PATH_VARIABLE}\\;$<TARGET_FILE_DIR:protoc-gen-c>")

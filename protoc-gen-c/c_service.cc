@@ -69,6 +69,39 @@
 
 namespace protobuf_c {
 
+// Flags expression with the given constant prefix: the descriptor uses
+// PROTOBUF_C_METHOD_*_STREAMING, and invoke() uses PROTOBUF_C_*_STREAMING.
+static std::string MethodFlagsWithPrefix(const google::protobuf::MethodDescriptor* method,
+                                         const char* prefix) {
+  std::string flags;
+  if (method->client_streaming()) flags = std::string(prefix) + "INPUT_STREAMING";
+  if (method->server_streaming()) {
+    if (!flags.empty()) flags += " | ";
+    flags += std::string(prefix) + "OUTPUT_STREAMING";
+  }
+  return flags.empty() ? "0" : flags;
+}
+static std::string MethodFlags(const google::protobuf::MethodDescriptor* method) {
+  return MethodFlagsWithPrefix(method, "PROTOBUF_C_METHOD_");
+}
+static std::string InvokeFlags(const google::protobuf::MethodDescriptor* method) {
+  return MethodFlagsWithPrefix(method, "PROTOBUF_C_");
+}
+
+// Return type of handlers and callers: input-streaming methods hand back the
+// stream through which further requests are sent.
+static std::string ReturnType(const google::protobuf::MethodDescriptor* method) {
+  return method->client_streaming() ? "ProtobufCInputStream *" : "void";
+}
+
+// Return type of callers: as above, but the stream is the typed wrapper of the
+// method's input message type (see MessageGenerator).
+static std::string CallerReturnType(const google::protobuf::MethodDescriptor* method) {
+  if (!method->client_streaming()) return "void";
+  return FullNameToC(method->input_type()->full_name(), method->input_type()->file()) +
+         "__InputStream *";
+}
+
 ServiceGenerator::ServiceGenerator(const google::protobuf::ServiceDescriptor* descriptor,
                                    const std::string& dllexport_decl)
   : descriptor_(descriptor) {
@@ -109,11 +142,13 @@ void ServiceGenerator::GenerateVfuncs(google::protobuf::io::Printer* printer)
     vars_["metpad"] = ConvertToSpaces(lcname);
     vars_["input_typename"] = FullNameToC(method->input_type()->full_name(), method->input_type()->file());
     vars_["output_typename"] = FullNameToC(method->output_type()->full_name(), method->output_type()->file());
+    vars_["rettype"] = ReturnType(method);
+    vars_["retpad"] = ConvertToSpaces(ReturnType(method));
     printer->Print(vars_,
-                   "  void (*$method$)($cname$_Service *service,\n"
-                   "         $metpad$  const $input_typename$ *input,\n"
-                   "         $metpad$  $output_typename$_Closure closure,\n"
-                   "         $metpad$  void *closure_data);\n");
+                   "  $rettype$ (*$method$)($cname$_Service *service,\n"
+                   "         $retpad$ $metpad$  const $input_typename$ *input,\n"
+                   "         $retpad$ $metpad$  $output_typename$_Closure closure,\n"
+                   "         $retpad$ $metpad$  void *closure_data);\n");
   }
   printer->Print(vars_,
 		 "};\n");
@@ -151,11 +186,13 @@ void ServiceGenerator::GenerateCallersDeclarations(google::protobuf::io::Printer
     vars_["input_typename"] = FullNameToC(method->input_type()->full_name(), method->input_type()->file());
     vars_["output_typename"] = FullNameToC(method->output_type()->full_name(), method->output_type()->file());
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
+    vars_["rettype"] = CallerReturnType(method);
+    vars_["retpad"] = ConvertToSpaces(CallerReturnType(method));
     printer->Print(vars_,
-                   "void $lcfullname$__$method$(ProtobufCService *service,\n"
-                   "     $padddddddddddddddddd$ const $input_typename$ *input,\n"
-                   "     $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
-                   "     $padddddddddddddddddd$ void *closure_data);\n");
+                   "$rettype$ $lcfullname$__$method$(ProtobufCService *service,\n"
+                   "     $retpad$ $padddddddddddddddddd$ const $input_typename$ *input,\n"
+                   "     $retpad$ $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
+                   "     $retpad$ $padddddddddddddddddd$ void *closure_data);\n");
   }
 }
 
@@ -210,12 +247,13 @@ void ServiceGenerator::GenerateServiceDescriptor(google::protobuf::io::Printer* 
     vars_["method"] = std::string(method->name());
     vars_["input_descriptor"] = "&" + FullNameToLower(method->input_type()->full_name(), method->input_type()->file()) + "__descriptor";
     vars_["output_descriptor"] = "&" + FullNameToLower(method->output_type()->full_name(), method->output_type()->file()) + "__descriptor";
+    vars_["method_flags"] = MethodFlags(method);
     if (optimize_code_size) {
       printer->Print(vars_,
-          "  { NULL, $input_descriptor$, $output_descriptor$ }, /* CODE_SIZE */\n");
+          "  { NULL, $input_descriptor$, $output_descriptor$, $method_flags$ }, /* CODE_SIZE */\n");
     } else {
       printer->Print(vars_,
-          "  { \"$method$\", $input_descriptor$, $output_descriptor$ },\n");
+          "  { \"$method$\", $input_descriptor$, $output_descriptor$, $method_flags$ },\n");
     }
     mi_array.push_back({i, method->name()});
   }
@@ -273,16 +311,35 @@ void ServiceGenerator::GenerateCallersImplementations(google::protobuf::io::Prin
     vars_["output_typename"] = FullNameToC(method->output_type()->full_name(), method->output_type()->file());
     vars_["padddddddddddddddddd"] = ConvertToSpaces(lcfullname + "__" + lcname);
     vars_["index"] = SimpleItoa(i);
+    vars_["rettype"] = CallerReturnType(method);
+    vars_["retpad"] = ConvertToSpaces(CallerReturnType(method));
+    vars_["input_descriptor_name"] = FullNameToLower(method->input_type()->full_name(), method->input_type()->file());
+    vars_["flags_or"] = InvokeFlags(method) == "0" ? "" : " | " + InvokeFlags(method);
 
-    printer->Print(vars_,
-                   "void $lcfullname$__$method$(ProtobufCService *service,\n"
-                   "     $padddddddddddddddddd$ const $input_typename$ *input,\n"
-                   "     $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
-                   "     $padddddddddddddddddd$ void *closure_data)\n"
-		   "{\n"
-		   "  assert(service->descriptor == &$lcfullname$__descriptor);\n"
-		   "  service->invoke(service, $index$, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);\n"
-		   "}\n");
+    if (method->client_streaming()) {
+      printer->Print(vars_,
+                   "$rettype$ $lcfullname$__$method$(ProtobufCService *service,\n"
+                   "     $retpad$ $padddddddddddddddddd$ const $input_typename$ *input,\n"
+                   "     $retpad$ $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
+                   "     $retpad$ $padddddddddddddddddd$ void *closure_data)\n"
+                   "{\n"
+                   "  ProtobufCInputStream *stream;\n"
+                   "  assert(service->descriptor == &$lcfullname$__descriptor);\n"
+                   "  stream = service->invoke(service, $index$$flags_or$, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);\n"
+                   "  assert(stream == NULL || stream->input_descriptor == &$input_descriptor_name$__descriptor);\n"
+                   "  return ($rettype$) stream;\n"
+                   "}\n");
+    } else {
+      printer->Print(vars_,
+                   "$rettype$ $lcfullname$__$method$(ProtobufCService *service,\n"
+                   "     $retpad$ $padddddddddddddddddd$ const $input_typename$ *input,\n"
+                   "     $retpad$ $padddddddddddddddddd$ $output_typename$_Closure closure,\n"
+                   "     $retpad$ $padddddddddddddddddd$ void *closure_data)\n"
+                   "{\n"
+                   "  assert(service->descriptor == &$lcfullname$__descriptor);\n"
+                   "  service->invoke(service, $index$$flags_or$, (const ProtobufCMessage *) input, (ProtobufCClosure) closure, closure_data);\n"
+                   "}\n");
+    }
   }
 }
 
