@@ -92,6 +92,10 @@ else
   PROTOBUF_VERSION="not required, not building compiler"
 fi
 
+# Edition 2023 .proto files need protoc >= 27 (libprotoc 27.0 and later).
+protoc_major=`echo "$PROTOBUF_VERSION" | sed -n 's/^libprotoc \([[0-9]]*\)\..*/\1/p'`
+AM_CONDITIONAL([TEST_EDITIONS],
+               [test "x$enable_protoc" != "xno" && test -n "$protoc_major" && test "$protoc_major" -ge 27])
 AM_CONDITIONAL([BUILD_COMPILER], [test "x$enable_protoc" != "xno"])
 AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" != "xno"])
 

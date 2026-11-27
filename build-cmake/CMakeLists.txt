@@ -261,6 +261,45 @@ if(BUILD_PROTOC)
                     t/issue251/issue251.pb-c.h)
     target_link_libraries(test-issue251 protobuf-c)
 
+    # Edition 2023 .proto files need protoc >= 27.
+    if(NOT Protobuf_VERSION VERSION_LESS 27)
+      set(TEST_EDITIONS TRUE)
+      generate_test_sources(${TEST_DIR}/editions/editions.proto
+                            t/editions/editions.pb-c.c
+                            t/editions/editions.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/editions-implicit.proto
+                            t/editions/editions-implicit.pb-c.c
+                            t/editions/editions-implicit.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/utf8-proto3.proto
+                            t/editions/utf8-proto3.pb-c.c
+                            t/editions/utf8-proto3.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/utf8-proto2.proto
+                            t/editions/utf8-proto2.pb-c.c
+                            t/editions/utf8-proto2.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/enums.proto
+                            t/editions/enums.pb-c.c
+                            t/editions/enums.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/enums-proto2.proto
+                            t/editions/enums-proto2.pb-c.c
+                            t/editions/enums-proto2.pb-c.h)
+      add_executable(
+        test-editions ${TEST_DIR}/editions/editions.c
+                      t/editions/editions.pb-c.c t/editions/editions.pb-c.h
+                      t/editions/editions-implicit.pb-c.c
+                      t/editions/editions-implicit.pb-c.h
+                      t/editions/utf8-proto3.pb-c.c
+                      t/editions/utf8-proto3.pb-c.h
+                      t/editions/utf8-proto2.pb-c.c
+                      t/editions/utf8-proto2.pb-c.h
+                      t/editions/enums.pb-c.c
+                      t/editions/enums.pb-c.h
+                      t/editions/enums-proto2.pb-c.c
+                      t/editions/enums-proto2.pb-c.h)
+      target_include_directories(test-editions PRIVATE ${MAIN_DIR}
+                                 ${CMAKE_CURRENT_BINARY_DIR})
+      target_link_libraries(test-editions protobuf-c)
+    endif()
+
     add_executable(test-version ${TEST_DIR}/version/version.c)
     target_link_libraries(test-version protobuf-c)
 
@@ -344,10 +383,17 @@ if(BUILD_TESTS)
   add_test(test-generated-code3 test-generated-code3)
   add_test(test-issue220 test-issue220)
   add_test(test-issue251 test-issue251)
+  if(TEST_EDITIONS)
+    add_test(test-editions test-editions)
+  endif()
   add_test(test-version test-version)
 
+  if(TEST_EDITIONS)
+    set(TEST_EDITIONS_NAME test-editions)
+  endif()
   if(WIN32)
     set_tests_properties(
+      ${TEST_EDITIONS_NAME}
       test-generated-code test-generated-code2 test-generated-code3
       test-issue220 test-issue251 test-version
       PROPERTIES

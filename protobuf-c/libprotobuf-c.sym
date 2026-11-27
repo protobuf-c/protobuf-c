@@ -26,3 +26,10 @@ LIBPROTOBUF_C_1.3.0 {
 global:
         protobuf_c_empty_string;
 } LIBPROTOBUF_C_1.0.0;
+
+LIBPROTOBUF_C_1.6.0 {
+global:
+        protobuf_c_message_validate_utf8;
+        protobuf_c_validate_utf8;
+        protobuf_c_validate_utf8_strict;
+} LIBPROTOBUF_C_1.3.0;

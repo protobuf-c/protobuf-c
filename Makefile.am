@@ -379,6 +379,50 @@ EXTRA_DIST += \
 #
 #
 
+# Editions (requires a protoc that understands "edition = 2023")
+if TEST_EDITIONS
+check_PROGRAMS += \
+	t/editions/editions
+TESTS += \
+	t/editions/editions
+t_editions_editions_SOURCES = \
+	t/editions/editions.c \
+	t/editions/editions.pb-c.c \
+	t/editions/editions-implicit.pb-c.c \
+	t/editions/utf8-proto3.pb-c.c \
+	t/editions/utf8-proto2.pb-c.c \
+	t/editions/enums.pb-c.c \
+	t/editions/enums-proto2.pb-c.c
+t_editions_editions_LDADD = \
+	protobuf-c/libprotobuf-c.la
+t/editions/editions.pb-c.c t/editions/editions.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/editions/editions.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/editions/editions.proto
+t/editions/editions-implicit.pb-c.c t/editions/editions-implicit.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/editions/editions-implicit.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/editions/editions-implicit.proto
+t/editions/utf8-proto3.pb-c.c t/editions/utf8-proto3.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/editions/utf8-proto3.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/editions/utf8-proto3.proto
+t/editions/utf8-proto2.pb-c.c t/editions/utf8-proto2.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/editions/utf8-proto2.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/editions/utf8-proto2.proto
+t/editions/enums.pb-c.c t/editions/enums.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/editions/enums.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/editions/enums.proto
+t/editions/enums-proto2.pb-c.c t/editions/enums-proto2.pb-c.h: $(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) $(top_srcdir)/t/editions/enums-proto2.proto
+	$(AM_V_GEN)@PROTOC@ --plugin=protoc-gen-c=$(top_builddir)/protoc-gen-c/protoc-gen-c$(EXEEXT) -I$(top_srcdir) --c_out=$(top_builddir) $(top_srcdir)/t/editions/enums-proto2.proto
+BUILT_SOURCES += \
+	t/editions/editions.pb-c.c t/editions/editions.pb-c.h \
+	t/editions/editions-implicit.pb-c.c t/editions/editions-implicit.pb-c.h \
+	t/editions/utf8-proto3.pb-c.c t/editions/utf8-proto3.pb-c.h \
+	t/editions/utf8-proto2.pb-c.c t/editions/utf8-proto2.pb-c.h \
+	t/editions/enums.pb-c.c t/editions/enums.pb-c.h \
+	t/editions/enums-proto2.pb-c.c t/editions/enums-proto2.pb-c.h
+endif
+EXTRA_DIST += \
+	t/editions/editions.proto \
+	t/editions/editions-implicit.proto \
+	t/editions/utf8-proto3.proto \
+	t/editions/utf8-proto2.proto \
+	t/editions/enums.proto \
+	t/editions/enums-proto2.proto
+
 CLEANFILES += $(BUILT_SOURCES)
 
 dist-hook:

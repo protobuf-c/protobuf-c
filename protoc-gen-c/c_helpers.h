@@ -164,23 +164,50 @@ struct NameIndex
 };
 int compare_name_indices_by_name(const void*, const void*);
 
-// Return the syntax version of the file containing the field.
-inline int FieldSyntax(const google::protobuf::FieldDescriptor* field) {
+// Returns true if the field has "implicit" presence: a singular field
+// without a has_ flag, whose zero value is simply not serialized.
+//
+// proto2 fields (and editions fields with features.field_presence = EXPLICIT
+// or LEGACY_REQUIRED) have explicit presence.  Every proto3 field is treated
+// as implicit here, as protobuf-c always has (including proto3 "optional"
+// and oneof members); editions files follow features.field_presence.
+inline bool FieldHasImplicitPresence(const google::protobuf::FieldDescriptor* field) {
   auto proto = google::protobuf::FileDescriptorProto();
   field->file()->CopyTo(&proto);
 
   if (proto.has_syntax()) {
-    auto syntax = proto.syntax();
-    assert(syntax == "proto2" || syntax == "proto3");
-    if (syntax == "proto2") {
-      return 2;
-    } else if (syntax == "proto3") {
-      return 3;
-    }
+    const std::string& syntax = proto.syntax();
+    if (syntax == "proto3")
+      return true;
+    if (syntax == "editions")
+      return !field->has_presence();
   }
-
-  return 2;
+  return false;
 }
+
+// The resolved edition features of a descriptor, as emitted into the
+// ProtobufCFeatures structure (the numeric values are those of FeatureSet in
+// descriptor.proto).
+struct FeatureValues {
+  int field_presence;
+  int enum_type;
+  int repeated_field_encoding;
+  int utf8_validation;
+  int message_encoding;
+  int json_format;
+};
+
+// Returns the C expression ("&name" or "NULL") that points to the
+// ProtobufCFeatures for the given descriptor.  The definitions of the
+// referenced objects are written by PrintFeaturesDefinitions().
+std::string FeaturesReference(const google::protobuf::Descriptor* desc);
+std::string FeaturesReference(const google::protobuf::FieldDescriptor* desc);
+std::string FeaturesReference(const google::protobuf::EnumDescriptor* desc);
+
+// Writes a static ProtobufCFeatures for each distinct set of features used by
+// the messages, fields and enums of the file.
+void PrintFeaturesDefinitions(const google::protobuf::FileDescriptor* file,
+                              google::protobuf::io::Printer* printer);
 
 }  // namespace protobuf_c
 

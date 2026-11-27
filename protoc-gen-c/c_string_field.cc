@@ -131,7 +131,7 @@ void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* pri
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
   if (descriptor_->has_default_value()) {
     vars["default"] = GetDefaultValue();
-  } else if (FieldSyntax(descriptor_) == 2) {
+  } else if (!FieldHasImplicitPresence(descriptor_)) {
     vars["default"] = "NULL";
   } else if (opt.const_strings()) {
     vars["default"] = "(const char *)protobuf_c_empty_string";

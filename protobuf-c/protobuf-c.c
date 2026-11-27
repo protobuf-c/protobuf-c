@@ -88,6 +88,65 @@
 const char protobuf_c_empty_string[] = "";
 #endif
 
+/* ---- UTF-8 validation of string fields ---- */
+
+protobuf_c_boolean
+protobuf_c_validate_utf8_strict(size_t len, const char *data)
+{
+	const uint8_t *s = (const uint8_t *) data;
+	const uint8_t *end = s + len;
+
+	while (s < end) {
+		uint8_t c = *s;
+
+		if (c < 0x80) {
+			s++;
+			continue;
+		}
+		if (c >= 0xc2 && c <= 0xdf) {		/* 2 bytes */
+			if (end - s < 2 || (s[1] & 0xc0) != 0x80)
+				return FALSE;
+			s += 2;
+		} else if (c >= 0xe0 && c <= 0xef) {	/* 3 bytes */
+			if (end - s < 3 || (s[1] & 0xc0) != 0x80 ||
+			    (s[2] & 0xc0) != 0x80)
+				return FALSE;
+			if (c == 0xe0 && s[1] < 0xa0)	/* overlong */
+				return FALSE;
+			if (c == 0xed && s[1] >= 0xa0)	/* surrogate */
+				return FALSE;
+			s += 3;
+		} else if (c >= 0xf0 && c <= 0xf4) {	/* 4 bytes */
+			if (end - s < 4 || (s[1] & 0xc0) != 0x80 ||
+			    (s[2] & 0xc0) != 0x80 || (s[3] & 0xc0) != 0x80)
+				return FALSE;
+			if (c == 0xf0 && s[1] < 0x90)	/* overlong */
+				return FALSE;
+			if (c == 0xf4 && s[1] >= 0x90)	/* > U+10FFFF */
+				return FALSE;
+			s += 4;
+		} else {
+			return FALSE;	/* continuation byte, C0, C1, F5..FF */
+		}
+	}
+	return TRUE;
+}
+
+protobuf_c_boolean (*protobuf_c_validate_utf8)(size_t len, const char *data) =
+	protobuf_c_validate_utf8_strict;
+
+/* Does unpacking `field` have to check that its contents are valid UTF-8? */
+static protobuf_c_boolean
+field_requires_utf8(const ProtobufCFieldDescriptor *field)
+{
+	const ProtobufCFeatures *f = field->features;
+
+	/* NULL: code generated before features were recorded. */
+	return f != NULL &&
+	       f->struct_size > offsetof(ProtobufCFeatures, utf8_validation) &&
+	       f->utf8_validation == PROTOBUF_C_UTF8_VALIDATION_VERIFY;
+}
+
 /**
  * Internal `ProtobufCMessage` manipulation macro.
  *
@@ -2554,6 +2613,15 @@ parse_required_member(ScannedMember *scanned_member,
 		if (wire_type != PROTOBUF_C_WIRE_TYPE_LENGTH_PREFIXED)
 			return FALSE;
 
+		/* Checked before anything is changed. */
+		if (field_requires_utf8(scanned_member->field) &&
+		    !protobuf_c_validate_utf8(len - pref_len,
+					      (const char *) data + pref_len)) {
+			PROTOBUF_C_UNPACK_ERROR("string field '%s' is not valid UTF-8",
+						scanned_member->field->name);
+			return FALSE;
+		}
+
 		if (maybe_clear && *pstr != NULL) {
 			const char *def = scanned_member->field->default_value;
 			if (*pstr != def)
@@ -2707,6 +2775,24 @@ parse_optional_member(ScannedMember *scanned_member,
 }
 
 static protobuf_c_boolean
+add_unknown_field(ProtobufCMessage *message, ProtobufCAllocator *allocator,
+		  uint32_t tag, uint8_t wire_type, size_t len,
+		  const uint8_t *data)
+{
+	ProtobufCMessageUnknownField *ufield =
+		message->unknown_fields + (message->n_unknown_fields++);
+
+	ufield->tag = tag;
+	ufield->wire_type = wire_type;
+	ufield->len = len;
+	ufield->data = do_alloc(allocator, len);
+	if (ufield->data == NULL)
+		return FALSE;
+	memcpy(ufield->data, data, len);
+	return TRUE;
+}
+
+static protobuf_c_boolean
 parse_repeated_member(ScannedMember *scanned_member,
 		      void *member,
 		      ProtobufCMessage *message,
@@ -2740,10 +2826,63 @@ scan_varint(unsigned len, const uint8_t *data)
 	return i + 1;
 }
 
+/*
+ * Closed enums (the enum_type feature; the default for proto2) do not accept
+ * values that the enum does not define: such a value is kept as an unknown
+ * field instead, and the field keeps its previous (default) value.
+ */
+static protobuf_c_boolean
+enum_field_is_closed(const ProtobufCFieldDescriptor *field)
+{
+	const ProtobufCEnumDescriptor *ed;
+	const ProtobufCFeatures *f;
+
+	if (field->type != PROTOBUF_C_TYPE_ENUM)
+		return FALSE;
+	ed = field->descriptor;
+	if (ed == NULL)
+		return FALSE;
+	f = ed->features;	/* NULL: older generated code, treated as open */
+	return f != NULL &&
+	       f->struct_size > offsetof(ProtobufCFeatures, enum_type) &&
+	       f->enum_type == PROTOBUF_C_ENUM_TYPE_CLOSED;
+}
+
+static protobuf_c_boolean
+closed_enum_accepts(const ProtobufCFieldDescriptor *field, int32_t value)
+{
+	return protobuf_c_enum_descriptor_get_value(field->descriptor,
+						    value) != NULL;
+}
+
+/* Count the elements of a packed closed-enum field that are defined by the
+ * enum, and those that are not. */
+static protobuf_c_boolean
+count_packed_closed_enum(const ProtobufCFieldDescriptor *field,
+			 size_t len, const uint8_t *data,
+			 size_t *n_known, size_t *n_unknown)
+{
+	*n_known = *n_unknown = 0;
+	while (len > 0) {
+		unsigned s = scan_varint(len, data);
+
+		if (s == 0)
+			return FALSE;
+		if (closed_enum_accepts(field, parse_int32(s, data)))
+			(*n_known)++;
+		else
+			(*n_unknown)++;
+		data += s;
+		len -= s;
+	}
+	return TRUE;
+}
+
 static protobuf_c_boolean
 parse_packed_repeated_member(ScannedMember *scanned_member,
 			     void *member,
-			     ProtobufCMessage *message)
+			     ProtobufCMessage *message,
+			     ProtobufCAllocator *allocator)
 {
 	const ProtobufCFieldDescriptor *field = scanned_member->field;
 	size_t *p_n = STRUCT_MEMBER_PTR(size_t, message, field->quantifier_offset);
@@ -2755,6 +2894,33 @@ parse_packed_repeated_member(ScannedMember *scanned_member,
 #if defined(WORDS_BIGENDIAN)
 	unsigned i;
 #endif
+
+	if (enum_field_is_closed(field)) {
+		/* Defined values are stored; the others become unknown
+		 * (varint) fields, as if they had not been packed. */
+		while (rem > 0) {
+			unsigned s = scan_varint(rem, at);
+			int32_t v;
+
+			if (s == 0) {
+				PROTOBUF_C_UNPACK_ERROR("bad packed-repeated enum value");
+				return FALSE;
+			}
+			v = parse_int32(s, at);
+			if (closed_enum_accepts(field, v)) {
+				((int32_t *) array)[count++] = v;
+			} else if (!add_unknown_field(message, allocator,
+						      scanned_member->tag,
+						      PROTOBUF_C_WIRE_TYPE_VARINT,
+						      s, at)) {
+				return FALSE;
+			}
+			at += s;
+			rem -= s;
+		}
+		*p_n += count;
+		return TRUE;
+	}
 
 	switch (field->type) {
 	case PROTOBUF_C_TYPE_SFIXED32:
@@ -2890,17 +3056,11 @@ parse_member(ScannedMember *scanned_member,
 	void *member;
 
 	if (field == NULL) {
-		ProtobufCMessageUnknownField *ufield =
-			message->unknown_fields +
-			(message->n_unknown_fields++);
-		ufield->tag = scanned_member->tag;
-		ufield->wire_type = scanned_member->wire_type;
-		ufield->len = scanned_member->len;
-		ufield->data = do_alloc(allocator, scanned_member->len);
-		if (ufield->data == NULL)
-			return FALSE;
-		memcpy(ufield->data, scanned_member->data, ufield->len);
-		return TRUE;
+		return add_unknown_field(message, allocator,
+					 scanned_member->tag,
+					 scanned_member->wire_type,
+					 scanned_member->len,
+					 scanned_member->data);
 	}
 	member = (char *) message + field->offset;
 	switch (field->label) {
@@ -2923,7 +3083,8 @@ parse_member(ScannedMember *scanned_member,
 		     is_packable_type(field->type)))
 		{
 			return parse_packed_repeated_member(scanned_member,
-							    member, message);
+							    member, message,
+							    allocator);
 		} else {
 			return parse_repeated_member(scanned_member,
 						     member, message,
@@ -3126,9 +3287,6 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			field = last_field;
 		}
 
-		if (field != NULL && field->label == PROTOBUF_C_LABEL_REQUIRED)
-			REQUIRED_FIELD_BITMAP_SET(last_field_index);
-
 		at += used;
 		rem -= used;
 		tmp.tag = tag;
@@ -3186,6 +3344,19 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			goto error_cleanup_during_scan;
 		}
 
+		/* A value that a closed enum does not define is unknown. */
+		if (field != NULL && wire_type == PROTOBUF_C_WIRE_TYPE_VARINT &&
+		    enum_field_is_closed(field) &&
+		    !closed_enum_accepts(field, parse_int32(tmp.len, tmp.data)))
+		{
+			field = NULL;
+			tmp.field = NULL;
+			n_unknown++;
+		}
+
+		if (field != NULL && field->label == PROTOBUF_C_LABEL_REQUIRED)
+			REQUIRED_FIELD_BITMAP_SET(last_field_index);
+
 		if (in_slab_index == (1UL <<
 			(which_slab + FIRST_SCANNED_MEMBER_SLAB_SIZE_LOG2)))
 		{
@@ -3213,12 +3384,21 @@ protobuf_c_message_unpack(const ProtobufCMessageDescriptor *desc,
 			     is_packable_type(field->type)))
 			{
 				size_t count;
-				if (!count_packed_elements(field->type,
-							   tmp.len -
-							   tmp.length_prefix_len,
-							   tmp.data +
-							   tmp.length_prefix_len,
-							   &count))
+				size_t n_unknown_in_run = 0;
+				protobuf_c_boolean counted;
+
+				if (enum_field_is_closed(field))
+					counted = count_packed_closed_enum(field,
+							tmp.len - tmp.length_prefix_len,
+							tmp.data + tmp.length_prefix_len,
+							&count, &n_unknown_in_run);
+				else
+					counted = count_packed_elements(field->type,
+							tmp.len - tmp.length_prefix_len,
+							tmp.data + tmp.length_prefix_len,
+							&count);
+				n_unknown += n_unknown_in_run;
+				if (!counted)
 				{
 					PROTOBUF_C_UNPACK_ERROR("counting packed elements");
 					goto error_cleanup_during_scan;
@@ -3325,6 +3505,90 @@ error_cleanup_during_scan:
 	if (required_fields_bitmap_alloced)
 		do_free(allocator, required_fields_bitmap);
 	return NULL;
+}
+
+/* Does every string below `message` that has to be valid UTF-8 pass
+ * protobuf_c_validate_utf8? On failure `*bad_field` (if given) is the
+ * innermost field that failed. */
+static protobuf_c_boolean
+message_validate_utf8(const ProtobufCMessage *message,
+		      const ProtobufCFieldDescriptor **bad_field)
+{
+	const ProtobufCMessageDescriptor *desc = message->descriptor;
+	unsigned f;
+
+	ASSERT_IS_MESSAGE(message);
+	for (f = 0; f < desc->n_fields; f++) {
+		const ProtobufCFieldDescriptor *field = &desc->fields[f];
+		protobuf_c_boolean check_str;
+
+		if (field->type != PROTOBUF_C_TYPE_STRING &&
+		    field->type != PROTOBUF_C_TYPE_MESSAGE)
+			continue;
+		if ((field->flags & PROTOBUF_C_FIELD_FLAG_ONEOF) &&
+		    field->id != STRUCT_MEMBER(uint32_t, message,
+					       field->quantifier_offset))
+			continue;	/* not the selected member of its oneof */
+		check_str = field->type == PROTOBUF_C_TYPE_STRING &&
+			    field_requires_utf8(field);
+		if (field->type == PROTOBUF_C_TYPE_STRING && !check_str)
+			continue;
+
+		if (field->label == PROTOBUF_C_LABEL_REPEATED) {
+			size_t n = STRUCT_MEMBER(size_t, message,
+						 field->quantifier_offset);
+			void *arr = STRUCT_MEMBER(void *, message, field->offset);
+			size_t i;
+
+			if (arr == NULL)
+				continue;
+			for (i = 0; i < n; i++) {
+				if (check_str) {
+					const char *s = ((char **) arr)[i];
+
+					if (s != NULL &&
+					    !protobuf_c_validate_utf8(strlen(s), s))
+						goto fail;
+				} else {
+					const ProtobufCMessage *sub =
+						((ProtobufCMessage **) arr)[i];
+
+					if (sub != NULL &&
+					    !message_validate_utf8(sub, bad_field))
+						return FALSE;
+				}
+			}
+		} else if (check_str) {
+			const char *s = STRUCT_MEMBER(char *, message, field->offset);
+
+			if (s != NULL && s != field->default_value &&
+			    !protobuf_c_validate_utf8(strlen(s), s))
+				goto fail;
+		} else {
+			const ProtobufCMessage *sub =
+				STRUCT_MEMBER(ProtobufCMessage *, message,
+					      field->offset);
+
+			if (sub != NULL && sub != field->default_value &&
+			    !message_validate_utf8(sub, bad_field))
+				return FALSE;
+		}
+		continue;
+	fail:
+		if (bad_field != NULL)
+			*bad_field = field;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+protobuf_c_boolean
+protobuf_c_message_validate_utf8(const ProtobufCMessage *message,
+				 const ProtobufCFieldDescriptor **bad_field)
+{
+	if (bad_field != NULL)
+		*bad_field = NULL;
+	return message_validate_utf8(message, bad_field);
 }
 
 void
