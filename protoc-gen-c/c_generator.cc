@@ -100,12 +100,50 @@ void ParseOptions(const std::string& text, std::vector<std::pair<std::string, st
 CGenerator::CGenerator() {}
 CGenerator::~CGenerator() {}
 
+namespace {
+
+// protobuf-c has no support for groups, which are what proto2 `group` fields
+// and editions fields with features.message_encoding = DELIMITED become.
+// Returns the first such field in `m` (or its nested messages), or NULL.
+const google::protobuf::FieldDescriptor*
+FindGroupField(const google::protobuf::Descriptor* m) {
+  for (int i = 0; i < m->field_count(); i++)
+    if (m->field(i)->type() == google::protobuf::FieldDescriptor::TYPE_GROUP)
+      return m->field(i);
+  for (int i = 0; i < m->extension_count(); i++)
+    if (m->extension(i)->type() == google::protobuf::FieldDescriptor::TYPE_GROUP)
+      return m->extension(i);
+  for (int i = 0; i < m->nested_type_count(); i++) {
+    const google::protobuf::FieldDescriptor* f = FindGroupField(m->nested_type(i));
+    if (f != NULL)
+      return f;
+  }
+  return NULL;
+}
+
+}  // namespace
+
 bool CGenerator::Generate(const google::protobuf::FileDescriptor* file,
                             const std::string& parameter,
                             google::protobuf::compiler::OutputDirectory* output_directory,
                             std::string* error) const {
   if (file->options().GetExtension(pb_c_file).no_generate())
     return true;
+
+  {
+    const google::protobuf::FieldDescriptor* group = NULL;
+    for (int i = 0; group == NULL && i < file->message_type_count(); i++)
+      group = FindGroupField(file->message_type(i));
+    for (int i = 0; group == NULL && i < file->extension_count(); i++)
+      if (file->extension(i)->type() == google::protobuf::FieldDescriptor::TYPE_GROUP)
+        group = file->extension(i);
+    if (group != NULL) {
+      *error = "field " + std::string(group->full_name()) +
+               " is a group (a proto2 `group`, or features.message_encoding = DELIMITED), "
+               "which protobuf-c does not support";
+      return false;
+    }
+  }
 
   std::vector<std::pair<std::string, std::string> > options;
   ParseOptions(parameter, &options);

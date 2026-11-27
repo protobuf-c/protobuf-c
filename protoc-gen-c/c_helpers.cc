@@ -554,8 +554,6 @@ void CollectMessage(const google::protobuf::Descriptor* m,
   (*out)[FeaturesName(m->file(), v)] = v;
   for (int i = 0; i < m->field_count(); i++)
     CollectField(m->field(i), out);
-  for (int i = 0; i < m->extension_count(); i++)
-    CollectField(m->extension(i), out);
   for (int i = 0; i < m->enum_type_count(); i++)
     CollectEnum(m->enum_type(i), out);
   for (int i = 0; i < m->nested_type_count(); i++)
@@ -581,8 +579,8 @@ void PrintFeaturesDefinitions(const google::protobuf::FileDescriptor* file,
     CollectMessage(file->message_type(i), &all);
   for (int i = 0; i < file->enum_type_count(); i++)
     CollectEnum(file->enum_type(i), &all);
-  for (int i = 0; i < file->extension_count(); i++)
-    CollectField(file->extension(i), &all);
+  // Extensions get no descriptor in the generated code, so their features are
+  // not recorded.
   if (all.empty())
     return;
 
