@@ -12,6 +12,8 @@
 #include "t/editions/editions-implicit.pb-c.h"
 #include "t/editions/utf8-proto2.pb-c.h"
 #include "t/editions/utf8-proto3.pb-c.h"
+#include "t/editions/enums.pb-c.h"
+#include "t/editions/enums-proto2.pb-c.h"
 
 static void
 check_bytes(const char *what, const uint8_t *got, size_t got_len,
@@ -435,6 +437,110 @@ test_validate_message(void)
 	puts("validate_utf8 ok");
 }
 
+/* ---- closed and open enums ---- */
+
+static Editions__Enums *
+unpack_enums(const uint8_t *data, size_t len)
+{
+	return editions__enums__unpack(NULL, len, data);
+}
+
+static void
+test_closed_enums(void)
+{
+	/* closed = 7 (undefined), req = 1 */
+	static const uint8_t unknown_single[] = { 0x08, 0x07, 0x30, 0x01 };
+	static const uint8_t known_single[] = { 0x08, 0x05, 0x30, 0x01 };
+	static const uint8_t open_single[] = { 0x10, 0x07, 0x30, 0x01 };
+	/* rep = packed [1, 7, 5, 9], req = 1 */
+	static const uint8_t packed[] = { 0x1a, 0x04, 0x01, 0x07, 0x05, 0x09,
+					  0x30, 0x01 };
+	/* rep_expanded = 1, 8 and packed [1, 8] (both encodings accepted) */
+	static const uint8_t expanded[] = { 0x20, 0x01, 0x20, 0x08,
+					    0x22, 0x02, 0x01, 0x08, 0x30, 0x01 };
+	/* closed_choice = 7, req = 1 */
+	static const uint8_t oneof_unknown[] = { 0x28, 0x07, 0x30, 0x01 };
+	/* req = 9 (undefined): the required field is missing */
+	static const uint8_t req_unknown[] = { 0x30, 0x09 };
+	Editions__Enums *m;
+	uint8_t buf[64];
+	size_t n;
+
+	/* An undefined value of a closed enum becomes an unknown field. */
+	m = unpack_enums(unknown_single, sizeof(unknown_single));
+	assert(m != NULL);
+	assert(m->has_closed == 0 && m->closed == EDITIONS__CLOSED_E__CLOSED_A);
+	assert(m->base.n_unknown_fields == 1);
+	assert(m->base.unknown_fields[0].tag == 1);
+	assert(m->base.unknown_fields[0].wire_type == PROTOBUF_C_WIRE_TYPE_VARINT);
+	/* ... and is written back unchanged. */
+	n = editions__enums__pack(m, buf);
+	assert(n == 4);
+	editions__enums__free_unpacked(m, NULL);
+
+	m = unpack_enums(known_single, sizeof(known_single));
+	assert(m != NULL);
+	assert(m->has_closed && m->closed == EDITIONS__CLOSED_E__CLOSED_C);
+	assert(m->base.n_unknown_fields == 0);
+	editions__enums__free_unpacked(m, NULL);
+
+	/* Open enums keep any value. */
+	m = unpack_enums(open_single, sizeof(open_single));
+	assert(m != NULL);
+	assert(m->has_open && (int) m->open == 7);
+	assert(m->base.n_unknown_fields == 0);
+	editions__enums__free_unpacked(m, NULL);
+
+	/* Packed: defined elements stay, the others become unknown fields. */
+	m = unpack_enums(packed, sizeof(packed));
+	assert(m != NULL);
+	assert(m->n_rep == 2);
+	assert(m->rep[0] == EDITIONS__CLOSED_E__CLOSED_B);
+	assert(m->rep[1] == EDITIONS__CLOSED_E__CLOSED_C);
+	assert(m->base.n_unknown_fields == 2);
+	assert(m->base.unknown_fields[0].tag == 3 && m->base.unknown_fields[0].len == 1
+	       && m->base.unknown_fields[0].data[0] == 7);
+	assert(m->base.unknown_fields[1].tag == 3 && m->base.unknown_fields[1].data[0] == 9);
+	editions__enums__free_unpacked(m, NULL);
+
+	m = unpack_enums(expanded, sizeof(expanded));
+	assert(m != NULL);
+	assert(m->n_rep_expanded == 2);
+	assert(m->rep_expanded[0] == EDITIONS__CLOSED_E__CLOSED_B);
+	assert(m->rep_expanded[1] == EDITIONS__CLOSED_E__CLOSED_B);
+	assert(m->base.n_unknown_fields == 2);
+	editions__enums__free_unpacked(m, NULL);
+
+	m = unpack_enums(oneof_unknown, sizeof(oneof_unknown));
+	assert(m != NULL);
+	assert(m->o_case == EDITIONS__ENUMS__O__NOT_SET);
+	assert(m->base.n_unknown_fields == 1);
+	editions__enums__free_unpacked(m, NULL);
+
+	/* An undefined value does not satisfy a required field. */
+	assert(unpack_enums(req_unknown, sizeof(req_unknown)) == NULL);
+}
+
+static void
+test_closed_enums_proto2(void)
+{
+	static const uint8_t single[] = { 0x08, 0x07 };
+	static const uint8_t rep[] = { 0x10, 0x01, 0x10, 0x07, 0x12, 0x02, 0x00, 0x09 };
+	Editions__Proto2Enums *m;
+
+	m = editions__proto2_enums__unpack(NULL, sizeof(single), single);
+	assert(m != NULL);
+	assert(!m->has_e && m->base.n_unknown_fields == 1);
+	editions__proto2_enums__free_unpacked(m, NULL);
+
+	m = editions__proto2_enums__unpack(NULL, sizeof(rep), rep);
+	assert(m != NULL);
+	assert(m->n_r == 2 && m->r[0] == EDITIONS__PROTO2_E__P2_B
+	       && m->r[1] == EDITIONS__PROTO2_E__P2_A);
+	assert(m->base.n_unknown_fields == 2);
+	editions__proto2_enums__free_unpacked(m, NULL);
+}
+
 int
 main(void)
 {
@@ -447,6 +553,8 @@ main(void)
 	test_utf8_validator();
 	test_utf8();
 	test_validate_message();
+	test_closed_enums();
+	test_closed_enums_proto2();
 	puts("editions: ok");
 	return 0;
 }

@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package editions;
+
+// proto2 enums are closed.
+enum Proto2E {
+  P2_A = 0;
+  P2_B = 1;
+}
+
+message Proto2Enums {
+  optional Proto2E e = 1;
+  repeated Proto2E r = 2;
+}

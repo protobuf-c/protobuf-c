@@ -1,0 +1,26 @@
+edition = "2023";
+
+package editions;
+
+enum OpenE {
+  OPEN_A = 0;
+  OPEN_B = 1;
+}
+
+enum ClosedE {
+  option features.enum_type = CLOSED;
+  CLOSED_A = 0;
+  CLOSED_B = 1;
+  CLOSED_C = 5;
+}
+
+message Enums {
+  ClosedE closed = 1;
+  OpenE open = 2;
+  repeated ClosedE rep = 3;
+  repeated ClosedE rep_expanded = 4 [features.repeated_field_encoding = EXPANDED];
+  oneof o {
+    ClosedE closed_choice = 5;
+  }
+  ClosedE req = 6 [features.field_presence = LEGACY_REQUIRED];
+}

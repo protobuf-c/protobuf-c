@@ -276,6 +276,12 @@ if(BUILD_PROTOC)
       generate_test_sources(${TEST_DIR}/editions/utf8-proto2.proto
                             t/editions/utf8-proto2.pb-c.c
                             t/editions/utf8-proto2.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/enums.proto
+                            t/editions/enums.pb-c.c
+                            t/editions/enums.pb-c.h)
+      generate_test_sources(${TEST_DIR}/editions/enums-proto2.proto
+                            t/editions/enums-proto2.pb-c.c
+                            t/editions/enums-proto2.pb-c.h)
       add_executable(
         test-editions ${TEST_DIR}/editions/editions.c
                       t/editions/editions.pb-c.c t/editions/editions.pb-c.h
@@ -284,7 +290,11 @@ if(BUILD_PROTOC)
                       t/editions/utf8-proto3.pb-c.c
                       t/editions/utf8-proto3.pb-c.h
                       t/editions/utf8-proto2.pb-c.c
-                      t/editions/utf8-proto2.pb-c.h)
+                      t/editions/utf8-proto2.pb-c.h
+                      t/editions/enums.pb-c.c
+                      t/editions/enums.pb-c.h
+                      t/editions/enums-proto2.pb-c.c
+                      t/editions/enums-proto2.pb-c.h)
       target_include_directories(test-editions PRIVATE ${MAIN_DIR}
                                  ${CMAKE_CURRENT_BINARY_DIR})
       target_link_libraries(test-editions protobuf-c)
